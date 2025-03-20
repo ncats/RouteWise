@@ -16,3 +16,10 @@ bin-release/
 # Project files, i.e. `.project`, `.actionScriptProperties` and `.flexProperties`
 # should NOT be excluded as they contain compiler settings and other important
 # information for Eclipse / Flash Builder.
+
+# Python cache files
+__pycache__/
+**/__pycache__/
+
+# Ignore api/data directory
+api/data/

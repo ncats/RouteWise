@@ -1,0 +1,201 @@
+const rxnSmiles2RdkitSvgPath = "rxsmiles2svg";
+const molSmiles2RdkitSvgPath = "molsmiles2svg";
+const apiStatusPath = "status";
+const computeAllBiPath = "compute_all_bi";
+
+
+// Fetch reaction full RDKIT SVG from rxn smiles
+export const getReactionRdkitSvgByRxsmiles = async (baseUrl, rxsmiles, highlight) => {
+  // Encode the rxsmiles string to ensure it's safely passed in the URL
+  const encodedRxsmiles = encodeURIComponent(rxsmiles);
+
+  // Construct the URL with query parameters
+  const url = `${baseUrl.trim()}/${rxnSmiles2RdkitSvgPath}?rxsmiles=${encodedRxsmiles}&highlight=${highlight}&img_width=1800&img_height=600&base64_encode=true`;
+
+  console.log("Fetching from:", url);
+
+  try {
+    // Perform the GET request without a body and without headers
+    const response = await fetch(url);
+
+    // Check if the response is successful
+    if (!response.ok) {
+      throw new Error(`Error: ${response.status}`);
+    }
+
+    // Assuming the response contains an "svg" field
+    const data = await response.json();
+    return data["svg_base64"];
+  } catch (error) {
+    console.error("Error fetching SVG:", error);
+    return null;
+  }
+};
+
+// Fetch molecule full RDKIT SVG from inchikey
+export const getMoleculeRdkitSvgBySmiles = async (baseUrl, smiles) => {
+  // Construct the URL with query parameters
+  const encodedSmiles = encodeURIComponent(smiles);
+  const url = `${baseUrl.trim()}/${molSmiles2RdkitSvgPath}?mol_smiles=${encodedSmiles}&img_width=300&img_height=300&base64_encode=true`;
+
+  console.log("Fetching from:", url);
+
+  try {
+    // Perform the GET request without a body or custom headers
+    const response = await fetch(url);
+
+    // Check if the response is successful
+    if (!response.ok) {
+      throw new Error(`Error: ${response.status}`);
+    }
+
+    // Assuming the response contains an "svg" field
+    const data = await response.json();
+    return data["svg_base64"];
+  } catch (error) {
+    console.error("Error fetching SVG:", error);
+    return null;
+  }
+};
+
+const substanceNodes = ["substance"];
+const reactionNodes = ["reaction"];
+
+export const mapAicpGraphWithSVG = async (baseUrl, aicpGraph) => {
+  // Create an array to hold all promises
+  const promises = aicpGraph.nodes.map(async (node) => {
+    const nodeType = node.node_type.toLowerCase();
+    if (substanceNodes.includes(nodeType)) {
+      const svg = await getMoleculeSvg(baseUrl, node.node_label);
+      if (svg) {
+        const base64Svg = btoa(svg);
+        node.base64svg = base64Svg; // Add the base64 encoded SVG to the node
+      }
+    } else if (reactionNodes.includes(nodeType)) {
+      const svg = await getReactionSvg(baseUrl, node.node_label);
+      if (svg) {
+        const base64Svg = btoa(svg);
+        node.base64svg = base64Svg; // Add the base64 encoded SVG to the node
+      }
+    } else {
+      // Nothing for now
+    }
+  });
+
+  // Wait for all promises to resolve
+  await Promise.all(promises);
+
+  // Return the modified aicpGraph
+  return aicpGraph;
+};
+
+export const checkApiStatus = async (baseUrl) => {
+  try {
+    const url = `${baseUrl.trim()}/${apiStatusPath}`;
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+      },
+    });
+
+    // Check if the response was successful (status 200-299)
+    if (!response.ok) {
+      throw new Error(`Error: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data; // This will return the data
+  } catch (error) {
+    console.error(error);
+    return { error: true }; // This will return the error object if an error occurred
+  }
+};
+
+export const moleculeSmilesToInchikey = async (baseUrl, smiles) => {
+  const url = `${baseUrl.trim()}/api/v1/substance_utils/smiles2inchikey`;
+  const body = JSON.stringify({ smiles: smiles });
+
+  const response = await fetch(url, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: body,
+  });
+
+  if (!response.ok) {
+    throw new Error(`Error: ${response.status}`);
+  }
+
+  const data = await response.json();
+  return data.inchikey;
+};
+
+export const getInchikeysFromGraph = (graph = []) => {
+  return graph.filter(item => item.data.inchikey !== undefined).map(item => item.data.inchikey);
+}
+
+
+export const sendToCytoscape = async (baseUrl, cytoscapeJson) => {  // Receiving baseUrl as an argument
+  if (!cytoscapeJson) {
+    console.error("No graph data available.");
+    return;
+  }
+
+  try {
+
+    const uploadResponse = await fetch(`${baseUrl.trim()}/upload_network/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(cytoscapeJson),  // Directly use the passed cytoscapeJson
+    });
+
+    if (!uploadResponse.ok) {
+      throw new Error("Failed to upload network.");
+    }
+
+    const uploadData = await uploadResponse.json();
+    const networkId = uploadData.network_id;
+
+
+  } catch (error) {
+    console.error("Error sending to Cytoscape:", error.message);
+  }
+};
+
+export const compute_balance = async (baseUrl, rxsmiles) => {
+  // Ensure rxsmiles is provided
+  if (!rxsmiles) {
+    console.error("Error: rxsmiles parameter is required.");
+    return null;
+  }
+
+  // Construct the API endpoint URL with the rxsmiles parameter
+  const url = `${baseUrl.trim()}/${computeAllBiPath}?rxsmiles=${encodeURIComponent(rxsmiles)}`;
+
+  console.log("Fetching from:", url);
+
+  try {
+    // Perform the GET request
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+      },
+    });
+
+
+    // Check if the response is successful
+    if (!response.ok) {
+      throw new Error(`Error: ${response.statusText}`);
+    }
+
+    // Parse the JSON response
+    const data = await response.json();
+    return data; // { pbi: ..., rbi: ..., tbi: ... }
+  } catch (error) {
+    console.error("Error fetching BI values:", error);
+    return null;
+  }
+};

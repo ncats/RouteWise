@@ -1,0 +1,13 @@
+name: networkvis_backend
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - svgutils
+  - python=3.12
+  - rdkit=2024.3.5
+  - pip
+  - pip:
+      - fastapi
+      - uvicorn[standard]
+      - requests

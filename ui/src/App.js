@@ -1,0 +1,221 @@
+import React, { useState, useEffect } from "react";
+
+// components
+import NetworkVisualizer from "./views/Cytoscape";
+import { useNavigate } from "react-router-dom";
+
+// context
+import { MainContext } from "./contexts/MainContext";
+
+// utils
+import {
+  defaultAppSettings,
+  defaultGraphSettings,
+  getSvgDimensions,
+  graphLayouts,
+} from "./helpers/commonHelpers";
+import {
+  getReactionRdkitSvgByRxsmiles,
+  getMoleculeRdkitSvgBySmiles,
+  checkApiStatus,
+  compute_balance,
+} from "./helpers/apiHelpers";
+
+const defaultApiStatus = { error: false };
+
+function App() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchRoomId = async () => {
+      try {
+        const response = await fetch("http://localhost:5099/rooms/new", { method: "POST" });
+        const data = await response.json();
+        navigate(`/room/${data.room_id}`);
+      } catch (error) {
+        console.error("Failed to fetch room ID:", error);
+      }
+    };
+
+    if (window.location.pathname === "/") {
+      fetchRoomId();
+    }
+  }, [navigate]);
+  const [appSettings, setAppSettings] = useState(defaultAppSettings);
+  const [graphSettings, setGraphSettings] = useState(defaultGraphSettings);
+  const [networkGraph, setNetworkGraph] = useState(null);
+  const [cytoscapeGraph, setCytoscapeGraph] = useState([]);
+  const [aicpGraph, setAicpGraph] = useState(null);
+  const [layout, setLayout] = useState(graphLayouts.HIERARCHICAL);
+  const [nodeSvgs, setNodeSvgs] = useState({});
+  const [reactionSources, setReactionSources] = useState({});
+  const [zoomLevel, setZoomLevel] = useState();
+  const [selectedEntity, setSelectedEntity] = useState(null);
+  const [previewEntity, setPreviewEntity] = useState(null);
+  const [apiStatus, setApiStatus] = useState(defaultApiStatus);
+  const [showReagents, setShowReagents] = useState(false);
+  const [duplicateReagents, setDuplicateReagents] = useState(true);
+  const [highlightAtoms, setHighlightAtoms] = useState(true);
+  const [showKetcher, setShowKetcher] = useState(false);
+  const [ketcherSmiles, setKetcherSmiles] = useState("");
+  const [balanceData, setBalanceData] = useState({});
+
+  useEffect(() => {
+    const checkStatus = async () => {
+      try {
+        const apiStatusRes = await checkApiStatus(appSettings.apiUrl);
+        setApiStatus(!!apiStatusRes.error ? { error: true } : defaultApiStatus);
+      } catch (error) {
+        console.error("Error fetching API status:", error);
+      }
+    };
+
+    checkStatus();
+  }, []);
+
+  const addNodeSvg = (nodeSvg) => {
+    setNodeSvgs((prev) => ({
+      ...prev,
+      ...nodeSvg,
+    }));
+  };
+
+  const addBalanceData = (reactionId, balance) => {
+    setBalanceData((prev) => ({
+      ...prev,
+      [reactionId]: balance,
+    }));
+  };
+
+  const updateCytoscapeGraph = async (mappedGraph) => {
+    const promises = [];
+    setSelectedEntity(null);
+    setPreviewEntity(null);
+    setReactionSources({});
+  
+    mappedGraph.forEach((graphElement) => {
+      const molId = graphElement.data.id;
+      const nodeType = graphElement.data.nodeType;
+      if (graphElement.data.svg) {
+        const svgUrl = graphElement.data.svg;
+        const dimensions = getSvgDimensions(svgUrl);
+        graphElement.data.width = dimensions.width;
+        graphElement.data.height = dimensions.height;
+        addNodeSvg({ [molId]: svgUrl });
+      } else {
+        if (nodeType === "substance" && graphElement.data.canonical_smiles) {
+          const smiles = graphElement.data.canonical_smiles;
+          const substancePromise = getMoleculeRdkitSvgBySmiles(
+            appSettings.apiUrl,
+            smiles
+          ).then((svg) => {
+            if (svg) {
+              const svgUrl = `data:image/svg+xml;base64,${svg}`;
+              graphElement.data.svg = svgUrl;
+              const dimensions = getSvgDimensions(svgUrl);
+              graphElement.data.width = dimensions.width;
+              graphElement.data.height = dimensions.height;
+              addNodeSvg({ [molId]: svgUrl });
+            } else {
+              console.error("Failed to fetch substance SVG");
+            }
+          });
+          promises.push(substancePromise);
+        } else if (nodeType === "reaction" && graphElement.data.rxsmiles) {
+          const { rxid, rxsmiles, isPredicted } = graphElement.data;
+  
+          const reactionSvgPromise = getReactionRdkitSvgByRxsmiles(
+            appSettings.apiUrl,
+            rxsmiles,
+            highlightAtoms
+          ).then((svg) => {
+            if (svg) {
+              const svgUrl = `data:image/svg+xml;base64,${svg}`;
+              graphElement.data.svg = svgUrl;
+              graphElement.data.type = "custom";
+              addNodeSvg({ [molId]: svgUrl });
+              const dimensions = getSvgDimensions(svgUrl);
+              graphElement.data.width = dimensions.width;
+              graphElement.data.height = dimensions.height;
+            } else {
+              console.error("Failed to fetch reaction SVG");
+            }
+          });
+
+          const balanceDataPromise = compute_balance(appSettings.apiUrl, rxsmiles).then((balanceData) => {
+            if (balanceData) {
+              graphElement.data.pbi = balanceData["pbi"];
+              graphElement.data.rbi = balanceData["rbi"];
+              graphElement.data.tbi = balanceData["tbi"];
+              addBalanceData(rxid, balanceData);
+              console.log(`Added balance data to reaction ${rxid}:`);
+            } else {
+              console.error(`Failed to fetch balance data for reaction ${rxid}`);
+            }
+          });
+  
+          promises.push(reactionSvgPromise, balanceDataPromise);
+        }
+      }
+    });
+
+    Promise.all(promises)
+      .then(() => {
+        console.log("All SVGs and balance data fetched and processed.");
+      })
+      .catch((error) => {
+        console.error("Error fetching one or more SVGs or balance data:", error);
+      })
+      .finally(() => {
+        setCytoscapeGraph(mappedGraph);
+      });
+  };
+
+  return (
+    <MainContext.Provider
+      value={{
+        appSettings,
+        setAppSettings,
+        graphSettings,
+        setGraphSettings,
+        networkGraph,
+        setNetworkGraph,
+        cytoscapeGraph,
+        setCytoscapeGraph,
+        aicpGraph,
+        setAicpGraph,
+        layout,
+        setLayout,
+        nodeSvgs,
+        setNodeSvgs,
+        addNodeSvg,
+        updateCytoscapeGraph,
+        zoomLevel,
+        setZoomLevel,
+        selectedEntity,
+        setSelectedEntity,
+        previewEntity,
+        setPreviewEntity,
+        apiStatus,
+        showReagents,
+        setShowReagents,
+        showKetcher,
+        setShowKetcher,
+        ketcherSmiles,
+        setKetcherSmiles,
+        duplicateReagents,
+        setDuplicateReagents,
+        highlightAtoms,
+        setHighlightAtoms,
+        reactionSources,
+        setReactionSources,
+        balanceData,
+        setBalanceData,
+      }}
+    >
+      <NetworkVisualizer />
+    </MainContext.Provider>
+  );
+}
+
+export default App;

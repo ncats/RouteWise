@@ -1,0 +1,471 @@
+{
+  "synth_graph": {
+    "nodes": [
+      {
+        "node_label": "ASPIRE-00051539618053",
+        "node_type": "Reaction",
+        "uuid": "reaction_8863cefe75bc18863e5cded03f5713427e0a3218d0a086b70425453f0a82e1a7",
+        "rxid": "ASPIRE-00051539618053",
+        "rxsmiles": "ClC(Cl)(O[C:5](=[O:11])OC(Cl)(Cl)Cl)Cl.[Cl:13][C:14]1[CH:19]=[CH:18][C:17]([C:20]2[N:21]=[C:22]([CH:31]3[CH2:36][CH2:35][NH:34][CH2:33][CH2:32]3)[S:23][C:24]=2[C:25]2[CH:30]=[CH:29][CH:28]=[CH:27][CH:26]=2)=[CH:16][CH:15]=1.C(N(CC)CC)C.Cl.[CH3:45][NH:46][OH:47].[Cl-].[NH4+]>ClCCl.O>[Cl:13][C:14]1[CH:19]=[CH:18][C:17]([C:20]2[N:21]=[C:22]([CH:31]3[CH2:36][CH2:35][N:34]([C:5](=[O:11])[N:46]([OH:47])[CH3:45])[CH2:33][CH2:32]3)[S:23][C:24]=2[C:25]2[CH:30]=[CH:29][CH:28]=[CH:27][CH:26]=2)=[CH:16][CH:15]=1 |f:3.4,5.6|",
+        "yield_info": {
+          "yield_predicted": 0.0,
+          "yield_score": 4
+        },
+        "provenance": {
+          "is_in_uspto": true,
+          "is_in_savi": false
+        },
+        "validation": {
+          "is_balanced": false
+        },
+        "route_assembly_type": {
+          "is_predicted": false,
+          "is_evidence": false
+        }
+      },
+      {
+        "node_label": "XLYOFNOQVPJJNP-UHFFFAOYSA-N",
+        "node_type": "substance",
+        "uuid": "substance_b3b38cd280cc635e68a33b2a16e8ca1cd37b81bcbc31e3db348cd64a96bffb3d",
+        "inchikey": "XLYOFNOQVPJJNP-UHFFFAOYSA-N",
+        "canonical_smiles": "O",
+        "srole": "sm",
+        "route_assembly_type": {
+          "is_predicted": false,
+          "is_evidence": false
+        }
+      },
+      {
+        "node_label": "YMWUJEATGCHHMB-UHFFFAOYSA-N",
+        "node_type": "substance",
+        "uuid": "substance_0d9f06151fef64d2a086bd37dfa6e98d953104c36e1295ca04a60dc7a12cff0f",
+        "inchikey": "YMWUJEATGCHHMB-UHFFFAOYSA-N",
+        "canonical_smiles": "ClCCl",
+        "srole": "sm",
+        "route_assembly_type": {
+          "is_predicted": false,
+          "is_evidence": false
+        }
+      },
+      {
+        "node_label": "UCPYLLCMEDAXFR-UHFFFAOYSA-N",
+        "node_type": "substance",
+        "uuid": "substance_a6ca6d78e3e6d48d43fe14e339985747b601fb0f15d54895a3cc5cc08d4cb563",
+        "inchikey": "UCPYLLCMEDAXFR-UHFFFAOYSA-N",
+        "canonical_smiles": "O=C(OC(Cl)(Cl)Cl)OC(Cl)(Cl)Cl",
+        "srole": "sm",
+        "route_assembly_type": {
+          "is_predicted": false,
+          "is_evidence": false
+        }
+      },
+      {
+        "node_label": "NLXLAEXVIDQMFP-UHFFFAOYSA-N",
+        "node_type": "substance",
+        "uuid": "substance_9f829add76b18f4dacd282244e39be0310eb3390e217409e86babcbe9b6d75f1",
+        "inchikey": "NLXLAEXVIDQMFP-UHFFFAOYSA-N",
+        "canonical_smiles": "[Cl-].[NH4+]",
+        "srole": "sm",
+        "route_assembly_type": {
+          "is_predicted": false,
+          "is_evidence": false
+        }
+      },
+      {
+        "node_label": "ZMANZCXQSJIPKH-UHFFFAOYSA-N",
+        "node_type": "substance",
+        "uuid": "substance_253e3f2e8eee9e3d52cf04b6b83f4accbc610e9a2208667b3932f179f03d5ec1",
+        "inchikey": "ZMANZCXQSJIPKH-UHFFFAOYSA-N",
+        "canonical_smiles": "CCN(CC)CC",
+        "srole": "sm",
+        "route_assembly_type": {
+          "is_predicted": false,
+          "is_evidence": false
+        }
+      },
+      {
+        "node_label": "OZHBILCBYQVJCH-UHFFFAOYSA-N",
+        "node_type": "substance",
+        "uuid": "substance_5a08814d2b4c42411a5e5b2204d760b2afb94893e034627ff201147303b4e991",
+        "inchikey": "OZHBILCBYQVJCH-UHFFFAOYSA-N",
+        "canonical_smiles": "Clc1ccc(-c2nc(C3CCNCC3)sc2-c2ccccc2)cc1",
+        "srole": "sm",
+        "route_assembly_type": {
+          "is_predicted": false,
+          "is_evidence": false
+        }
+      },
+      {
+        "node_label": "RGZRSLKIOCHTSI-UHFFFAOYSA-N",
+        "node_type": "substance",
+        "uuid": "substance_78e9258b7d36d24b18feaff3c7a190cb78328aefec8d2f8f4db9c84c3cc8dc87",
+        "inchikey": "RGZRSLKIOCHTSI-UHFFFAOYSA-N",
+        "canonical_smiles": "CNO.Cl",
+        "srole": "sm",
+        "route_assembly_type": {
+          "is_predicted": false,
+          "is_evidence": false
+        }
+      },
+      {
+        "node_label": "YTIQRXMAVJLXHH-UHFFFAOYSA-N",
+        "node_type": "substance",
+        "uuid": "substance_c9d2372e21f85c3e187f936686859e48e08e9137a548eda4274bc3b77989f1c2",
+        "inchikey": "YTIQRXMAVJLXHH-UHFFFAOYSA-N",
+        "canonical_smiles": "CN(O)C(=O)N1CCC(c2nc(-c3ccc(Cl)cc3)c(-c3ccccc3)s2)CC1",
+        "srole": "tm",
+        "route_assembly_type": {
+          "is_predicted": false,
+          "is_evidence": false
+        }
+      }
+    ],
+    "edges": [
+      {
+        "start_node": "ASPIRE-00051539618053",
+        "end_node": "YTIQRXMAVJLXHH-UHFFFAOYSA-N",
+        "edge_label": "ASPIRE-00051539618053|YTIQRXMAVJLXHH-UHFFFAOYSA-N",
+        "edge_type": "product_of",
+        "uuid": "product_of_c03a33db79b74c0060cb0dd5407d550815cb7fc6de33f2ea8a2d83da4fecdc93",
+        "inchikey": "YTIQRXMAVJLXHH-UHFFFAOYSA-N",
+        "rxid": "ASPIRE-00051539618053",
+        "route_assembly_type": {
+          "is_predicted": false,
+          "is_evidence": false
+        }
+      },
+      {
+        "start_node": "XLYOFNOQVPJJNP-UHFFFAOYSA-N",
+        "end_node": "ASPIRE-00051539618053",
+        "edge_label": "XLYOFNOQVPJJNP-UHFFFAOYSA-N|ASPIRE-00051539618053",
+        "edge_type": "reagent_of",
+        "uuid": "reagent_of_c3d95aedae373071d4223810384f6895b2bef5ee0ec660092b22c0fca30c9ade",
+        "inchikey": "XLYOFNOQVPJJNP-UHFFFAOYSA-N",
+        "rxid": "ASPIRE-00051539618053",
+        "route_assembly_type": {
+          "is_predicted": false,
+          "is_evidence": false
+        }
+      },
+      {
+        "start_node": "YMWUJEATGCHHMB-UHFFFAOYSA-N",
+        "end_node": "ASPIRE-00051539618053",
+        "edge_label": "YMWUJEATGCHHMB-UHFFFAOYSA-N|ASPIRE-00051539618053",
+        "edge_type": "reagent_of",
+        "uuid": "reagent_of_a491f226ff68a3a5c3b2750e759e0f64b55d1550dd44126db344a56528e753da",
+        "inchikey": "YMWUJEATGCHHMB-UHFFFAOYSA-N",
+        "rxid": "ASPIRE-00051539618053",
+        "route_assembly_type": {
+          "is_predicted": false,
+          "is_evidence": false
+        }
+      },
+      {
+        "start_node": "UCPYLLCMEDAXFR-UHFFFAOYSA-N",
+        "end_node": "ASPIRE-00051539618053",
+        "edge_label": "UCPYLLCMEDAXFR-UHFFFAOYSA-N|ASPIRE-00051539618053",
+        "edge_type": "reactant_of",
+        "uuid": "reactant_of_6c6f8f50ac9c2eb711cfbaab99acbf1f3da86ff02664cf74c797a1baa95c41a9",
+        "inchikey": "UCPYLLCMEDAXFR-UHFFFAOYSA-N",
+        "rxid": "ASPIRE-00051539618053",
+        "route_assembly_type": {
+          "is_predicted": false,
+          "is_evidence": false
+        }
+      },
+      {
+        "start_node": "NLXLAEXVIDQMFP-UHFFFAOYSA-N",
+        "end_node": "ASPIRE-00051539618053",
+        "edge_label": "NLXLAEXVIDQMFP-UHFFFAOYSA-N|ASPIRE-00051539618053",
+        "edge_type": "reactant_of",
+        "uuid": "reactant_of_be64131f1437fa15b21048273ef03b629cb903f6d29ab7f34fe95a31a0c3208f",
+        "inchikey": "NLXLAEXVIDQMFP-UHFFFAOYSA-N",
+        "rxid": "ASPIRE-00051539618053",
+        "route_assembly_type": {
+          "is_predicted": false,
+          "is_evidence": false
+        }
+      },
+      {
+        "start_node": "ZMANZCXQSJIPKH-UHFFFAOYSA-N",
+        "end_node": "ASPIRE-00051539618053",
+        "edge_label": "ZMANZCXQSJIPKH-UHFFFAOYSA-N|ASPIRE-00051539618053",
+        "edge_type": "reactant_of",
+        "uuid": "reactant_of_ad6afdecb2a7d15472bc97c19e7ff9a8a20b6dd68e918ecdd839375f2ab2f66d",
+        "inchikey": "ZMANZCXQSJIPKH-UHFFFAOYSA-N",
+        "rxid": "ASPIRE-00051539618053",
+        "route_assembly_type": {
+          "is_predicted": false,
+          "is_evidence": false
+        }
+      },
+      {
+        "start_node": "OZHBILCBYQVJCH-UHFFFAOYSA-N",
+        "end_node": "ASPIRE-00051539618053",
+        "edge_label": "OZHBILCBYQVJCH-UHFFFAOYSA-N|ASPIRE-00051539618053",
+        "edge_type": "reactant_of",
+        "uuid": "reactant_of_fcfb5af9295510eec25a49e9d6fa01f18e068ab7c1c107550fba51fcd33d6595",
+        "inchikey": "OZHBILCBYQVJCH-UHFFFAOYSA-N",
+        "rxid": "ASPIRE-00051539618053",
+        "route_assembly_type": {
+          "is_predicted": false,
+          "is_evidence": false
+        }
+      },
+      {
+        "start_node": "RGZRSLKIOCHTSI-UHFFFAOYSA-N",
+        "end_node": "ASPIRE-00051539618053",
+        "edge_label": "RGZRSLKIOCHTSI-UHFFFAOYSA-N|ASPIRE-00051539618053",
+        "edge_type": "reactant_of",
+        "uuid": "reactant_of_f917be204facc0645179dba06f7b90c7f59a217991af7ec5523232bb62cb197a",
+        "inchikey": "RGZRSLKIOCHTSI-UHFFFAOYSA-N",
+        "rxid": "ASPIRE-00051539618053",
+        "route_assembly_type": {
+          "is_predicted": false,
+          "is_evidence": false
+        }
+      }
+    ]
+  },
+  "routes": {
+    "subgraphs": [
+      {
+        "aggregate_yield": 58.96699999999997,
+        "route_index": 1,
+        "route_status": "Viable Route Candidate",
+        "method": "AICP",
+        "route_node_labels": [
+          "ASPIRE-00051539618053",
+          "XLYOFNOQVPJJNP-UHFFFAOYSA-N",
+          "YMWUJEATGCHHMB-UHFFFAOYSA-N",
+          "UCPYLLCMEDAXFR-UHFFFAOYSA-N",
+          "NLXLAEXVIDQMFP-UHFFFAOYSA-N",
+          "ZMANZCXQSJIPKH-UHFFFAOYSA-N",
+          "OZHBILCBYQVJCH-UHFFFAOYSA-N",
+          "RGZRSLKIOCHTSI-UHFFFAOYSA-N",
+          "YTIQRXMAVJLXHH-UHFFFAOYSA-N"
+        ]
+      }
+    ],
+    "predicted": false,
+    "num_subgraphs": 1
+  },
+  "availability": [
+    {
+        "inchikey": "XLYOFNOQVPJJNP-UHFFFAOYSA-N",
+        "inventory": {
+          "available": false,
+          "locations": [
+            {
+              "smiles": "O",
+              "room": "",
+              "position": "",
+              "quantity_weight": "",
+              "unit": ""
+            }
+          ]
+        },
+        "commercial_availability": {
+          "available": false,
+          "vendors": [
+            {
+              "smiles": "O",
+              "source": "", 
+              "ppg": "",
+              "lead_time": "", 
+              "url": "link"
+            }
+          ]
+        }
+      },
+    {
+        "inchikey": "YMWUJEATGCHHMB-UHFFFAOYSA-N",
+        "inventory": {
+          "available": false,
+          "locations": [
+            {
+              "smiles": "ClCCl",
+              "room": "",
+              "position": "",
+              "quantity_weight": "",
+              "unit": ""
+            }
+          ]
+        },
+        "commercial_availability": {
+          "available": false,
+          "vendors": [
+            {
+              "smiles": "ClCCl",
+              "source": "", 
+              "ppg": "",
+              "lead_time": "", 
+              "url": "link"
+            }
+          ]
+        }
+      },
+    {
+        "inchikey": "UCPYLLCMEDAXFR-UHFFFAOYSA-N",
+        "inventory": {
+          "available": true,
+          "locations": [
+            {
+              "smiles": "O=C(OC(Cl)(Cl)Cl)OC(Cl)(Cl)Cl",
+              "room": "",
+              "position": "",
+              "quantity_weight": "",
+              "unit": ""
+            }
+          ]
+        },
+        "commercial_availability": {
+          "available": true,
+          "vendors": [
+            {
+              "smiles": "O=C(OC(Cl)(Cl)Cl)OC(Cl)(Cl)Cl",
+              "source": "", 
+              "ppg": "",
+              "lead_time": "", 
+              "url": "link"
+            }
+          ]
+        }
+      },
+    {
+        "inchikey": "NLXLAEXVIDQMFP-UHFFFAOYSA-N",
+        "inventory": {
+          "available": false,
+          "locations": [
+            {
+              "smiles": "[Cl-].[NH4+]",
+              "room": "",
+              "position": "",
+              "quantity_weight": "",
+              "unit": ""
+            }
+          ]
+        },
+        "commercial_availability": {
+          "available": false,
+          "vendors": [
+            {
+              "smiles": "[Cl-].[NH4+]",
+              "source": "", 
+              "ppg": "",
+              "lead_time": "", 
+              "url": "link"
+            }
+          ]
+        }
+      },
+    {
+        "inchikey": "ZMANZCXQSJIPKH-UHFFFAOYSA-N",
+        "inventory": {
+          "available": true,
+          "locations": [
+            {
+              "smiles": "CCN(CC)CC",
+              "room": "",
+              "position": "",
+              "quantity_weight": "",
+              "unit": ""
+            }
+          ]
+        },
+        "commercial_availability": {
+          "available": false,
+          "vendors": [
+            {
+              "smiles": "CCN(CC)CC",
+              "source": "", 
+              "ppg": "",
+              "lead_time": "", 
+              "url": "link"
+            }
+          ]
+        }
+      },
+    {
+        "inchikey": "OZHBILCBYQVJCH-UHFFFAOYSA-N",
+        "inventory": {
+          "available": false,
+          "locations": [
+            {
+              "smiles": "Clc1ccc(-c2nc(C3CCNCC3)sc2-c2ccccc2)cc1",
+              "room": "",
+              "position": "",
+              "quantity_weight": "",
+              "unit": ""
+            }
+          ]
+        },
+        "commercial_availability": {
+          "available": false,
+          "vendors": [
+            {
+              "smiles": "Clc1ccc(-c2nc(C3CCNCC3)sc2-c2ccccc2)cc1",
+              "source": "", 
+              "ppg": "",
+              "lead_time": "", 
+              "url": "link"
+            }
+          ]
+        }
+      },
+    {
+        "inchikey": "RGZRSLKIOCHTSI-UHFFFAOYSA-N",
+        "inventory": {
+          "available": false,
+          "locations": [
+            {
+              "smiles": "CNO.Cl",
+              "room": "",
+              "position": "",
+              "quantity_weight": "",
+              "unit": ""
+            }
+          ]
+        },
+        "commercial_availability": {
+          "available": false,
+          "vendors": [
+            {
+              "smiles": "CNO.Cl",
+              "source": "", 
+              "ppg": "",
+              "lead_time": "", 
+              "url": "link"
+            }
+          ]
+        }
+      },
+    {
+        "inchikey": "YTIQRXMAVJLXHH-UHFFFAOYSA-N",
+        "inventory": {
+          "available": false,
+          "locations": [
+            {
+              "smiles": "CN(O)C(=O)N1CCC(c2nc(-c3ccc(Cl)cc3)c(-c3ccccc3)s2)CC1",
+              "room": "",
+              "position": "",
+              "quantity_weight": "",
+              "unit": ""
+            }
+          ]
+        },
+        "commercial_availability": {
+          "available": false,
+          "vendors": [
+            {
+              "smiles": "CN(O)C(=O)N1CCC(c2nc(-c3ccc(Cl)cc3)c(-c3ccccc3)s2)CC1",
+              "source": "", 
+              "ppg": "",
+              "lead_time": "", 
+              "url": "link"
+            }
+          ]
+        }
+      }
+  ]
+}

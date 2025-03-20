@@ -1,0 +1,1 @@
+export { Graph2D as default } from './Graph2D';

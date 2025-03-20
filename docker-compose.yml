@@ -3,31 +3,27 @@ version: "3.3"
 services:
   
   websocket-microservice:
-    image: ncats/aicp-websocket-microservice:latest
+    build:
+      context: ./api
+      dockerfile: Dockerfile
     container_name: websocket-microservice
     ports:
-      - "${port_websocket_microservice}:${port_websocket_microservice}"
-    volumes:
-      - $PWD/common:/common
-    env_file:
-      - ./.env
+      - "5099:5099"
     networks:
       my-custom-network:
-        aliases:
-         - ${network_alias_websocket_microservice}
   
   network-visualizer:
-    image: ncats/aicp-network-visualizer:latest
+    build:
+      context: ./ui
+      dockerfile: Dockerfile
     container_name: network-visualizer
     ports:
-      - "${port_force_directed_graph}:3000"
+      - "4204:4204"
     environment:
-      - REACT_APP_WEBSOCKET_URL=http://localhost:${port_websocket_microservice}/ws
-      - REACT_APP_IN_STANDALONE_MODE=true
+      - REACT_APP_BASE_PATH=/
+      - REACT_APP_STATIC_CONTENT_PATH=http://localhost:4204
     networks:
       my-custom-network:
-        aliases:
-          - ${network_alias_force_directed_graph}
 
 networks:
   my-custom-network:

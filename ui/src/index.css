@@ -1,0 +1,189 @@
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+.Main-header-container { 
+  margin: 0;
+  padding: 0;
+  padding-left: 15px;
+  padding-right: 15px;
+  height: auto;
+  background-color: #eee;
+  border-bottom: rgb(117, 120, 120) 2px solid;
+}
+
+.Main-header-logo {
+  height: 40px;
+}
+
+.Main-header-title {
+  margin-left: 10px;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.Graph-selector-container {
+  margin-left: 20px;
+}
+
+.Graph-selector-container .ant-select-selector {
+  min-width: 200px;
+}
+
+.Graph-form-container {
+  margin-left: 15px;
+}
+
+.Network-search-menu {
+  display: flex;
+  align-items: center;
+}
+
+/* CSS For upload json file graph retrieval method*/
+.upload-container {
+  display: flex;
+  align-items: center;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.upload-container h4 {
+  margin-right: 10px;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.upload-container .ant-upload {
+  margin-right: 10px;
+}
+
+.upload-container p {
+  margin-left: auto;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+
+/* CSS For json examples graphs */
+.example-container {
+  display: flex;
+  align-items: center;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.example-container h4 {
+  margin-right: 10px;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+/* CSS entity information */
+.draggable-panel {
+  width: 600px;
+  background: #f9f9f9;
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  position: absolute;
+  z-index: 1001;
+}
+
+.draggable-header {
+  padding: 15px 20px;
+  background: #e6f7ff; /* Light blue background */
+  border-bottom: 1px solid #d9d9d9; /* Border between header and content */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: move; /* Makes the header draggable */
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+}
+
+.panel-title {
+  margin: 0;
+  white-space: normal; /* Allows text to wrap */
+  word-wrap: break-word; /* Ensures long words will break onto the next line */
+  overflow-wrap: break-word; /* Alternative for better browser compatibility */
+}
+
+.close-button {
+  font-size: 16px;
+  color: #999;
+  cursor: pointer;
+}
+
+.panel-content {
+  padding: 20px; /* Padding for the content section */
+}
+
+/* Graph Legend CSS */
+
+.legendContainer {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  min-width: 400px;
+  font-weight: bold;
+}
+
+.legendRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin-top: 8px;
+}
+
+.firstLegendRow {
+  margin-top: 0px;
+}
+
+.legendNodeColumn,
+.legendEdgeColumn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.legendNodeColor {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.legendEdgeColor {
+  width: 20px;
+  height: 8px;
+  display: inline-block;
+}
+
+.legendLabelText {
+  line-height: 20px;
+}
+
+.ketcherContainer {
+  height: calc(100vh - 250px);
+}
+
+.link-like {
+  color: blue;
+  cursor: pointer;
+  text-decoration: underline;
+
+  &:hover {
+    text-decoration: none;
+  }
+}
