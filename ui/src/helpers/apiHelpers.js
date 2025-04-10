@@ -12,7 +12,6 @@ export const getReactionRdkitSvgByRxsmiles = async (baseUrl, rxsmiles, highlight
   // Construct the URL with query parameters
   const url = `${baseUrl.trim()}/${rxnSmiles2RdkitSvgPath}?rxsmiles=${encodedRxsmiles}&highlight=${highlight}&img_width=1800&img_height=600&base64_encode=true`;
 
-  console.log("Fetching from:", url);
 
   try {
     // Perform the GET request without a body and without headers
@@ -37,8 +36,6 @@ export const getMoleculeRdkitSvgBySmiles = async (baseUrl, smiles) => {
   // Construct the URL with query parameters
   const encodedSmiles = encodeURIComponent(smiles);
   const url = `${baseUrl.trim()}/${molSmiles2RdkitSvgPath}?mol_smiles=${encodedSmiles}&img_width=300&img_height=300&base64_encode=true`;
-
-  console.log("Fetching from:", url);
 
   try {
     // Perform the GET request without a body or custom headers
@@ -145,7 +142,7 @@ export const sendToCytoscape = async (baseUrl, cytoscapeJson) => {  // Receiving
 
   try {
 
-    const uploadResponse = await fetch(`${baseUrl.trim()}/upload_network/`, {
+    const uploadResponse = await fetch(`${baseUrl.trim()}/send_to_cytoscape/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(cytoscapeJson),  // Directly use the passed cytoscapeJson
@@ -173,8 +170,6 @@ export const compute_balance = async (baseUrl, rxsmiles) => {
 
   // Construct the API endpoint URL with the rxsmiles parameter
   const url = `${baseUrl.trim()}/${computeAllBiPath}?rxsmiles=${encodeURIComponent(rxsmiles)}`;
-
-  console.log("Fetching from:", url);
 
   try {
     // Perform the GET request

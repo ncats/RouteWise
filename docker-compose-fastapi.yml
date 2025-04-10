@@ -1,0 +1,10 @@
+version: "3.8"
+services:
+  fastapi:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    ports:
+      - "5099:5099"
+    environment:
+      - API_URL=http://0.0.0.0:5099

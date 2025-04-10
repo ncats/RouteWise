@@ -1,11 +1,24 @@
 # aspire-network-visualizer
 
-To work on the prototype development branch, use the following command:
+1.  [Prerequisite](#prerequisite)
+2.  [Installation](#installation)
+3.  [Visualize data using JSON examples](#visualize-data-using-json-examples)
+4.  [JSON data structure explained](#json-data-structure-explained)
+5.  [App settings](#app-settings)
+6.  [Running containers on custom ports](#running-containers-on-custom-ports)
+7.  [Features](#features)
 
-```
-git checkout prototype_dev
-```
-New light-weight version of the Network Visualizer for graph rendering and network investigation.
+## Features
+
+- **Send To Cytoscape Button**: Allows users to send the current graph to Cytoscape. Ensure Cytoscape is running in the background for this feature to work.
+- **AICP/Cytoscape JSON Toggle**: Enables users to view JSON data in different formats, including AICP and Cytoscape formats.
+- **Upload JSON Functionality**: Provides options to upload JSON files, Cytoscape JSON files, and select example graphs from a dropdown menu. Users can also refer to the Jupyter notebook example for uploading JSON or use the Swagger documentation available at [http://0.0.0.0:5099/api/v1/docs/aicp/nv_api](http://0.0.0.0:5099/api/v1/docs/aicp/nv_api).
+- **Example Graphs**: Includes two evidence-based route examples and an ASKCOS Route Sample. The ASKCOS Route Sample is parsed and converted internally into the graph format before rendering.
+- **Aggregate Yield Display**: Displays aggregate yield as "Agg Yield" on top of the graph for better visualization.
+- **User Settings**: Offers various settings that users can toggle to customize their experience, including graph rendering options and visualization preferences.
+
+
+
 
 1.  [Prerequisite](#prerequisite)
 2.  [Installation](#installation)
@@ -24,26 +37,7 @@ Required software you need to be installed before you move to visualizer install
 Optional (not required, but nice to have):
 * [Git](https://git-scm.com/)
 
-## Installation and Deployment
-
-### Clone the Repository
-
-#### If you have Git installed:
-* via HTTPS: 
-    ```bash
-    git clone https://github.com/ncats/aspire-network-visualizer.git
-    ```
-* via SSH: 
-    ```bash
-    git clone git@github.com:ncats/aspire-network-visualizer.git
-    ```
-
-#### If you DON'T have Git installed:
-* Find the green button named "Code" and click on it.
-* Click "Download ZIP" link at the bottom of the list.
-* Once downloaded, unzip the code and open the terminal at the root of the unzipped folder.
-
-![Alt](/images/git-zip.png "Download ZIP archive")
+## Environment Variables
 
 ---
 
@@ -65,17 +59,13 @@ Optional (not required, but nice to have):
    docker-compose up -d
    ```
 
-4. Access the application:
-   - UI: [http://localhost:4204/](http://localhost:4204/)
-   - API: [http://0.0.0.0:5099](http://0.0.0.0:5099)
 
----
 
 ### Visualize data using JSON examples
 
 You can use attached JSON examples (check `json-examples` folder) to render some prepared graphs:
 
-![Alt](/images/json.gif "How to visualize graph using JSON files")
+![Alt](/images/Example.png "How to visualize graph using JSON files")
 
 In the following section we'll describe basic graph structure, so you can create and render your own datasets.
 
@@ -117,12 +107,15 @@ Where `nodes` is an array of graph nodes, and `edges` - array of graph edges (co
 | `node_type` | Type of the node, can be: `reaction` (represented by red circle) or `substance` (gray square box) |
 | `node_label` | Label for the node displayed on hover |
 | `srole` | _Works with substance nodes only:_ can be `sm` (**starting material**), `tm` (**target molecule**) or `im` (**intermediate material**). We use different colors depending on the node role, so you can easily find e.g. target molecule in a big graph |
+| `canonical_smiles` | _Works with substance nodes only:_ Canonical SMILES representation of the substance. |
 | `base64svg` | If you want to include an image for the node, you can do that using this parameter. Check [this section](#showing-graphical-content-inside-the-nodes) for details |
 | `uuid` | Unique identifier for the node |
 | `rxid` | _Works with reaction nodes only:_ The reaction identifier |
 | `rxsmiles` | _Works with reaction nodes only:_ SMILES representation of the reaction |
 | `yield_info` | _Works with reaction nodes only:_ Contains information on predicted yield and yield score. Options: <br> - `yield_predicted`: Predicted yield value <br> - `yield_score`: Yield score (e.g., a numerical score) |
 | `provenance` | _Works with reaction nodes only:_ Indicates if the reaction is in the USPTO and SAVI. Options: <br> - `is_in_uspto`: Boolean indicating if the reaction is in USPTO <br> - `is_in_savi`: Boolean indicating if the reaction is in SAVI |
+| `rxname` | _Works with reaction nodes only:_ Name of the reaction. |
+| `rxclass` | _Works with reaction nodes only:_ Class of the reaction. |
 | `validation` | _Works with reaction nodes only:_ Indicates whether the reaction is balanced or not. Options: <br> - `is_balanced`: Boolean indicating if the reaction is balanced |
 | `route_assembly_type` | _Works with both node types:_ Indicates whether the route is predicted or based on evidence. Options: <br> - `is_predicted`: Boolean indicating if the route is predicted <br> - `is_evidence`: Boolean indicating if the route is based on evidence |
 
@@ -143,6 +136,7 @@ In the following table below you'll find all supported parameters for the **edge
 
 ### Manual Setup (Without Docker)
 
+
 #### UI Setup
 1. Navigate to the `ui` directory:
    ```bash
@@ -154,6 +148,8 @@ In the following table below you'll find all supported parameters for the **edge
    ```
 3. Start the development server:
    ```bash
+   export API_URL=http://0.0.0.0:5099
+   export REACT_APP_API_URL=http://localhost:4204/
    npm run start
    ```
 4. Open the application in your browser:
@@ -168,13 +164,14 @@ In the following table below you'll find all supported parameters for the **edge
    ```
 2. Run the development setup script:
    ```bash
+   export API_URL=http://0.0.0.0:5099
+   export REACT_APP_API_URL=http://localhost:4204/
    bash ./run.sh --dev
    ```
 
 ##### If packages are already installed:
 1. Run the development setup script with the `--skip-env-setup` flag:
    ```bash
+   export API_URL=http://0.0.0.0:5099
+   export REACT_APP_API_URL=http://localhost:4204/
    bash ./run.sh --dev --skip-env-setup
-   ```
-2. Open the API in your browser:
-   [http://0.0.0.0:5099](http://0.0.0.0:5099)

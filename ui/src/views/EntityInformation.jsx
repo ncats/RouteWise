@@ -276,17 +276,15 @@ const fillEntityData = async () => {
                                 {entityInfo.is_in_aicp ? "Yes" : "No"}
                               </Text>
                             </p>
-                            <p>
+                            <div>
                               <Text>
-                            <p>
-                            <b>In USPTO:</b>{" "}
-                            {entityInfo.is_in_uspto_full ? "Yes" : "No"}
-                            </p>
-                            <Text>
-                              <b>Inventory Status:</b> {entityInfo?.inventory?.available === undefined ? "Unknown" : entityInfo?.inventory?.available ? "Available" : "Not Available"}
-                            </Text>
+                                <b>In USPTO:</b>{" "}
+                                {entityInfo.is_in_uspto_full ? "Yes" : "No"}
                               </Text>
-                            </p>
+                              <Text>
+                                <b>Inventory Status:</b> {entityInfo?.inventory?.available === undefined ? "Unknown" : entityInfo?.inventory?.available ? "Available" : "Not Available"}
+                              </Text>
+                            </div>
                           </>
                         )}
                         {isAskcosNode && (
@@ -346,20 +344,16 @@ const fillEntityData = async () => {
                           </p>
                         </>
                       )}
-                      {!!entityInfo.rxname && (
-                        <p>
-                          <Text>
-                            <b>RX Name:</b> {entityInfo.rxname}
-                          </Text>
-                        </p>
-                      )}
-                      {!!entityInfo.rxclass && (
-                        <p>
-                          <Text>
-                            <b>RX Class:</b> {entityInfo.rxclass}
-                          </Text>
-                        </p>
-                      )}
+                      <p>
+                        <Text>
+                          <b>RX Name:</b> {entityInfo.rxname || ""}
+                        </Text>
+                      </p>
+                      <p>
+                        <Text>
+                          <b>RX Class:</b> {entityInfo.rxclass || ""}
+                        </Text>
+                      </p>
                       {isAskcosNode === false && (
                         <p>
                           <b>Source Information:</b>{" "}

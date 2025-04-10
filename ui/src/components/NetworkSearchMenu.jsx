@@ -1,6 +1,5 @@
 import React, { useState, useContext, useEffect } from "react";
 import UploadJson from "./GraphRetrieval/UploadJson";
-import WebSocketConnection from "./GraphRetrieval/WebSocketConnection";
 import ExampleGraphs from "./GraphRetrieval/ExampleGraphs";
 import { MainContext } from "../contexts/MainContext";
 import { Select } from "antd";
@@ -58,7 +57,6 @@ const NetworkSearchMenu = () => {
       <div className="Graph-form-container">
       {selectedRetrievalOption === "json" && <UploadJson convertToNormalFormat={false} />}
       {selectedRetrievalOption === "cytoscape-json" && <UploadJson convertToNormalFormat={true} />}
-      {selectedRetrievalOption === "websocket" && <WebSocketConnection />}
       {selectedRetrievalOption === "examples" && <ExampleGraphs />}
     </div>
 

@@ -2,19 +2,17 @@
 #
 # Organization: National Center for Advancing Translational Sciences (NCATS/NIH)
 
-from typing import List, Optional
-from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect, HTTPException, Query
-from fastapi.exceptions import RequestValidationError
+from typing import Optional
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Query, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field, ConfigDict, validator
 import os
+from pydantic import BaseModel
 import requests
 import uuid
 import logging
 from uvicorn.logging import DefaultFormatter
 import json
-from datetime import datetime, timedelta
 import asyncio
 from draw_utils import reaction_smiles_to_image
 from rdkit import Chem
@@ -122,116 +120,155 @@ app.add_middleware(
 
 # Directory to persist data
 DATA_DIR = "data"
-ROOMS_FILE = os.path.join(DATA_DIR, "rooms.json")
-LAST_ACTIVITY_FILE = os.path.join(DATA_DIR, "last_activity.json")
 
 # Ensure the data directory exists
 os.makedirs(DATA_DIR, exist_ok=True)
 
-# Load rooms from file
-def load_rooms():
-    if os.path.exists(ROOMS_FILE):
-        with open(ROOMS_FILE, "r") as file:
-            data = json.load(file)
-            if isinstance(data, list):
-                return {room_id: [] for room_id in data}
-            return data
-    return {}
-
-# Save rooms to file
-def save_rooms():
-    try:
-        with open(ROOMS_FILE, "w") as file:
-            json.dump(list(rooms.keys()), file)
-    except IOError as e:
-        logger.error(f"Failed to save rooms: {e}")
-        raise Exception(f"Failed to save rooms: {e}")
-
-# Load last activity times from file
-def load_last_activity():
-    if os.path.exists(LAST_ACTIVITY_FILE):
-        with open(LAST_ACTIVITY_FILE, "r") as file:
-            data = json.load(file)
-            return {room_id: datetime.fromisoformat(timestamp) for room_id, timestamp in data.items()}
-    return {}
-
-# Save last activity times to file
-def save_last_activity():
-    with open(LAST_ACTIVITY_FILE, "w") as file:
-        json.dump({room_id: timestamp.isoformat() for room_id, timestamp in last_activity.items()}, file)
-
-# Load room data from file
-def load_room_data(room_id):
-    room_file = os.path.join(DATA_DIR, f"{room_id}-data.json")
-    if os.path.exists(room_file):
-        with open(room_file, "r") as file:
-            return json.load(file)
-    return {}
 
 # Save room data to file
 def save_room_data(room_id, data):
-    room_file = os.path.join(DATA_DIR, f"{room_id}-data.json")
+    room_file = os.path.join(DATA_DIR, f"{room_id}.json")
     with open(room_file, "w") as file:
         json.dump(data, file)
 
-# Delete room data file
-def delete_room_data(room_id):
-    room_file = os.path.join(DATA_DIR, f"{room_id}-data.json")
-    if os.path.exists(room_file):
-        os.remove(room_file)
-
-# Initialize rooms and last activity times
-rooms = load_rooms()
-last_activity = load_last_activity()
-
 # Redirect root endpoint to Swagger docs
-@app.get("/", include_in_schema=False)
-async def redirect_to_docs():
-    return RedirectResponse(url=docs_url)
+
+@app.get("/")
+async def root():
+    return {"message": "Welcome to the FastAPI server. Visit /docs for API documentation."}
+@app.get("/room/{room_id}")
+async def room_page(room_id: str):
+    return HTMLResponse(content=f"<html><body><h1>Room ID: {room_id}</h1></body></html>")
+async def get_room_data(room_id: str):
+    room_file = os.path.join(DATA_DIR, f"{room_id}.json")
+    if not os.path.exists(room_file):
+        raise HTTPException(status_code=404, detail="Room not found")
+    with open(room_file, "r") as file:
+        room_data = json.load(file)
+    return room_data
 
 # Add simple status endpoint to return 200
 @app.get("/status")
 async def status():
     return {"status": "OK"}
 
+class Node(BaseModel):
+    node_label: str
+    node_type: str
+    uuid: str
+    route_assembly_type: dict
+    rxid: Optional[str] = None
+    rxsmiles: Optional[str] = None
+    yield_info: Optional[dict] = None
+    validation: Optional[dict] = None
+    srole: Optional[str] = None
+    inchikey: Optional[str] = None
+    canonical_smiles: Optional[str] = None
+
+class Edge(BaseModel):
+    start_node: str
+    end_node: str
+    edge_label: str
+    edge_type: str
+    uuid: str
+    route_assembly_type: dict
+
+class SynthGraph(BaseModel):
+    nodes: list[Node]
+    edges: list[Edge]
+
+class RouteSubgraph(BaseModel):
+    aggregate_yield: float
+    route_index: int
+    route_status: str
+    method: str
+    route_node_labels: list[str]
+
+class Routes(BaseModel):
+    subgraphs: list[RouteSubgraph]
+    predicted: bool
+    num_subgraphs: int
+
+class Availability(BaseModel):
+    inchikey: str
+    inventory: dict
+    commercial_availability: dict
+
+class InputFile(BaseModel):
+    synth_graph: SynthGraph
+    routes: Routes
+    availability: list[Availability]
+
+@app.post("/upload_json_to_ui/")
+async def upload_json_to_ui(file: UploadFile):
+    try:
+        # Parse the JSON file
+        json_data = json.loads(await file.read())
+
+        # Validate the JSON data using Pydantic
+        validated_data = InputFile(**json_data)
+
+        # Create a new room ID using the create_new_room function
+        room_id_response = await create_new_room()
+        room_id = room_id_response["room_id"]
+
+        # Generate the URL for the front end
+        url = f"http://localhost:3000/render/{room_id}"
+
+        # Push JSON data to the room using the new endpoint
+        await push_json_to_room(room_id, validated_data.dict())
+
+        # Return only the JSON data to the front end
+        return {"data": validated_data.dict()}
+    except json.JSONDecodeError as e:
+        raise HTTPException(status_code=400, detail=f"Invalid JSON file: {str(e)}")
+    except ValidationError as e:
+        raise HTTPException(status_code=422, detail=f"Validation error: {str(e)}")
+    try:
+        # Parse the JSON file
+        json_data = json.loads(await file.read())
+
+        # Create a new room ID using the create_new_room function
+        room_id_response = await create_new_room()
+        room_id = room_id_response["room_id"]
+
+        # Generate the URL for the front end
+        url = f"http://localhost:3000/render/{room_id}"
+
+        # Push JSON data to the room using the new endpoint
+        await push_json_to_room(room_id, json_data)
+
+        # Return the URL and JSON data to the front end
+        return {"url": url, "data": json_data}
+    except json.JSONDecodeError as e:
+        raise HTTPException(status_code=400, detail=f"Invalid JSON file: {str(e)}")
+
 # WebSocket endpoint
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket, room_id: str = Query(default=None)):
     await websocket.accept()
-    
-    # Generate a random room ID if not provided
-    if room_id is None or room_id == "":
-        room_id = str(uuid.uuid4())
 
-    # Add the client to the specified room
-    if room_id not in rooms:
-        rooms[room_id] = []
-        save_rooms()
-    rooms[room_id].append(websocket)
-    last_activity[room_id] = datetime.now()
-    save_last_activity()
-    
     try:
-        await websocket.send_text(f"Connected to room: {room_id}")
         while True:
             try:
-                data = await asyncio.wait_for(websocket.receive_text(), timeout=60)
-                last_activity[room_id] = datetime.now()
-                save_last_activity()
-                # Broadcast the message to all clients in the room
-                for client in rooms[room_id]:
-                    await client.send_text(f"Message Received in {room_id}")
+                # Search the data directory for any .json file and extract room ID and room data
+                for file_name in os.listdir(DATA_DIR):
+                    if file_name.endswith(".json"):
+                        room_id_from_file = file_name.split(".json")[0]
+                        with open(os.path.join(DATA_DIR, file_name), "r") as file:
+                            room_data = json.load(file)
+                            await websocket.send_json({"room_id": room_id_from_file, "route_data": room_data})
+                            # Send data and delete the file after successful transmission
+                        await websocket.send_json({"room_id": room_id_from_file, "route_data": room_data})
+                        os.remove(os.path.join(DATA_DIR, file_name))
+                # Keep the WebSocket connection alive
+                await asyncio.sleep(1)
             except asyncio.TimeoutError:
-                # Send a ping message to keep the connection alive
-                await websocket.send_text("ping")
-                last_activity[room_id] = datetime.now()
-                save_last_activity()
+                # Handle timeout
+                pass
     except WebSocketDisconnect:
-        # Remove the client from the room on disconnect
-        rooms[room_id].remove(websocket)
-        if not rooms[room_id]:
-            last_activity[room_id] = datetime.now()
-            save_last_activity()
+        # Handle WebSocket disconnection
+        pass
 
 ################
 # HTML Content
@@ -247,148 +284,6 @@ def get_html_content(file_path: str) -> str:
 async def getWsTestHtml():
     html_content = get_html_content("websocket_validation.html")
     return HTMLResponse(html_content)
-
-################
-# Rooms Endpoint
-################
-
-
-# Example of using the model
-example_graph = {
-  "nodes": [
-    {
-      "node_label": "ASPIRE-00000000149166",
-      "is_in_savi_130k": True,
-      "is_in_uspto_full": False,
-      "node_type": "Reaction",
-      "rxid": "ASPIRE-00000000149166",
-      "node_id": "ASPIRE-00000000149166",
-      "rxsmiles": "N1(C(=O)C(N2C=CN=C2)=O)C=CN=C1.[F:15][C:16]1[CH:21]=[CH:20][C:19]([N:22]2[C:31]([CH2:32][CH2:33][CH2:34][CH2:35][C:36]([O:38][C:39]([CH3:42])([CH3:41])[CH3:40])=[O:37])=[CH:30][C:29]3[C:24](=[CH:25][CH:26]=[C:27]([CH:43]=[N:44]O)[CH:28]=3)[C:23]2=[O:46])=[CH:18][CH:17]=1>C1(C)C=CC=CC=1.ClCCCl.C(OCC)(=O)C>[C:43]([C:27]1[CH:28]=[C:29]2[C:24](=[CH:25][CH:26]=1)[C:23](=[O:46])[N:22]([C:19]1[CH:20]=[CH:21][C:16]([F:15])=[CH:17][CH:18]=1)[C:31]([CH2:32][CH2:33][CH2:34][CH2:35][C:36]([O:38][C:39]([CH3:42])([CH3:41])[CH3:40])=[O:37])=[CH:30]2)#[N:44]"
-    },
-    {
-      "node_label": "BDERNNFJNOPAEC-UHFFFAOYSA-N",
-      "inchikey": "BDERNNFJNOPAEC-UHFFFAOYSA-N",
-      "is_in_savi_130k": True,
-      "is_in_uspto_full": True,
-      "node_type": "substance",
-      "node_id": "BDERNNFJNOPAEC-UHFFFAOYSA-N",
-      "smiles": "CCCO",
-      "srole": "sm"
-    },
-    {
-      "node_label": "GYWYRJBGPKHKCX-UHFFFAOYSA-N",
-      "inchikey": "GYWYRJBGPKHKCX-UHFFFAOYSA-N",
-      "is_in_savi_130k": True,
-      "is_in_uspto_full": False,
-      "node_type": "substance",
-      "node_id": "GYWYRJBGPKHKCX-UHFFFAOYSA-N",
-      "smiles": "Nc1sc2c(c1C(=O)O)CCC2",
-      "srole": "sm"
-    },
-    {
-      "node_label": "CYWIEOWOBJPEMV-UHFFFAOYSA-N",
-      "inchikey": "CYWIEOWOBJPEMV-UHFFFAOYSA-N",
-      "is_in_savi_130k": True,
-      "is_in_uspto_full": False,
-      "node_type": "substance",
-      "node_id": "CYWIEOWOBJPEMV-UHFFFAOYSA-N",
-      "smiles": "CCCOC(=O)c1c(N)sc2c1CCC2",
-      "srole": "tm"
-    }
-  ],
-  "edges": [
-    {
-      "start_node": "ASPIRE-00000000149166",
-      "end_node": "CYWIEOWOBJPEMV-UHFFFAOYSA-N",
-      "node_label": "1706658_3806431",
-      "edge_label": "ASPIRE-00000000149166|CYWIEOWOBJPEMV-UHFFFAOYSA-N",
-      "edge_type": "product_of",
-      "is_in_savi_130k": True,
-      "is_in_uspto_full": False,
-      "uuid": "product_of_7ff022fe503a99593d8b68dc37c786c70b2f15442ba9eae5b6219e4e84590a35",
-      "start_node_id": 1706658,
-      "end_node_id": 3806431,
-      "inchikey": "CYWIEOWOBJPEMV-UHFFFAOYSA-N",
-      "rxid": "ASPIRE-00000000149166"
-    },
-    {
-      "start_node": "BDERNNFJNOPAEC-UHFFFAOYSA-N",
-      "end_node": "ASPIRE-00000000149166",
-      "node_label": "3346942_1706658",
-      "edge_label": "BDERNNFJNOPAEC-UHFFFAOYSA-N|ASPIRE-00000000149166",
-      "edge_type": "reactant_of",
-      "is_in_savi_130k": True,
-      "is_in_uspto_full": False,
-      "uuid": "reactant_of_e84641a371828ab2a0832875930b6a6f9a42a68b8b523f77a57250cec32a31c6",
-      "start_node_id": 3346942,
-      "end_node_id": 1706658,
-      "inchikey": "BDERNNFJNOPAEC-UHFFFAOYSA-N",
-      "rxid": "ASPIRE-00000000149166"
-    },
-    {
-      "start_node": "GYWYRJBGPKHKCX-UHFFFAOYSA-N",
-      "end_node": "ASPIRE-00000000149166",
-      "node_label": "3833932_1706658",
-      "edge_label": "GYWYRJBGPKHKCX-UHFFFAOYSA-N|ASPIRE-00000000149166",
-      "edge_type": "reactant_of",
-      "is_in_savi_130k": True,
-      "is_in_uspto_full": False,
-      "uuid": "reactant_of_b35c2df402b812567ce030cf4dde4a4b6a998875156eee7ebd0090121c1ad1b6",
-      "start_node_id": 3833932,
-      "end_node_id": 1706658,
-      "inchikey": "GYWYRJBGPKHKCX-UHFFFAOYSA-N",
-      "rxid": "ASPIRE-00000000149166"
-    }
-  ]
-}
-
-
-class Node(BaseModel):
-    node_type: str
-    node_label: str
-    node_id: Optional[str] = None
-    uuid: Optional[str] = None
-    inchikey: Optional[str] = None
-    srole: Optional[str] = None
-    smiles: Optional[str] = None 
-    rxid: Optional[str] = None
-    rxsmiles: Optional[str] = None
-    base64svg: Optional[str] = None
-
-    model_config = ConfigDict(extra='allow')
-
-    @validator('node_id', pre=True)
-    def convert_node_id_to_str(cls, value):
-        # Convert value to string if it's an integer
-        if isinstance(value, int):
-            return str(value)
-        return value
-
-class Edge(BaseModel):
-    edge_type: str
-    start_node: str
-    end_node: str
-    edge_label: str
-    uuid: Optional[str] = None
-
-    model_config = ConfigDict(extra='allow')
-
-
-# Graph data model
-class Graph(BaseModel):
-    nodes: List[Node] = Field(description="List of nodes in the graph", examples=[example_graph["nodes"]])
-    edges: List[Edge] = Field(description="List of edges in the graph", examples=[example_graph["edges"]])
-
-
-@app.exception_handler(RequestValidationError)
-async def validation_exception_handler(request: Request, exc: RequestValidationError):
-    return JSONResponse(
-        status_code=422,  # Set the HTTP status code you want
-        content={
-            "detail": "Invalid input for Graph schema. Graph data must be a valid JSON object with 'nodes' and 'edges' keys. Please read the documentation for more information.",
-            "errors": exc.errors(),
-        },
-    )
 
 
 ###################
@@ -505,8 +400,8 @@ def apply_layout(network_suid, layout_type):
     return {"error": f"Failed to apply layout '{layout_type}'."}
 
 
-@app.post("/upload_network/")
-def upload_network(network_json: dict, layout_type: str = "hierarchical"):
+@app.post("/send_to_cytoscape/")
+def send_to_cytoscape(network_json: dict, layout_type: str = "hierarchical"):
     """ Uploads a Cytoscape JSON network and applies the default style """
     try:
         # Send the network to Cytoscape without custom headers
@@ -568,11 +463,15 @@ def upload_network(network_json: dict, layout_type: str = "hierarchical"):
         logger.error(f"Error: {e}")
         return {"error": str(e)}
 
+@app.post("/rooms/{room_id}/data")
+async def push_json_to_room(room_id: str, json_data: dict):
+    # Store the JSON data for the room
+    save_room_data(room_id, json_data)
+    return {"message": "Room data saved successfully", "room_id": room_id}
+
 @app.post("/rooms/new")
 async def create_new_room():
     room_id = str(uuid.uuid4())
-    rooms[room_id] = []
-    save_rooms()
     return {"room_id": room_id}
 
 @app.get("/compute_all_bi")
@@ -597,29 +496,6 @@ async def compute_all_bi(rxsmiles: Optional[str] = None):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
-
-##################
-# Background Task
-##################
-
-# Background task to clean up inactive rooms
-async def cleanup_inactive_rooms():
-    while True:
-        now = datetime.now()
-        inactive_rooms = [room_id for room_id, last_active in last_activity.items() if now - last_active > timedelta(minutes=5)]
-        for room_id in inactive_rooms:
-            if room_id in rooms:
-                del rooms[room_id]
-                del last_activity[room_id]
-                delete_room_data(room_id)
-                save_rooms()
-                save_last_activity()
-        await asyncio.sleep(60)
-
-# Start the cleanup task
-@app.on_event("startup")
-async def startup_event():
-    asyncio.create_task(cleanup_inactive_rooms())
 
 if __name__ == "__main__":
     import uvicorn

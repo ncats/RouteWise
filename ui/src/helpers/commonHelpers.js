@@ -26,9 +26,10 @@ export const generateRoomId = () => uuidv4();
 export const defaultAppSettings = {
   roomId: generateRoomId(),
   graphSize: 50,
-  apiUrl: removeTrailingSlashFromHostname(
-    process.env.REACT_APP_API_URL || "http://0.0.0.0:5099 /"
+apiUrl: removeTrailingSlashFromHostname(
+    process.env.API_URL || "http://0.0.0.0:5099"
   ),
+uploadJsonToUiStreamUrl: `${process.env.API_URL}/upload_json_to_ui/stream`,
   appBasePath: process.env.REACT_APP_BASE_PATH || "/",
   staticContentPath:
     process.env.REACT_APP_STATIC_CONTENT_PATH || "http://localhost:4204",
@@ -128,6 +129,7 @@ export const mapGraphDataToCytoscape = (data, subgraphIndex = 0) => {
           : null,
         type: flatNode.base64svg || flatNode.srole === "tm" ? "custom" : null,
         nodeType,
+        position: { x: Math.random() * 1000, y: Math.random() * 1000 }, // Randomize positions to avoid overlap
         ...flatNode,
       },
     };
@@ -319,7 +321,6 @@ export const cyStyles = [
     selector: "node",
     style: {
       shape: "rectangle",
-      label: "data(id)",
       "border-width": 1,
       "border-color": colors.GRAY.dark,
       "background-color": colors.WHITE.primary,

@@ -107,7 +107,6 @@ const Settings = () => {
                   // re-map graph to show/hide any non-TM depictions
                   setCytoscapeGraph((prev) =>
                     prev.map((node) => {
-                      console.log("node", node);
                       // show all depictions
                       if (checked) {
                         if (node.data.svg !== "") {

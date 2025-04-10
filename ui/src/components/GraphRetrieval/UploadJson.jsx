@@ -52,10 +52,7 @@ const UploadJson = ({ convertToNormalFormat = false }) => {
 
       // Update the graph with the final data
       setAicpGraph(finalData);
-
-      console.log("finalData", finalData);
       const mappedData = mapGraphDataToCytoscape(finalData);
-      console.log("mappedData", mappedData);
       updateCytoscapeGraph(mappedData);
 
 

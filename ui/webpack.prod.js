@@ -18,7 +18,7 @@ if (process.env.REACT_APP_BASE_PATH && process.env.REACT_APP_BASE_PATH.endsWith(
 }
 
 if (!process.env.REACT_APP_STATIC_CONTENT_PATH) {
-  process.env.REACT_APP_STATIC_CONTENT_PATH = "http://localhost:4204";
+  process.env.REACT_APP_STATIC_CONTENT_PATH = process.env.REACT_APP_STATIC_CONTENT_PATH || "http://localhost:4204";
 }
 
 module.exports = merge(common, {

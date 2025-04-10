@@ -13,6 +13,7 @@ import {
   defaultGraphSettings,
   getSvgDimensions,
   graphLayouts,
+  mapGraphDataToCytoscape,
 } from "./helpers/commonHelpers";
 import {
   getReactionRdkitSvgByRxsmiles,
@@ -27,19 +28,44 @@ function App() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchRoomId = async () => {
-      try {
-        const response = await fetch("http://localhost:5099/rooms/new", { method: "POST" });
-        const data = await response.json();
-        navigate(`/room/${data.room_id}`);
-      } catch (error) {
-        console.error("Failed to fetch room ID:", error);
-      }
+    const websocket = new WebSocket(`${process.env.API_URL}/ws`);
+
+    websocket.onopen = () => {
+      console.log("WebSocket connection established");
     };
 
-    if (window.location.pathname === "/") {
-      fetchRoomId();
-    }
+    websocket.onmessage = (event) => {
+        let data;
+        try {
+            data = JSON.parse(event.data);
+        } catch (error) {
+            console.error("Invalid JSON received:", event.data);
+            return;
+        }
+        if (data.room_id && data.route_data) {
+            // Navigate to the new URL with the room ID
+            const newUrl = `/room/${data.room_id}`;
+            navigate(newUrl);
+            // Update the graph object with the received room data after navigation
+            // Parse and update the graph with the received data
+            const finalData = data.route_data;
+            setAicpGraph(finalData);
+            const mappedData = mapGraphDataToCytoscape(finalData);
+            updateCytoscapeGraph(mappedData);
+        }
+    };
+
+    websocket.onerror = (error) => {
+      console.error("WebSocket error:", error);
+    };
+
+    websocket.onclose = () => {
+      console.log("WebSocket connection closed");
+    };
+
+    return () => {
+      websocket.close();
+    };
   }, [navigate]);
   const [appSettings, setAppSettings] = useState(defaultAppSettings);
   const [graphSettings, setGraphSettings] = useState(defaultGraphSettings);
@@ -148,7 +174,6 @@ function App() {
               graphElement.data.rbi = balanceData["rbi"];
               graphElement.data.tbi = balanceData["tbi"];
               addBalanceData(rxid, balanceData);
-              console.log(`Added balance data to reaction ${rxid}:`);
             } else {
               console.error(`Failed to fetch balance data for reaction ${rxid}`);
             }
@@ -161,7 +186,6 @@ function App() {
 
     Promise.all(promises)
       .then(() => {
-        console.log("All SVGs and balance data fetched and processed.");
       })
       .catch((error) => {
         console.error("Error fetching one or more SVGs or balance data:", error);
