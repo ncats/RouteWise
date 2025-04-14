@@ -10,6 +10,17 @@
 
 ## Features
 
+- **normalize_roles**: This function reassigns the roles of substances (reactants, reagents, and products) in a reaction SMILES (RXSMILES) string based on atom mapping. It ensures consistency by:
+  1. Checking for atom mapping in the RXSMILES.
+  2. Parsing the RXSMILES into reactants, reagents, and products.
+  3. Reassigning roles:
+     - Reactants with no atom mapping overlap with products are reassigned as reagents.
+     - Reagents with atom mapping overlap with products are reassigned as reactants.
+  4. Reconstructing the RXSMILES with updated roles:
+     - Reactants are placed on the left side of the RXSMILES (before the first `>` delimiter).
+     - Reagents are placed in the middle section (between the first and second `>` delimiters).
+     - Products are placed on the right side (after the second `>` delimiter).
+
 - **Send To Cytoscape Button**: Allows users to send the current graph to Cytoscape. Ensure Cytoscape is running in the background for this feature to work.
 - **AICP/Cytoscape JSON Toggle**: Enables users to view JSON data in different formats, including AICP and Cytoscape formats.
 - **Upload JSON Functionality**: Provides options to upload JSON files, Cytoscape JSON files, and select example graphs from a dropdown menu. Users can also refer to the Jupyter notebook example for uploading JSON or use the Swagger documentation available at [http://0.0.0.0:5099/api/v1/docs/aicp/nv_api](http://0.0.0.0:5099/api/v1/docs/aicp/nv_api).
@@ -58,6 +69,12 @@ Optional (not required, but nice to have):
    ```bash
    docker-compose up -d
    ```
+
+4. Open the Swagger documentation in your browser:
+   [http://0.0.0.0:5099/api/v1/docs/aicp/nv_api](http://0.0.0.0:5099/api/v1/docs/aicp/nv_api)
+
+5. Open the front-end application in your browser:
+   [http://localhost:4204/](http://localhost:4204/)
 
 
 
@@ -175,3 +192,6 @@ In the following table below you'll find all supported parameters for the **edge
    export API_URL=http://0.0.0.0:5099
    export REACT_APP_API_URL=http://localhost:4204/
    bash ./run.sh --dev --skip-env-setup
+
+2. Open the Swagger documentation in your browser:
+   [http://0.0.0.0:5099/api/v1/docs/aicp/nv_api](http://0.0.0.0:5099/api/v1/docs/aicp/nv_api)

@@ -19,7 +19,9 @@ import {
   getReactionRdkitSvgByRxsmiles,
   getMoleculeRdkitSvgBySmiles,
   checkApiStatus,
-  compute_balance,
+  compute_balance, 
+  hasAtomMapping, 
+  normalizeRoles,
 } from "./helpers/apiHelpers";
 
 const defaultApiStatus = { error: false };
@@ -150,9 +152,22 @@ function App() {
         } else if (nodeType === "reaction" && graphElement.data.rxsmiles) {
           const { rxid, rxsmiles, isPredicted } = graphElement.data;
   
+          let updatedRxsmiles = rxsmiles;
+
+          // Check if RXSMILES has atom mapping
+          if (!hasAtomMapping(rxsmiles)) {
+            console.warn(`RXSMILES for reaction ${rxid} does not have atom mapping. Normalizing roles.`);
+            promises.push(
+              normalizeRoles(appSettings.apiUrl, rxsmiles).then((normalizedRxsmiles) => {
+                updatedRxsmiles = normalizedRxsmiles;
+                graphElement.data.rxsmiles = updatedRxsmiles; // Update RXSMILES in graph data
+              })
+            );
+          }
+
           const reactionSvgPromise = getReactionRdkitSvgByRxsmiles(
             appSettings.apiUrl,
-            rxsmiles,
+            updatedRxsmiles,
             highlightAtoms
           ).then((svg) => {
             if (svg) {

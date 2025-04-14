@@ -4,9 +4,11 @@
 
 from typing import Optional
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Query, UploadFile
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from pydantic import ValidationError
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 import os
+import json
 from pydantic import BaseModel
 import requests
 import uuid
@@ -19,6 +21,11 @@ from rdkit import Chem
 from rdkit.Chem import Draw
 import base64
 import role_assigner_utils
+from api_models import (
+    NormalizeRoleRequest,
+    NormalizeRoleResponse,
+)
+from role_assigner_utils import RxsmilesAtomMappingException
 
 CYTOSCAPE_URL = "http://localhost:1234/v1"
 DEFAULT_STYLE_NAME = "New SynGPS API"
@@ -118,6 +125,7 @@ app.add_middleware(
     allow_headers=["*"],  # Allow all headers
 )
 
+
 # Directory to persist data
 DATA_DIR = "data"
 
@@ -136,9 +144,6 @@ def save_room_data(room_id, data):
 @app.get("/")
 async def root():
     return {"message": "Welcome to the FastAPI server. Visit /docs for API documentation."}
-@app.get("/room/{room_id}")
-async def room_page(room_id: str):
-    return HTMLResponse(content=f"<html><body><h1>Room ID: {room_id}</h1></body></html>")
 async def get_room_data(room_id: str):
     room_file = os.path.join(DATA_DIR, f"{room_id}.json")
     if not os.path.exists(room_file):
@@ -199,7 +204,7 @@ class InputFile(BaseModel):
     routes: Routes
     availability: list[Availability]
 
-@app.post("/upload_json_to_ui/")
+@app.post("/upload_json_to_ui/", description="Upload a JSON file. Example file: public/json_example_1.json")
 async def upload_json_to_ui(file: UploadFile):
     try:
         # Parse the JSON file
@@ -208,15 +213,12 @@ async def upload_json_to_ui(file: UploadFile):
         # Validate the JSON data using Pydantic
         validated_data = InputFile(**json_data)
 
-        # Create a new room ID using the create_new_room function
-        room_id_response = await create_new_room()
-        room_id = room_id_response["room_id"]
+        # Generate a new room ID
+        room_id = str(uuid.uuid4())
 
-        # Generate the URL for the front end
-        url = f"http://localhost:3000/render/{room_id}"
 
-        # Push JSON data to the room using the new endpoint
-        await push_json_to_room(room_id, validated_data.dict())
+        # Save JSON data to the room directly
+        save_room_data(room_id, validated_data.dict())
 
         # Return only the JSON data to the front end
         return {"data": validated_data.dict()}
@@ -224,24 +226,7 @@ async def upload_json_to_ui(file: UploadFile):
         raise HTTPException(status_code=400, detail=f"Invalid JSON file: {str(e)}")
     except ValidationError as e:
         raise HTTPException(status_code=422, detail=f"Validation error: {str(e)}")
-    try:
-        # Parse the JSON file
-        json_data = json.loads(await file.read())
 
-        # Create a new room ID using the create_new_room function
-        room_id_response = await create_new_room()
-        room_id = room_id_response["room_id"]
-
-        # Generate the URL for the front end
-        url = f"http://localhost:3000/render/{room_id}"
-
-        # Push JSON data to the room using the new endpoint
-        await push_json_to_room(room_id, json_data)
-
-        # Return the URL and JSON data to the front end
-        return {"url": url, "data": json_data}
-    except json.JSONDecodeError as e:
-        raise HTTPException(status_code=400, detail=f"Invalid JSON file: {str(e)}")
 
 # WebSocket endpoint
 @app.websocket("/ws")
@@ -399,9 +384,12 @@ def apply_layout(network_suid, layout_type):
 
     return {"error": f"Failed to apply layout '{layout_type}'."}
 
+def load_example_payload():
+    with open("send_cytoscape_example.json", "r") as file:
+        return json.load(file)
 
-@app.post("/send_to_cytoscape/")
-def send_to_cytoscape(network_json: dict, layout_type: str = "hierarchical"):
+@app.post("/send_to_cytoscape/", response_model=dict)
+def send_to_cytoscape(network_json: dict = load_example_payload(), layout_type: str = "hierarchical"):
     """ Uploads a Cytoscape JSON network and applies the default style """
     try:
         # Send the network to Cytoscape without custom headers
@@ -463,19 +451,31 @@ def send_to_cytoscape(network_json: dict, layout_type: str = "hierarchical"):
         logger.error(f"Error: {e}")
         return {"error": str(e)}
 
-@app.post("/rooms/{room_id}/data")
-async def push_json_to_room(room_id: str, json_data: dict):
-    # Store the JSON data for the room
-    save_room_data(room_id, json_data)
-    return {"message": "Room data saved successfully", "room_id": room_id}
 
-@app.post("/rooms/new")
-async def create_new_room():
-    room_id = str(uuid.uuid4())
-    return {"room_id": room_id}
+
+@app.post("/normalize_roles", summary="Normalize reaction roles from a RXN Smiles")
+async def normalize_rxsmiles_roles(request: NormalizeRoleRequest) -> NormalizeRoleResponse:
+    """
+    Normalizes the roles of a reaction from a RXN Smiles string. Input string must be a valid RXN Smiles
+    with atom mapping.
+    """
+    rxsmiles = request.rxsmiles
+
+    # Check if the RXSMILES has atom mapping
+    if not role_assigner_utils.rxsmiles_has_atommapping(rxsmiles):
+        raise HTTPException(status_code=400, detail="Input RXSMILES must contain atom mapping.")
+
+    try:
+        normalized_rxn = role_assigner_utils.normalize_roles(rxsmiles)
+        return NormalizeRoleResponse(original_rxsmiles=request.rxsmiles, rxsmiles=normalized_rxn)
+    except RxsmilesAtomMappingException:
+        raise HTTPException(status_code=400, detail="Error parsing RXN Smiles: Atom mapping required")
+    except Exception as e:
+        logger.error(f"Error normalizing roles: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal error normalizing roles")
 
 @app.get("/compute_all_bi")
-async def compute_all_bi(rxsmiles: Optional[str] = None):
+async def compute_all_bi(rxsmiles: Optional[str] = "ClC(Cl)(O[C:5](=[O:11])OC(Cl)(Cl)Cl)Cl.[Cl:13][C:14]1[CH:19]=[CH:18][C:17]([C:20]2[N:21]=[C:22]([CH:31]3[CH2:36][CH2:35][NH:34][CH2:33][CH2:32]3)[S:23][C:24]=2[C:25]2[CH:30]=[CH:29][CH:28]=[CH:27][CH:26]=2)=[CH:16][CH:15]=1.C(N(CC)CC)C.Cl.[CH3:45][NH:46][OH:47].[Cl-].[NH4+]>ClCCl.O>[Cl:13][C:14]1[CH:19]=[CH:18][C:17]([C:20]2[N:21]=[C:22]([CH:31]3[CH2:36][CH2:35][N:34]([C:5](=[O:11])[N:46]([OH:47])[CH3:45])[CH2:33][CH2:32]3)[S:23][C:24]=2[C:25]2[CH:30]=[CH:29][CH:28]=[CH:27][CH:26]=2)=[CH:16][CH:15]=1"):
     try:
         # Ensure rxsmiles is provided
         if rxsmiles is None:
@@ -495,8 +495,3 @@ async def compute_all_bi(rxsmiles: Optional[str] = None):
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
-
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=port)

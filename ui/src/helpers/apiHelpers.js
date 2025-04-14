@@ -4,7 +4,12 @@ const apiStatusPath = "status";
 const computeAllBiPath = "compute_all_bi";
 
 
-// Fetch reaction full RDKIT SVG from rxn smiles
+export const hasAtomMapping = (rxsmiles) => {
+  // Check if the RXSMILES contains atom mapping by looking for atom map numbers in the format [n]
+  const atomMappingRegex = /\[\d+\]/;
+  return atomMappingRegex.test(rxsmiles);
+};
+
 export const getReactionRdkitSvgByRxsmiles = async (baseUrl, rxsmiles, highlight) => {
   // Encode the rxsmiles string to ensure it's safely passed in the URL
   const encodedRxsmiles = encodeURIComponent(rxsmiles);
@@ -158,6 +163,31 @@ export const sendToCytoscape = async (baseUrl, cytoscapeJson) => {  // Receiving
 
   } catch (error) {
     console.error("Error sending to Cytoscape:", error.message);
+  }
+};
+
+export const normalizeRoles = async (baseUrl, rxsmiles) => {
+  const url = `${baseUrl.trim()}/normalize_roles`;
+  const body = JSON.stringify({ rxsmiles });
+
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: body,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.rxsmiles; // Return normalized RXSMILES
+  } catch (error) {
+    console.error("Error normalizing RXSMILES:", error);
+    return null;
   }
 };
 
