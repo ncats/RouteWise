@@ -10,6 +10,7 @@
 
 ## Features
 
+- **is_valid**: This feature validates reaction nodes to determine their correctness. The `is_valid` field is displayed in the entity information panel for reaction nodes, providing users with immediate feedback on the validity of reactions.
 - **normalize_roles**: This function reassigns the roles of substances (reactants, reagents, and products) in a reaction SMILES (RXSMILES) string based on atom mapping. It ensures consistency by:
   1. Checking for atom mapping in the RXSMILES.
   2. Parsing the RXSMILES into reactants, reagents, and products.
@@ -20,6 +21,7 @@
      - Reactants are placed on the left side of the RXSMILES (before the first `>` delimiter).
      - Reagents are placed in the middle section (between the first and second `>` delimiters).
      - Products are placed on the right side (after the second `>` delimiter).
+     - During the role normalization process, the fragment indices in the fragment-section of the RXSMILES extension (|f:u.v,w.x|) are automatically updated as necessary to reflect the position of the fragments of substances at the end of the process.
 
 - **Send To Cytoscape Button**: Allows users to send the current graph to Cytoscape. Ensure Cytoscape is running in the background for this feature to work.
 - **AICP/Cytoscape JSON Toggle**: Enables users to view JSON data in different formats, including AICP and Cytoscape formats.
@@ -84,6 +86,8 @@ You can use attached JSON examples (check `json-examples` folder) to render some
 
 ![Alt](/images/Example.png "How to visualize graph using JSON files")
 
+When you open the front-end application, a room ID will be assigned to you. You can find this room ID in the URL after `/room/`. If you want to use the `upload_json_to_ui` endpoint, you need to paste this room ID into the request payload as shown in the Jupyter notebook example.
+
 In the following section we'll describe basic graph structure, so you can create and render your own datasets.
 
 ## JSON data structure explained
@@ -119,11 +123,13 @@ Where `nodes` is an array of graph nodes, and `edges` - array of graph edges (co
 
 ### Nodes structure
 
+Mandatory fields/attributes are marked with `*`.
+
 | Attribute | Description |
 | --- | --- |
-| `node_type` | Type of the node, can be: `reaction` (represented by red circle) or `substance` (gray square box) |
-| `node_label` | Label for the node displayed on hover |
-| `srole` | _Works with substance nodes only:_ can be `sm` (**starting material**), `tm` (**target molecule**) or `im` (**intermediate material**). We use different colors depending on the node role, so you can easily find e.g. target molecule in a big graph |
+| `node_type`* | Type of the node, can be: `reaction` (represented by red circle) or `substance` (square box, shading depending on the `srole`, see below) |
+| `node_label`* | Label for the node displayed on hover |
+| `srole`* | _Works with substance nodes only:_ can be `sm` (**starting material**), `tm` (**target molecule**) or `im` (**intermediate material**) that are shaded by yellow, blue, and gray, respectively. |
 | `canonical_smiles` | _Works with substance nodes only:_ Canonical SMILES representation of the substance. |
 | `base64svg` | If you want to include an image for the node, you can do that using this parameter. Check [this section](#showing-graphical-content-inside-the-nodes) for details |
 | `uuid` | Unique identifier for the node |
@@ -195,3 +201,15 @@ In the following table below you'll find all supported parameters for the **edge
 
 2. Open the Swagger documentation in your browser:
    [http://0.0.0.0:5099/api/v1/docs/aicp/nv_api](http://0.0.0.0:5099/api/v1/docs/aicp/nv_api)
+
+---
+
+## Pulling Updates
+
+To ensure you have the latest updates for this repository, you can use the following command:
+
+```bash
+git pull
+```
+
+This will fetch and merge changes from the remote repository into your local copy.

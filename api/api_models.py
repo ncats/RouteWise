@@ -39,3 +39,11 @@ class NormalizeRoleResponse(RxsmilesRequest):
     )
 
 
+class RxnIsValidRequest(BaseModel):
+    rxsmiles: str = Field(default="", title="RXN", description="The RXN string to be validated", examples=["CCO.CC(=O)O>>CC(=O)OCC.O"])
+
+
+class RxnIsValidResponse(BaseModel):
+    rxsmiles: str = Field(default="", title="RXN", description="The RXN string to be validated", examples=["CCO.CC(=O)O>>CC(=O)OCC.O"])
+    is_valid: bool = Field(default=False, title="Is Valid", description="Whether the RXN is valid", examples=[True])
+

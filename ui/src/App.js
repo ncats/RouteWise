@@ -22,6 +22,7 @@ import {
   compute_balance, 
   hasAtomMapping, 
   normalizeRoles,
+  validateRxnSmiles,
 } from "./helpers/apiHelpers";
 
 const defaultApiStatus = { error: false };
@@ -44,13 +45,13 @@ function App() {
             console.error("Invalid JSON received:", event.data);
             return;
         }
-        if (data.room_id && data.route_data) {
+        if (data.room_id) {
             // Navigate to the new URL with the room ID
             const newUrl = `/room/${data.room_id}`;
             navigate(newUrl);
-            // Update the graph object with the received room data after navigation
-            // Parse and update the graph with the received data
-            const finalData = data.route_data;
+        } else if (data.data) {
+            // Update the graph object with the received data
+            const finalData = data.data;
             setAicpGraph(finalData);
             const mappedData = mapGraphDataToCytoscape(finalData);
             updateCytoscapeGraph(mappedData);
@@ -87,6 +88,7 @@ function App() {
   const [showKetcher, setShowKetcher] = useState(false);
   const [ketcherSmiles, setKetcherSmiles] = useState("");
   const [balanceData, setBalanceData] = useState({});
+  const [isValidData, setIsValidData] = useState({});
 
   useEffect(() => {
     const checkStatus = async () => {
@@ -108,10 +110,19 @@ function App() {
     }));
   };
 
+
+
   const addBalanceData = (reactionId, balance) => {
     setBalanceData((prev) => ({
       ...prev,
       [reactionId]: balance,
+    }));
+  };
+
+  const addIsValidData = (reactionId, isValid) => {
+    setIsValidData((prev) => ({
+      ...prev,
+      [reactionId]: isValid,
     }));
   };
 
@@ -194,7 +205,11 @@ function App() {
             }
           });
   
-          promises.push(reactionSvgPromise, balanceDataPromise);
+          const isValidPromise = validateRxnSmiles(appSettings.apiUrl, rxsmiles).then((isValid) => {
+            addIsValidData(rxid, isValid); // Store is_valid in isValidData
+          });
+
+          promises.push(reactionSvgPromise, balanceDataPromise, isValidPromise);
         }
       }
     });
@@ -249,6 +264,8 @@ function App() {
         reactionSources,
         setReactionSources,
         balanceData,
+        setIsValidData,
+        isValidData,
         setBalanceData,
       }}
     >

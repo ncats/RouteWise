@@ -3,7 +3,7 @@
 # Organization: National Center for Advancing Translational Sciences (NCATS/NIH)
 
 from typing import Optional
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Query, UploadFile
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, UploadFile
 from pydantic import ValidationError
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -24,6 +24,11 @@ import role_assigner_utils
 from api_models import (
     NormalizeRoleRequest,
     NormalizeRoleResponse,
+    RxnIsValidRequest,
+    RxnIsValidResponse,
+)
+from rdkit_utils import (
+    is_reaction_valid
 )
 from role_assigner_utils import RxsmilesAtomMappingException
 
@@ -205,7 +210,7 @@ class InputFile(BaseModel):
     availability: list[Availability]
 
 @app.post("/upload_json_to_ui/", description="Upload a JSON file. Example file: public/json_example_1.json")
-async def upload_json_to_ui(file: UploadFile):
+async def upload_json_to_ui(file: UploadFile, room_id: str):
     try:
         # Parse the JSON file
         json_data = json.loads(await file.read())
@@ -213,12 +218,15 @@ async def upload_json_to_ui(file: UploadFile):
         # Validate the JSON data using Pydantic
         validated_data = InputFile(**json_data)
 
-        # Generate a new room ID
-        room_id = str(uuid.uuid4())
-
+        # Check if the room ID exists
+        if room_id not in room_connections:
+            raise HTTPException(status_code=404, detail="Room ID not found")
 
         # Save JSON data to the room directly
         save_room_data(room_id, validated_data.dict())
+
+        # Send the data to the WebSocket client associated with the room ID
+        await room_connections[room_id].send_json({"room_id": room_id, "data": validated_data.dict()})
 
         # Return only the JSON data to the front end
         return {"data": validated_data.dict()}
@@ -229,9 +237,17 @@ async def upload_json_to_ui(file: UploadFile):
 
 
 # WebSocket endpoint
+# Maintain a mapping of room IDs to WebSocket connections
+room_connections = {}
+
 @app.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket, room_id: str = Query(default=None)):
+async def websocket_endpoint(websocket: WebSocket):
+    # Generate a unique room ID
+    room_id = str(uuid.uuid4())
+    room_connections[room_id] = websocket
+
     await websocket.accept()
+    await websocket.send_json({"room_id": room_id})
 
     try:
         while True:
@@ -242,9 +258,9 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str = Query(default=
                         room_id_from_file = file_name.split(".json")[0]
                         with open(os.path.join(DATA_DIR, file_name), "r") as file:
                             room_data = json.load(file)
-                            await websocket.send_json({"room_id": room_id_from_file, "route_data": room_data})
+                            if room_id_from_file in room_connections:
+                                await room_connections[room_id_from_file].send_json({"data": room_data})
                             # Send data and delete the file after successful transmission
-                        await websocket.send_json({"room_id": room_id_from_file, "route_data": room_data})
                         os.remove(os.path.join(DATA_DIR, file_name))
                 # Keep the WebSocket connection alive
                 await asyncio.sleep(1)
@@ -252,8 +268,8 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str = Query(default=
                 # Handle timeout
                 pass
     except WebSocketDisconnect:
-        # Handle WebSocket disconnection
-        pass
+        # Remove the WebSocket connection from the mapping
+        room_connections.pop(room_id, None)
 
 ################
 # HTML Content
@@ -495,3 +511,17 @@ async def compute_all_bi(rxsmiles: Optional[str] = "ClC(Cl)(O[C:5](=[O:11])OC(Cl
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+
+@app.post("/is_valid", summary="RXSMILES validation")
+async def is_valid(requset: RxnIsValidRequest) -> RxnIsValidResponse:
+    """
+    Validates if a RXSMILES is valid.
+    """
+    try:
+        is_valid = is_reaction_valid(requset.rxsmiles)
+        return RxnIsValidResponse(rxsmiles=requset.rxsmiles, is_valid=is_valid)
+    except Exception as e:
+        import traceback
+        logger.error(f"Error validating RXN: {str(e)}\nTraceback: {traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail="Error validating RXN")

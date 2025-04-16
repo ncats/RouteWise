@@ -114,25 +114,7 @@ export const checkApiStatus = async (baseUrl) => {
   }
 };
 
-export const moleculeSmilesToInchikey = async (baseUrl, smiles) => {
-  const url = `${baseUrl.trim()}/api/v1/substance_utils/smiles2inchikey`;
-  const body = JSON.stringify({ smiles: smiles });
 
-  const response = await fetch(url, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: body,
-  });
-
-  if (!response.ok) {
-    throw new Error(`Error: ${response.status}`);
-  }
-
-  const data = await response.json();
-  return data.inchikey;
-};
 
 export const getInchikeysFromGraph = (graph = []) => {
   return graph.filter(item => item.data.inchikey !== undefined).map(item => item.data.inchikey);
@@ -163,6 +145,31 @@ export const sendToCytoscape = async (baseUrl, cytoscapeJson) => {  // Receiving
 
   } catch (error) {
     console.error("Error sending to Cytoscape:", error.message);
+  }
+};
+
+export const validateRxnSmiles = async (baseUrl, rxsmiles) => {
+  try {
+    const url = `${baseUrl.trim()}/is_valid`;
+    const body = JSON.stringify({ rxsmiles });
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: body,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.is_valid; // Return validation result
+  } catch (error) {
+    console.error("Error validating RXSMILES:", error);
+    return null;
   }
 };
 

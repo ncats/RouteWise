@@ -16,7 +16,8 @@ const EntityInformation = () => {
     aicpGraph,
     nodeSvgs,
     balanceData,
-    reactionSources
+    reactionSources,
+    isValidData
   } = useContext(MainContext);
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState(null);
@@ -61,6 +62,10 @@ const EntityInformation = () => {
           nodeInfo.tbi = balanceEntity.tbi;
         }
         
+        const validEntity = isValidData[nodeInfo.rxid];
+        if (validEntity !== undefined) {
+          nodeInfo.is_valid = validEntity; // Add is_valid field to reaction nodes
+        }
         if (!nodeInfo.base64svg && nodeSvgs[entityId]) {
           nodeInfo.base64svg = extractBase64FromDataURL(nodeSvgs[entityId]);
         }
@@ -352,6 +357,11 @@ const fillEntityData = async () => {
                       <p>
                         <Text>
                           <b>RX Class:</b> {entityInfo.rxclass || ""}
+                        </Text>
+                      </p>
+                      <p>
+                        <Text>
+                          <b>RX Valid:</b> {entityInfo.is_valid !== undefined ? entityInfo.is_valid.toString() : "N/A"}
                         </Text>
                       </p>
                       {isAskcosNode === false && (
