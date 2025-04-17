@@ -206,7 +206,9 @@ function App() {
           });
   
           const isValidPromise = validateRxnSmiles(appSettings.apiUrl, rxsmiles).then((isValid) => {
-            addIsValidData(rxid, isValid); // Store is_valid in isValidData
+            graphElement.data.is_valid = String(isValid);
+            graphElement.data.type = isValid === false ? "" : "custom";
+            addIsValidData(rxid, isValid);
           });
 
           promises.push(reactionSvgPromise, balanceDataPromise, isValidPromise);

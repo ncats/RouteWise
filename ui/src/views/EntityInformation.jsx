@@ -237,7 +237,7 @@ const fillEntityData = async () => {
                     {entityInfo.node_type && isSubstance && (
                       <>
                         <p>
-                          <Text copyable={{ text: entityInfo.inchikey }}>
+                        <Text>
                             <b>Inchikey:</b> {entityInfo.inchikey}
                           </Text>
                         </p>
@@ -362,6 +362,11 @@ const fillEntityData = async () => {
                       <p>
                         <Text>
                           <b>RX Valid:</b> {entityInfo.is_valid !== undefined ? entityInfo.is_valid.toString() : "N/A"}
+                        </Text>
+                      </p>
+                      <p>
+                        <Text>
+                        <b>RX Name Recognized:</b> {entityInfo.is_rxname_recognized !== undefined ? entityInfo.is_rxname_recognized.toString() : "false"}
                         </Text>
                       </p>
                       {isAskcosNode === false && (

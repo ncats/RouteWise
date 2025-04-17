@@ -129,7 +129,7 @@ export const mapGraphDataToCytoscape = (data, subgraphIndex = 0) => {
           : null,
         type: flatNode.base64svg || flatNode.srole === "tm" ? "custom" : null,
         nodeType,
-        position: { x: Math.random() * 1000, y: Math.random() * 1000 }, // Randomize positions to avoid overlap
+        is_valid: String(flatNode.is_valid || ""),
         ...flatNode,
       },
     };
@@ -337,6 +337,14 @@ export const cyStyles = [
       "border-color": colors.PINK.primary,
       "background-color": colors.PINK.primary,
       "border-width": 2,
+    },
+  },
+  {
+    selector: 'node[nodeType="reaction"][is_valid="false"]',
+    style: {
+      shape: "ellipse",
+      width: 50, // Ensure circular shape
+      height: 50, // Match width for circle
     },
   },
   {

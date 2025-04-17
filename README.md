@@ -10,6 +10,9 @@
 
 ## Features
 
+### Node Styles
+- **Reaction Nodes**: Always displayed as red rectangles unless `is_valid` is `false`, in which case they are displayed as red circles.
+
 - **is_valid**: This feature validates reaction nodes to determine their correctness. The `is_valid` field is displayed in the entity information panel for reaction nodes, providing users with immediate feedback on the validity of reactions.
 - **normalize_roles**: This function reassigns the roles of substances (reactants, reagents, and products) in a reaction SMILES (RXSMILES) string based on atom mapping. It ensures consistency by:
   1. Checking for atom mapping in the RXSMILES.
@@ -138,6 +141,7 @@ Mandatory fields/attributes are marked with `*`.
 | `yield_info` | _Works with reaction nodes only:_ Contains information on predicted yield and yield score. Options: <br> - `yield_predicted`: Predicted yield value <br> - `yield_score`: Yield score (e.g., a numerical score) |
 | `provenance` | _Works with reaction nodes only:_ Indicates if the reaction is in the USPTO and SAVI. Options: <br> - `is_in_uspto`: Boolean indicating if the reaction is in USPTO <br> - `is_in_savi`: Boolean indicating if the reaction is in SAVI |
 | `rxname` | _Works with reaction nodes only:_ Name of the reaction. |
+| `is_rxname_recognized` | _Works with reaction nodes only:_ Indicates whether the reaction name is recognized. |
 | `rxclass` | _Works with reaction nodes only:_ Class of the reaction. |
 | `validation` | _Works with reaction nodes only:_ Indicates whether the reaction is balanced or not. Options: <br> - `is_balanced`: Boolean indicating if the reaction is balanced |
 | `route_assembly_type` | _Works with both node types:_ Indicates whether the route is predicted or based on evidence. Options: <br> - `is_predicted`: Boolean indicating if the route is predicted <br> - `is_evidence`: Boolean indicating if the route is based on evidence |

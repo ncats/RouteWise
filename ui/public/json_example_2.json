@@ -6,6 +6,7 @@
         "node_type": "Reaction",
         "rxname": "Unknown",
         "rxclass": "Unknown",
+        "is_rxname_recognized": false,
         "uuid": "reaction_39af5dcf572dc36691d040d3c34239337c6c409507bec215df2e3717944f071f",
         "rxid": "ASPIRE-00042949727600",
         "rxsmiles": "[F:1][C:2]1[C:23]([O:24][CH3:25])=[CH:22][C:21]([O:26][CH3:27])=[C:20]([F:28])[C:3]=1[CH2:4][O:5][C:6]1[CH:7]=[N:8][C:9]([NH:12][C:13]2[NH:17][N:16]=[C:15]([CH:18]=O)[CH:14]=2)=[N:10][CH:11]=1.[NH:29]1[CH2:34][CH2:33][O:32][CH2:31][CH2:30]1.C(O[BH-](OC(=O)C)OC(=O)C)(=O)C.[Na+].C(=O)([O-])O.[Na+]>CN(C)C=O>[F:28][C:20]1[C:21]([O:26][CH3:27])=[CH:22][C:23]([O:24][CH3:25])=[C:2]([F:1])[C:3]=1[CH2:4][O:5][C:6]1[CH:11]=[N:10][C:9]([NH:12][C:13]2[NH:17][N:16]=[C:15]([CH2:18][N:29]3[CH2:34][CH2:33][O:32][CH2:31][CH2:30]3)[CH:14]=2)=[N:8][CH:7]=1 |f:2.3,4.5|",
