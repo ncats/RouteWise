@@ -41,8 +41,9 @@ const NetworkSearchMenu = () => {
         </Select>
         <Select
           defaultValue="Route 0"
-          onChange={(value) => setSubgraphIndex(parseInt(value.replace('Route ', ''), 10))}
+          onChange={(value) => setSubgraphIndex(value === "SynthGraph" ? -1 : parseInt(value.replace('Route ', ''), 10))}
         >
+          <Select.Option value="SynthGraph">SynthGraph</Select.Option>
           {aicpGraph && aicpGraph.routes.subgraphs && aicpGraph.routes.subgraphs.length > 0 ? (
             Array.from({ length: aicpGraph.routes.subgraphs.length }, (_, i) => (
               <Select.Option key={i} value={`Route ${i}`}>

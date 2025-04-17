@@ -166,8 +166,7 @@ function App() {
           let updatedRxsmiles = rxsmiles;
 
           // Check if RXSMILES has atom mapping
-          if (!hasAtomMapping(rxsmiles)) {
-            console.warn(`RXSMILES for reaction ${rxid} does not have atom mapping. Normalizing roles.`);
+          if (hasAtomMapping(rxsmiles)) {
             promises.push(
               normalizeRoles(appSettings.apiUrl, rxsmiles).then((normalizedRxsmiles) => {
                 updatedRxsmiles = normalizedRxsmiles;
@@ -194,16 +193,19 @@ function App() {
             }
           });
 
-          const balanceDataPromise = compute_balance(appSettings.apiUrl, rxsmiles).then((balanceData) => {
-            if (balanceData) {
-              graphElement.data.pbi = balanceData["pbi"];
-              graphElement.data.rbi = balanceData["rbi"];
-              graphElement.data.tbi = balanceData["tbi"];
-              addBalanceData(rxid, balanceData);
-            } else {
-              console.error(`Failed to fetch balance data for reaction ${rxid}`);
-            }
-          });
+          let balanceDataPromise;
+          if (hasAtomMapping(rxsmiles)) {
+            balanceDataPromise = compute_balance(appSettings.apiUrl, rxsmiles).then((balanceData) => {
+              if (balanceData) {
+                graphElement.data.pbi = balanceData["pbi"];
+                graphElement.data.rbi = balanceData["rbi"];
+                graphElement.data.tbi = balanceData["tbi"];
+                addBalanceData(rxid, balanceData);
+              } else {
+                console.error(`Failed to fetch balance data for reaction ${rxid}`);
+              }
+            });
+          }
   
           const isValidPromise = validateRxnSmiles(appSettings.apiUrl, rxsmiles).then((isValid) => {
             graphElement.data.is_valid = String(isValid);

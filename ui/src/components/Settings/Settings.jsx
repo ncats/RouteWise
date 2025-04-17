@@ -113,7 +113,6 @@ const Settings = () => {
                           node.data.type = "custom";
                         }
                       } else {
-                        console.log("node", node, checked);
                         // show only TM reaction depictions
                         node.data.type = node.data.node_type !== "substance" && node.data.is_valid === "false"
                           ? ""

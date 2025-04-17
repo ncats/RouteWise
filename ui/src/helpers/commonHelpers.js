@@ -98,24 +98,27 @@ export const mapGraphDataToCytoscape = (data, subgraphIndex = 0) => {
     throw new Error("No subgraphs found in the 'routes.subgraphs' section.");
   }
 
-  if (subgraphIndex < 0 || subgraphIndex >= subgraphs.length) {
+  if (subgraphIndex < -1 || subgraphIndex >= subgraphs.length) {
     throw new Error("Invalid subgraph index.");
   }
+  let filteredNodes = synthGraph.nodes || [];
+  let filteredEdges = synthGraph.edges || [];
 
-  const subgraph = subgraphs[subgraphIndex];
-  subgraph.route_node_labels.forEach((label) => routeNodeLabels.add(label));
-
-  // Filter nodes
-  const filteredNodes = (synthGraph.nodes || []).filter((node) =>
-    routeNodeLabels.has(node.node_label)
-  );
-
-  // Filter edges: keep edge only if both ends are in routeNodeLabels
-  const filteredEdges = (synthGraph.edges || []).filter(
-    (edge) =>
-      routeNodeLabels.has(edge.start_node) &&
-      routeNodeLabels.has(edge.end_node)
-  );
+  if (subgraphIndex !== -1) {
+    const subgraph = subgraphs[subgraphIndex];
+    subgraph.route_node_labels.forEach((label) => routeNodeLabels.add(label));
+    // Filter nodes
+    filteredNodes = (synthGraph.nodes || []).filter((node) =>
+      routeNodeLabels.has(node.node_label)
+    );
+  
+    // Filter edges: keep edge only if both ends are in routeNodeLabels
+    filteredEdges = (synthGraph.edges || []).filter(
+      (edge) =>
+        routeNodeLabels.has(edge.start_node) &&
+        routeNodeLabels.has(edge.end_node)
+    );
+  }
 
   // Map filtered nodes to Cytoscape format
   const nodes = filteredNodes.map((node) => {
@@ -131,6 +134,7 @@ export const mapGraphDataToCytoscape = (data, subgraphIndex = 0) => {
         nodeType,
         is_valid: String(flatNode.is_valid || ""),
         ...flatNode,
+        provenance: flatNode.provenance || {},
       },
     };
   });
@@ -329,7 +333,7 @@ export const cyStyles = [
     },
   },
   {
-    selector: 'node[nodeType="reaction"]',
+    selector: 'node[nodeType="reaction"][width][height]',
     style: {
       shape: "rectangle",
       width: "data(width)",
@@ -372,7 +376,7 @@ export const cyStyles = [
     },
   },
   {
-    selector: 'node[type="custom"]',
+    selector: 'node[type="custom"][svg]',
     style: {
       "background-image": "data(svg)",
       "background-fit": "contain",
