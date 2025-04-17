@@ -16,7 +16,8 @@
         },
         "provenance": {
           "is_in_uspto": true,
-          "is_in_savi": false
+          "is_in_savi": false,
+          "Patents": ["USPTO-1234567", "USPTO-7654321"]
         },
         "validation": {
           "is_balanced": false
@@ -24,6 +25,11 @@
         "route_assembly_type": {
           "is_predicted": false,
           "is_evidence": false
+        },
+        "conditions_info": {
+          "USPTO-1234567": {
+            "conditions_text": "The reaction conditions include the use of dichloromethane as the solvent, a temperature range of 25-30°C, and a pressure of 1 atm. The reaction is initiated by adding the reactants sequentially, followed by stirring for 2 hours. After completion, the mixture is quenched with water and extracted using ethyl acetate. The organic layer is dried over anhydrous magnesium sulfate, filtered, and concentrated under reduced pressure to yield the product."
+          }
         }
       },
       {

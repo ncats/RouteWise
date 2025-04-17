@@ -36,6 +36,7 @@ const EntityInformation = () => {
   const [expandSourceInfo, setExpandSourceInfo] = useState(false);
 
   const nodeRef = useRef(null);
+  const [expandConditionInfo, setExpandConditionInfo] = useState(false);
 
   const handleClose = () => {
     setOpen(false);
@@ -363,30 +364,55 @@ const fillEntityData = async () => {
                           >
                             [{expandSourceInfo ? "hide" : "show"}]
                           </span>
-                        </p>
-                      )}
-                      {isAskcosNode === false && expandSourceInfo && (
-                        <div style={{ borderLeft: "2px solid #1890ff", paddingLeft: "1rem" }}>
-                          <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
-                            {entityInfo.provenance &&
-                              Object.entries(entityInfo.provenance).map(([key, value]) => (
-                                <Text key={key}>
-                                  <b>{formatLabel(key)}:</b> {String(value)}
-                                </Text>
+                        </p>,
+                        <>
+                          <p>
+                            <b>Source Information:</b>{" "}
+                            <span
+                              className="link-like"
+                              onClick={() => setExpandSourceInfo(!expandSourceInfo)}
+                            >
+                              [{expandSourceInfo ? "hide" : "show"}]
+                            </span>
+                          </p>
+                          {expandSourceInfo && (
+                            <div style={{ borderLeft: "2px solid #1890ff", paddingLeft: "1rem" }}>
+                              <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
+                                {entityInfo.provenance &&
+                                  Object.entries(entityInfo.provenance).map(([key, value]) => (
+                                    <Text key={key}>
+                                      <b>{formatLabel(key)}:</b> {Array.isArray(value) ? value.join(", ") : String(value)}
+                                    </Text>
+                                  ))}
+                              </div>
+                            </div>
+                          )}
+                          <p>
+                            <b>Conditions Information:</b>{" "}
+                            <span
+                              className="link-like"
+                              onClick={() => setExpandConditionInfo(!expandConditionInfo)}
+                            >
+                              [{expandConditionInfo ? "hide" : "show"}]
+                            </span>
+                          </p>
+                          {expandConditionInfo && entityInfo.conditions_info && (
+                            <div style={{ borderLeft: "2px solid #1890ff", paddingLeft: "1rem" }}>
+                              {Object.entries(entityInfo.conditions_info).map(([parentKey, value]) => (
+                                <p key={parentKey}>
+                                  <Text>
+                                    <b>Parent Key:</b> {parentKey} <br />
+                                    <b>Conditions Text:</b> {value.conditions_text}
+                                  </Text>
+                                </p>
                               ))}
-                          </div>
-                          {reactionSources[entityInfo.rxid] && <p>
-                            <Text copyable={{ text: reactionSources[entityInfo.rxid]['rxsmiles_original'] }}>
-                              <b>Original RXSmiles:</b> {reactionSources[entityInfo.rxid]['rxsmiles_original'] }
-                            </Text>
-                          </p>}
-                          {reactionSources[entityInfo.rxid] && reactionSources[entityInfo.rxid]['patent_number'] && <p>
-                            <Text>
-                              <b>USPTO Patent:</b> {reactionSources[entityInfo.rxid]['patent_number']} - Paragraph: {reactionSources[entityInfo.rxid]['paragraph_number']}
-                            </Text>
-                          </p>}
-                        </div>
+                            </div>
+                          )}
+                        </>
+
+                        
                       )}
+
                     </>
                   )}
 

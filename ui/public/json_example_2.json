@@ -16,7 +16,8 @@
         },
         "provenance": {
           "is_in_uspto": true,
-          "is_in_savi": false
+          "is_in_savi": false,
+          "Patents": ["USPTO-9876543"]
         },
         "validation": {
           "is_balanced": false
@@ -24,6 +25,11 @@
         "route_assembly_type": {
           "is_predicted": false,
           "is_evidence": false
+        },
+        "conditions_info": {
+          "USPTO-9876543": {
+            "conditions_text": "The reaction conditions involve the use of acetonitrile as the solvent, a temperature range of 20-25°C, and a pressure of 1 atm. The reactants are added in a specific sequence, followed by stirring for 3 hours. After the reaction, the mixture is quenched with an aqueous solution, extracted with dichloromethane, and the organic layer is dried over sodium sulfate. The solvent is removed under reduced pressure to isolate the product."
+          }
         }
       },
       {

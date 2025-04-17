@@ -140,11 +140,11 @@ Mandatory fields/attributes are marked with `*`.
 | `rxid` | _Works with reaction nodes only:_ The reaction identifier |
 | `rxsmiles` | _Works with reaction nodes only:_ SMILES representation of the reaction |
 | `yield_info` | _Works with reaction nodes only:_ Contains information on predicted yield and yield score. Options: <br> - `yield_predicted`: Predicted yield value <br> - `yield_score`: Yield score (e.g., a numerical score) |
-| `provenance` | _Works with reaction nodes only:_ Indicates if the reaction is in the USPTO and SAVI. Options: <br> - `is_in_uspto`: Boolean indicating if the reaction is in USPTO <br> - `is_in_savi`: Boolean indicating if the reaction is in SAVI |
+| `provenance` | _Works with reaction nodes only:_ Indicates if the reaction is in the USPTO and SAVI. Options: <br> - `is_in_uspto`: Boolean indicating if the reaction is in USPTO <br> - `is_in_savi`: Boolean indicating if the reaction is in SAVI <br> - `Patents`: Optional list of patent names associated with the reaction |
 | `rxname` | _Works with reaction nodes only:_ Name of the reaction. |
 | `is_rxname_recognized` | _Works with reaction nodes only:_ Indicates whether the reaction name is recognized. |
 | `rxclass` | _Works with reaction nodes only:_ Class of the reaction. |
-| `validation` | _Works with reaction nodes only:_ Indicates whether the reaction is balanced or not. Options: <br> - `is_balanced`: Boolean indicating if the reaction is balanced |
+| `conditions_info` | _Works with reaction nodes only:_ Optional field containing `conditions_text`, which is a paragraph describing the reaction conditions. |
 | `route_assembly_type` | _Works with both node types:_ Indicates whether the route is predicted or based on evidence. Options: <br> - `is_predicted`: Boolean indicating if the route is predicted <br> - `is_evidence`: Boolean indicating if the route is based on evidence |
 
 

@@ -135,6 +135,7 @@ export const mapGraphDataToCytoscape = (data, subgraphIndex = 0) => {
         is_valid: String(flatNode.is_valid || ""),
         ...flatNode,
         provenance: flatNode.provenance || {},
+        conditions_info: flatNode.conditions_info || {},
       },
     };
   });
