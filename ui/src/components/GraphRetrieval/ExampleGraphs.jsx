@@ -1,7 +1,8 @@
 import React, { useContext, useState } from "react";
 import { Button, Flex, message, Select } from "antd";
 import { MainContext } from "../../contexts/MainContext";
-import { mapGraphDataToCytoscape, parseASKCOSroutes } from "../../helpers/commonHelpers";
+import { mapGraphDataToCytoscape } from "../../helpers/commonHelpers";
+import { convertASKCOS2aicp } from "../../helpers/apiHelpers";
 
 // File name in the public assets directory
 const exampleJsonFiles = [
@@ -38,7 +39,7 @@ const ExampleGraphs = () => {
         let data = await response.json();
 
         if (askcosRoute) {
-          data = parseASKCOSroutes(data);
+          data = await convertASKCOS2aicp(data);
         }
         // Update the graph with the new data
         setAicpGraph(data);

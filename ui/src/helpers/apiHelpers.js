@@ -6,7 +6,7 @@ const computeAllBiPath = "compute_all_bi";
 
 export const hasAtomMapping = (rxsmiles) => {
   // Check if the RXSMILES contains atom mapping by looking for atom map numbers in the format [n]
-  const atomMappingRegex = /\[\d+\]/;
+  const atomMappingRegex = /:\d+\]/;
   return atomMappingRegex.test(rxsmiles);
 };
 
@@ -228,6 +228,30 @@ export const compute_balance = async (baseUrl, rxsmiles) => {
     return data; // { pbi: ..., rbi: ..., tbi: ... }
   } catch (error) {
     console.error("Error fetching BI values:", error);
+    return null;
+  }
+};
+
+// Helper function to call convertASKCOS2aicp endpoint
+export const convertASKCOS2aicp = async (ascosData) => {
+  const apiUrl = `${process.env.API_URL || "http://0.0.0.0:5099"}/convertASKCOS2aicp`;
+  try {
+    const response = await fetch(apiUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(ascosData),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data; // Return the converted data
+  } catch (error) {
+    console.error("Error calling convertASKCOS2aicp:", error);
     return null;
   }
 };

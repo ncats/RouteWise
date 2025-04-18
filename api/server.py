@@ -227,10 +227,17 @@ class InputFile(BaseModel):
     availability: list[Availability]
 
 @app.post("/upload_json_to_ui/", description="Upload a JSON file. Example file: public/json_example_1.json")
-async def upload_json_to_ui(file: UploadFile, room_id: str):
+async def upload_json_to_ui(file: UploadFile, room_id: str, convert_askcos: bool = False):
     try:
         # Parse the JSON file
         json_data = json.loads(await file.read())
+
+        # If convert_askcos is True, process ASKCOS data
+        if convert_askcos:
+            try:
+                json_data = await convert_ASKCOS_to_aicp(json_data)
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=f"Error converting ASKCOS data: {str(e)}")
 
         # Validate the JSON data using Pydantic
         validated_data = InputFile(**json_data)
@@ -533,14 +540,189 @@ async def compute_all_bi(rxsmiles: Optional[str] = "ClC(Cl)(O[C:5](=[O:11])OC(Cl
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
 
+@app.post("/convertASKCOS2aicp", summary="Convert ASKCOS data to AICP format")
+async def convert_ASKCOS_to_aicp(ascos_data: dict) -> dict:
+    """
+    Converts ASKCOS data to AICP format.
+    """
+    try:
+        # Initialize the result structure
+        parsed_data = {
+            "synth_graph": {
+                "nodes": [],
+                "edges": []
+            },
+            "routes": {
+                "method": "ASKCOS",
+                "predicted": True,
+                "subgraphs": [],
+                "num_subgraphs": 0
+            }
+        }
+
+        # Access the actual data from the 'result' field
+        result = ascos_data.get("result", {})
+
+        # Parsing graph nodes
+        availability = []
+        for node in result.get("graph", {}).get("nodes", []):
+            is_reaction = node.get("type") == "reaction"
+            is_substance = node.get("type") == "chemical"
+
+            node_data = {
+                "node_label": node.get("id"),
+                "node_type": "reaction" if is_reaction else "substance",
+                "uuid": node.get("id", ""),
+                "route_assembly_type": {
+                    "is_predicted": True,
+                    "is_evidence": False,
+                },
+            }
+
+            if is_reaction:
+                node_data.update({
+                    "rxid": str(node.get("template", {}).get("index", "")),
+                    "rxsmiles": node.get("id", ""),
+                    "yield_info": {
+                        "yield_predicted": node.get("scscore"),
+                        "yield_score": node.get("scscore")
+                    },
+                    "validation": {
+                        "is_balanced": False
+                    },
+                })
+            elif is_substance:
+                node_data.update({
+                    "inchikey": node.get("id", ""),
+                    "canonical_smiles": node.get("id", ""),
+                    "srole": "",
+                })
+                if is_substance and node.get("properties"):
+                    availability_item = {
+                        "inchikey": node.get("id", ""),
+                        "inventory": {
+                            "available": False,
+                            "locations": [
+                                {
+                                    "smiles": node.get("smiles", ""),
+                                    "room": "",
+                                    "position": "",
+                                    "quantity_weight": "",
+                                    "unit": ""
+                                }
+                            ]
+                        },
+                        "commercial_availability": {
+                            "available": False,
+                            "vendors": [
+                                {
+                                    "smiles": node.get("smiles", ""),
+                                    "source": "",
+                                    "ppg": "",
+                                    "lead_time": "",
+                                    "url": ""
+                                }
+                            ]
+                        }
+                    }
+                    availability.append(availability_item)
+
+            parsed_data["synth_graph"]["nodes"].append(node_data)
+
+        node_type_map = {node["node_label"]: node["node_type"] for node in parsed_data["synth_graph"]["nodes"]}
+
+        # Parsing graph edges (links)
+        for link in result.get("graph", {}).get("links", []):
+            target = link.get("target", "")
+            source = link.get("source", "")
+
+            target_node_type = node_type_map.get(source)
+            edge_type = "reactant_of" if target_node_type == "reaction" else "product_of"
+
+            edge_data = {
+                "start_node": target,
+                "end_node": source,
+                "edge_label": f"{target}|{source}",
+                "edge_type": edge_type,
+                "provenance": {
+                    "is_in_aicp": False
+                },
+                "uuid": f"{target}|{source}",
+                "inchikey": target if edge_type == "product_of" else source,
+                "rxid": source if edge_type == "product_of" else "",
+                "route_assembly_type": {
+                    "is_predicted": True,
+                    "is_evidence": False
+                }
+            }
+
+            parsed_data["synth_graph"]["edges"].append(edge_data)
+
+        # Parse routes
+        parsed_data["routes"]["subgraphs"] = []
+        parsed_data["routes"]["num_subgraphs"] = len(result.get("paths", []))
+
+        route_node_labels = set()
+        for path in result.get("paths", []):
+            subgraph_data = {
+                "aggregate_yield": 0.0,
+                "route_index": len(parsed_data["routes"]["subgraphs"]),
+                "route_status": "Viable Route",
+                "method": "ASKCOS",
+                "route_node_labels": [node.get("smiles", "") for node in path.get("nodes", [])],
+            }
+            parsed_data["routes"]["subgraphs"].append(subgraph_data)
+            route_node_labels.update(subgraph_data["route_node_labels"])
+
+        # Filter availability to include only substances in route subgraphs
+        parsed_data["availability"] = [item for item in availability if item["inchikey"] in route_node_labels]
+
+        # Assign substance roles
+        in_degrees = {}
+        out_degrees = {}
+
+        # Initialize degrees
+        for node in parsed_data["synth_graph"]["nodes"]:
+            if node["node_type"] == "substance":
+                in_degrees[node["node_label"]] = 0
+                out_degrees[node["node_label"]] = 0
+
+        # Count in-degrees and out-degrees
+        for edge in parsed_data["synth_graph"]["edges"]:
+            from_node = edge["start_node"]
+            to_node = edge["end_node"]
+
+            if from_node in out_degrees:
+                out_degrees[from_node] += 1
+            if to_node in in_degrees:
+                in_degrees[to_node] += 1
+
+        # Assign roles
+        for node in parsed_data["synth_graph"]["nodes"]:
+            if node["node_type"] == "substance":
+                in_deg = in_degrees[node["node_label"]]
+                out_deg = out_degrees[node["node_label"]]
+
+                if out_deg == 0:
+                    node["srole"] = "tm"  # terminal material
+                elif in_deg == 0:
+                    node["srole"] = "sm"  # starting material
+                else:
+                    node["srole"] = "im"  # intermediate
+
+        return parsed_data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error converting ASKCOS data: {str(e)}")
+    
+
 @app.post("/is_valid", summary="RXSMILES validation")
-async def is_valid(requset: RxnIsValidRequest) -> RxnIsValidResponse:
+async def is_valid(request: RxnIsValidRequest) -> RxnIsValidResponse:
     """
     Validates if a RXSMILES is valid.
     """
     try:
-        is_valid = is_reaction_valid(requset.rxsmiles)
-        return RxnIsValidResponse(rxsmiles=requset.rxsmiles, is_valid=is_valid)
+        is_valid = is_reaction_valid(request.rxsmiles)
+        return RxnIsValidResponse(rxsmiles=request.rxsmiles, is_valid=is_valid)
     except Exception as e:
         import traceback
         logger.error(f"Error validating RXN: {str(e)}\nTraceback: {traceback.format_exc()}")

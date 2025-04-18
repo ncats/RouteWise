@@ -7,6 +7,7 @@
 5.  [App settings](#app-settings)
 6.  [Running containers on custom ports](#running-containers-on-custom-ports)
 7.  [Features](#features)
+8.  [API Endpoints](#api-endpoints)
 
 ## Features
 
@@ -145,7 +146,9 @@ Mandatory fields/attributes are marked with `*`.
 | `rxname` | _Works with reaction nodes only:_ Name of the reaction. |
 | `is_rxname_recognized` | _Works with reaction nodes only:_ Indicates whether the reaction name is recognized. |
 | `rxclass` | _Works with reaction nodes only:_ Class of the reaction. |
-| `conditions_info` | _Works with reaction nodes only:_ Optional field containing keys associated with parent identifiers (e.g., patent IDs). Each key maps to a dictionary that includes `conditions_text`, which is a paragraph describing the reaction conditions. |
+| `evidence_conditions_info` | _Works with reaction nodes only:_ Optional field containing keys associated with parent identifiers (e.g., patent IDs). Each key maps to a dictionary with key-value pairs describing the reaction conditions, such as `solvent`, `temperature_range`, `pressure`, `reaction_time`, `quenching_agent`, and `extraction_solvent`. |
+| `evidence_protocol` | _Works with reaction nodes only:_ Optional field containing keys associated with parent identifiers (e.g., patent IDs). Each key maps to a dictionary with a `protocol_text` describing the reaction protocol, including details such as solvent, temperature range, pressure, and reaction steps. |
+| `predicted_conditions_info` | _Works with reaction nodes only:_ Optional field containing predicted reaction conditions. The structure includes a `method` key, which maps to a dictionary of methods (e.g., `ASKCOS`). Each method contains multiple predictions (e.g., `Pred 1`, `Pred 2`), and each prediction is a dictionary with key-value pairs describing the predicted conditions, such as `solvent`, `temperature_range`, `pressure`, `reaction_time`, `quenching_agent`, and `extraction_solvent`. |
 | `route_assembly_type` | _Works with both node types:_ Indicates whether the route is predicted or based on evidence. Options: <br> - `is_predicted`: Boolean indicating if the route is predicted <br> - `is_evidence`: Boolean indicating if the route is based on evidence |
 
 
@@ -251,6 +254,47 @@ The `availability` section in the JSON file provides detailed inventory informat
    [http://0.0.0.0:5099/api/v1/docs/aicp/nv_api](http://0.0.0.0:5099/api/v1/docs/aicp/nv_api)
 
 ---
+
+## API Endpoints
+
+### `POST /convertASKCOS2aicp`
+
+This endpoint converts ASKCOS data into the AICP format.
+
+#### Request
+- **Method**: `POST`
+- **Content-Type**: `application/json`
+- **Body**: A JSON object containing ASKCOS data. Example:
+  ```json
+  {
+    "result": {
+      "graph": {
+        "nodes": [...],
+        "links": [...]
+      },
+      "paths": [...]
+    }
+  }
+  ```
+
+#### Response
+- **Content-Type**: `application/json`
+- **Body**: A JSON object containing the converted AICP data. Example:
+  ```json
+  {
+    "synth_graph": {
+      "nodes": [...],
+      "edges": [...]
+    },
+    "routes": {
+      "subgraphs": [...],
+      "num_subgraphs": 1
+    },
+    "availability": [...]
+  }
+  ```
+
+Use this endpoint to process ASKCOS data and render it in the AICP format for visualization.
 
 ## Pulling Updates
 

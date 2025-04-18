@@ -166,54 +166,76 @@ function App() {
           let updatedRxsmiles = rxsmiles;
 
           // Check if RXSMILES has atom mapping
+
           if (hasAtomMapping(rxsmiles)) {
-            promises.push(
-              normalizeRoles(appSettings.apiUrl, rxsmiles).then((normalizedRxsmiles) => {
-                updatedRxsmiles = normalizedRxsmiles;
-                graphElement.data.rxsmiles = updatedRxsmiles; // Update RXSMILES in graph data
-              })
-            );
+            const combinedPromise = normalizeRoles(appSettings.apiUrl, rxsmiles).then((normalizedRxsmiles) => {
+              updatedRxsmiles = normalizedRxsmiles;
+              graphElement.data.rxsmiles = updatedRxsmiles; // Update RXSMILES in graph data
+              return getReactionRdkitSvgByRxsmiles(
+                appSettings.apiUrl,
+                updatedRxsmiles,
+                highlightAtoms
+              ).then((svg) => {
+                if (svg) {
+                  const svgUrl = `data:image/svg+xml;base64,${svg}`;
+                  graphElement.data.svg = svgUrl;
+                  graphElement.data.type = "custom";
+                  addNodeSvg({ [molId]: svgUrl });
+                  const dimensions = getSvgDimensions(svgUrl);
+                  graphElement.data.width = dimensions.width;
+                  graphElement.data.height = dimensions.height;
+                } else {
+                  console.error("Failed to fetch reaction SVG");
+                }
+                promises.push(combinedPromise);
+              });
+            });
+          } else {
+            const combinedPromise = getReactionRdkitSvgByRxsmiles(
+              appSettings.apiUrl,
+              rxsmiles,
+              highlightAtoms
+            ).then((svg) => {
+              if (svg) {
+                const svgUrl = `data:image/svg+xml;base64,${svg}`;
+                graphElement.data.svg = svgUrl;
+                graphElement.data.type = "custom";
+                addNodeSvg({ [molId]: svgUrl });
+                const dimensions = getSvgDimensions(svgUrl);
+                graphElement.data.width = dimensions.width;
+                graphElement.data.height = dimensions.height;
+              } else {
+                console.error("Failed to fetch reaction SVG");
+              }
+              promises.push(combinedPromise);
+            });
           }
 
-          const reactionSvgPromise = getReactionRdkitSvgByRxsmiles(
-            appSettings.apiUrl,
-            updatedRxsmiles,
-            highlightAtoms
-          ).then((svg) => {
-            if (svg) {
-              const svgUrl = `data:image/svg+xml;base64,${svg}`;
-              graphElement.data.svg = svgUrl;
-              graphElement.data.type = "custom";
-              addNodeSvg({ [molId]: svgUrl });
-              const dimensions = getSvgDimensions(svgUrl);
-              graphElement.data.width = dimensions.width;
-              graphElement.data.height = dimensions.height;
-            } else {
-              console.error("Failed to fetch reaction SVG");
-            }
-          });
+           
 
           let balanceDataPromise;
           if (hasAtomMapping(rxsmiles)) {
             balanceDataPromise = compute_balance(appSettings.apiUrl, rxsmiles).then((balanceData) => {
               if (balanceData) {
-                graphElement.data.pbi = balanceData["pbi"];
+  
+              graphElement.data.pbi = balanceData["pbi"];
                 graphElement.data.rbi = balanceData["rbi"];
                 graphElement.data.tbi = balanceData["tbi"];
                 addBalanceData(rxid, balanceData);
               } else {
                 console.error(`Failed to fetch balance data for reaction ${rxid}`);
               }
+              promises.push(balanceDataPromise);
             });
           }
   
-          const isValidPromise = validateRxnSmiles(appSettings.apiUrl, rxsmiles).then((isValid) => {
+            const isValidPromise = validateRxnSmiles(appSettings.apiUrl, rxsmiles).then((isValid) => {
             graphElement.data.is_valid = String(isValid);
             graphElement.data.type = isValid === false ? "" : "custom";
             addIsValidData(rxid, isValid);
           });
 
-          promises.push(reactionSvgPromise, balanceDataPromise, isValidPromise);
+          promises.push(isValidPromise );
         }
       }
     });

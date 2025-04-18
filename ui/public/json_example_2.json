@@ -27,9 +27,34 @@
           "is_predicted": false,
           "is_evidence": false
         },
-        "conditions_info": {
+        "evidence_protocol": {
           "USPTO-9876543": {
-            "conditions_text": "The reaction conditions involve the use of acetonitrile as the solvent, a temperature range of 20-25°C, and a pressure of 1 atm. The reactants are added in a specific sequence, followed by stirring for 3 hours. After the reaction, the mixture is quenched with an aqueous solution, extracted with dichloromethane, and the organic layer is dried over sodium sulfate. The solvent is removed under reduced pressure to isolate the product."
+            "protocol_text": "The reaction conditions include the use of dichloromethane as the solvent, a temperature range of 25-30°C, and a pressure of 1 atm. The reaction is initiated by adding the reactants sequentially, followed by stirring for 2 hours. After completion, the mixture is quenched with water and extracted using ethyl acetate. The organic layer is dried over anhydrous magnesium sulfate, filtered, and concentrated under reduced pressure to yield the product."
+          }
+        },
+        "evidence_conditions_info": {
+          "USPTO-9876543": {
+            "solvent": "dichloromethane",
+            "temperature_range": "20-25°C",
+            "pressure": "1 atm",
+            "reaction_time": "2 hours",
+            "quenching_agent": "water",
+            "extraction_solvent": "ethyl acetate"
+          }
+        },
+        "predicted_conditions_info": {
+          "method": {
+            "ASKCOS": {
+              "Pred 1": 
+                {
+                "solvent": "dichloromethane",
+                "temperature_range": "20-25°C",
+                "pressure": "1 atm",
+                "reaction_time": "2 hours",
+                "quenching_agent": "water",
+                "extraction_solvent": "ethyl acetate"
+              }
+          }
           }
         }
       },
