@@ -38,8 +38,10 @@ const EntityInformation = () => {
 
   const nodeRef = useRef(null);
   const [expandEvidenceConditionInfo, setExpandEvidenceConditionInfo] = useState(false);
+  const [expandInventoryLocations, setExpandInventoryLocations] = useState(false);
   const [expandPredictedConditionInfo, setExpandPredictedConditionInfo] = useState(false);
   const [expandOriginalSmiles, setExpandOriginalSmiles] = useState(false);
+  const [expandCommercialVendors, setExpandCommercialVendors] = useState(false);
 
   const handleClose = () => {
     setOpen(false);
@@ -84,7 +86,11 @@ const EntityInformation = () => {
     (item) => item.inchikey === nodeInfo.node_label
   );
   nodeInfo.inventory = availabilityItem
-    ? { available: availabilityItem.inventory?.available || false }
+    ? { ...availabilityItem.inventory, available: availabilityItem.inventory?.available || false }
+    : { available: false };
+
+  nodeInfo.commercial_availability = availabilityItem
+    ? { ...availabilityItem.commercial_availability, vendors: availabilityItem.commercial_availability?.vendors || [], available: availabilityItem.commercial_availability?.available || false }
     : { available: false };
 }
 return nodeInfo;
@@ -283,6 +289,82 @@ const fillEntityData = async () => {
                                 <b>Inventory Status:</b> {entityInfo?.inventory?.available === undefined ? "Unknown" : entityInfo?.inventory?.available ? "Available" : "Not Available"}
                               </Text>
                               </p>
+                              {entityInfo?.inventory?.available && entityInfo?.inventory?.locations && (
+                                <>
+                                  <p>
+                                    <Text>
+                                      <b>Inventory Locations:</b>{" "}
+                                      <span
+                                        className="link-like"
+                                        onClick={() => setExpandInventoryLocations(!expandInventoryLocations)}
+                                      >
+                                        [{expandInventoryLocations ? "hide" : "show"}]
+                                      </span>
+                                    </Text>
+                                  </p>
+                                  {expandInventoryLocations && (
+                                    <div style={{ borderLeft: "2px solid #1890ff", paddingLeft: "1rem", marginTop: "0.5rem" }}>
+                                      {entityInfo.inventory.locations.map((location, index) => (
+                                        <div key={index} style={{ marginBottom: "1rem" }}>
+                                          {Object.entries(location).map(([key, value]) => (
+                                            <p key={key}>
+                                              <Text>
+                                                <b>{formatLabel(key)}:</b> {value || "N/A"}
+                                              </Text>
+                                            </p>
+                                          ))}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </>
+                              )}
+                              {entityInfo?.commercial_availability && (
+                                <div style={{ marginTop: "1rem" }}>
+                                  <p>
+                                    <Text>
+                                      <b>Commercial Availability:</b> {entityInfo.commercial_availability.available ? "Available" : "Not Available"}
+                                    </Text>
+                                  </p>
+                                </div>
+                              )}
+                              {entityInfo?.commercial_availability?.available && entityInfo?.commercial_availability?.vendors && (
+                                <>
+                                  <p>
+                                    <Text>
+                                      <b>Commercial Vendors:</b>{" "}
+                                      <span
+                                        className="link-like"
+                                        onClick={() => setExpandCommercialVendors(!expandCommercialVendors)}
+                                      >
+                                        [{expandCommercialVendors ? "hide" : "show"}]
+                                      </span>
+                                    </Text>
+                                  </p>
+                                  {expandCommercialVendors && (
+                                    <div style={{ borderLeft: "2px solid #1890ff", paddingLeft: "1rem", marginTop: "0.5rem" }}>
+                                      {entityInfo.commercial_availability.vendors.map((vendor, index) => (
+                                        <div key={index} style={{ marginBottom: "1rem" }}>
+                                          {Object.entries(vendor).map(([key, value]) => (
+                                            <p key={key}>
+                                              <Text>
+                                                <b>{formatLabel(key)}:</b>{" "}
+                                                {key === "url" ? (
+                                                  <a href={value.startsWith("http") ? value : `https://${value}`} target="_blank" rel="noopener noreferrer">
+                                                    {value}
+                                                  </a>
+                                                ) : (
+                                                  value || "N/A"
+                                                )}
+                                              </Text>
+                                            </p>
+                                          ))}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </>
+                              )}
                             </div>
                           </>
                         )}

@@ -308,7 +308,7 @@
               "source": "", 
               "ppg": "",
               "lead_time": "", 
-              "url": "link"
+              "url": "google.com"
             }
           ]
         }
@@ -335,7 +335,7 @@
               "source": "", 
               "ppg": "",
               "lead_time": "", 
-              "url": "link"
+              "url": "google.com"
             }
           ]
         }
@@ -362,7 +362,7 @@
               "source": "", 
               "ppg": "",
               "lead_time": "", 
-              "url": "link"
+              "url": "google.com"
             }
           ]
         }
@@ -389,7 +389,7 @@
               "source": "", 
               "ppg": "",
               "lead_time": "", 
-              "url": "link"
+              "url": "google.com"
             }
           ]
         }
@@ -409,14 +409,14 @@
           ]
         },
         "commercial_availability": {
-          "available": false,
+          "available": true,
           "vendors": [
             {
               "smiles": "CCN(CC)CC",
               "source": "", 
               "ppg": "",
               "lead_time": "", 
-              "url": "link"
+              "url": "google.com"
             }
           ]
         }
@@ -443,7 +443,7 @@
               "source": "", 
               "ppg": "",
               "lead_time": "", 
-              "url": "link"
+              "url": "google.com"
             }
           ]
         }
@@ -470,7 +470,7 @@
               "source": "", 
               "ppg": "",
               "lead_time": "", 
-              "url": "link"
+              "url": "google.com"
             }
           ]
         }
@@ -490,14 +490,14 @@
           ]
         },
         "commercial_availability": {
-          "available": false,
+          "available": true,
           "vendors": [
             {
               "smiles": "CN(O)C(=O)N1CCC(c2nc(-c3ccc(Cl)cc3)c(-c3ccccc3)s2)CC1",
               "source": "", 
               "ppg": "",
               "lead_time": "", 
-              "url": "link"
+              "url": "google.com"
             }
           ]
         }

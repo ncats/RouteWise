@@ -8,6 +8,7 @@
 6.  [Running containers on custom ports](#running-containers-on-custom-ports)
 7.  [Features](#features)
 8.  [API Endpoints](#api-endpoints)
+9.  [Inventory and Commercial Availability](#inventory-and-commercial-availability)
 
 ## Features
 
@@ -255,7 +256,27 @@ The `availability` section in the JSON file provides detailed inventory informat
 
 ---
 
-## API Endpoints
+## Inventory and Commercial Availability
+
+### Inventory Status
+Provides information about the availability of substances in inventory. Includes:
+- **Available**: Boolean indicating if the substance is available in inventory.
+- **Locations**: Array of objects specifying the location details. Each object includes:
+  - `smiles`: SMILES representation of the substance.
+  - `room`: Room where the substance is stored.
+  - `position`: Position within the room.
+  - `quantity_weight`: Weight of the substance.
+  - `unit`: Unit of measurement for the weight.
+
+### Commercial Availability
+Provides information about the commercial availability of substances. Includes:
+- **Available**: Boolean indicating if the substance is commercially available.
+- **Vendors**: Array of objects specifying vendor details. Each object includes:
+  - `smiles`: SMILES representation of the substance.
+  - `source`: Source/vendor name.
+  - `ppg`: Price per gram.
+  - `lead_time`: Lead time for delivery.
+  - `url`: URL for the vendor's product page.
 
 ### `POST /convertASKCOS2aicp`
 
