@@ -1,0 +1,156 @@
+# Define the name of the workflow
+name: snyk
+
+# Define when the workflow should be triggered (on push to a specific branch and pull requests to the master branch)
+on:
+  push:
+    branches: ['main']
+  pull_request:
+    branches: ['main']
+  workflow_dispatch:
+
+# Define the jobs that will be executed as part of the workflow
+jobs:
+  # Job 1: Snyk-UI-Docker-Image
+  Snyk-UI-Docker-Image:
+    runs-on:
+      group: ncats-awsci-runners
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+      issues: write
+
+    outputs:
+      build_version: ${{ steps.get_build_version.outputs.build_version }}
+
+    steps:
+      # Step 1: Checkout repository
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Step 2: Generate Build Version Number
+      - name: Generate Build Version Number
+        id: GET_BUILD_VERSION
+        run: |
+          # Get the last recorded date from the environment variable
+          LAST_DATE=$(date -d "$LAST_BUILD_DATE" +'%Y-%m-%d' 2>/dev/null || echo "")
+
+          # Get the current date
+          CURRENT_DATE=$(date +'%Y-%m-%d')
+          echo "Last recorded date: $LAST_DATE"
+          echo "Current date: $CURRENT_DATE"
+
+          # Check if it's a new day
+          if [ "$LAST_DATE" != "$CURRENT_DATE" ]; then
+            # Reset BUILDS_TODAY to 0 for the new day
+            BUILDS_TODAY=0
+            echo "Resetting BUILDS_TODAY to 0 for the new day"
+          else
+            # Calculate the number of builds today
+            BUILDS_TODAY=$(seq -f v$GITHUB_RUN_NUMBER.%g $(($GITHUB_RUN_NUMBER - 1)) | wc -l)
+            echo "Incrementing BUILDS_TODAY"
+          fi
+
+          # Store the current date for the next run
+          echo "LAST_BUILD_DATE=$CURRENT_DATE" >> $GITHUB_ENV
+
+          # Generate the build version with the number of builds today
+          BUILD_VERSION_GENERATED=$(date +v%Y.%m%d.$BUILDS_TODAY)
+          echo "Generated Build Version: $BUILD_VERSION_GENERATED"
+          echo "BUILD_VERSION=$BUILD_VERSION_GENERATED" >> $GITHUB_ENV
+          echo "BUILD=true" >> $GITHUB_ENV
+          echo "::set-output name=build_version::$BUILD_VERSION_GENERATED"
+
+      # Step 3: Login to Dockerhub
+      - name: Login to Dockerhub
+        run: docker login -u "${{ secrets.DKRHUB_NCATSSVCDVOPS_USERNAME }}" -p "${{ secrets.DKRHUB_NCATSSVCDVOPS_TOKEN_WRITE }}"
+
+      # Step 4: Build a Docker image
+      - name: Build a Docker image
+        run: docker build --no-cache -f ./ui/Dockerfile --build-arg NPM_TOKEN=${{ secrets.NPM_INSTALL_TOKEN }} --build-arg BUILD_VERSION=$BUILD_VERSION -t ncats/aspire-network-visualizer-ui:$BUILD_VERSION ui/.
+
+        # Step 5: Run Snyk to check Docker image for vulnerabilities
+      - name: Run Snyk to check Docker image for vulnerabilities
+        continue-on-error: true
+        uses: snyk/actions/docker@master
+        id: docker-image-scan
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_CLI }}
+          ACTIONS_STEP_DEBUG: true
+        with:
+          command: monitor
+          image: ncats/aspire-network-visualizer-ui:$BUILD_VERSION
+          args: --file=./ui/Dockerfile
+
+  # Job 2: Snyk-API-Docker-Image
+  Snyk-API-Docker-Image:
+    runs-on:
+      group: ncats-awsci-runners
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+      issues: write
+
+    outputs:
+      build_version: ${{ steps.get_build_version.outputs.build_version }}
+
+    steps:
+      # Step 1: Checkout repository
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Step 2: Generate Build Version Number
+      - name: Generate Build Version Number
+        id: GET_BUILD_VERSION
+        run: |
+          # Get the last recorded date from the environment variable
+          LAST_DATE=$(date -d "$LAST_BUILD_DATE" +'%Y-%m-%d' 2>/dev/null || echo "")
+
+          # Get the current date
+          CURRENT_DATE=$(date +'%Y-%m-%d')
+          echo "Last recorded date: $LAST_DATE"
+          echo "Current date: $CURRENT_DATE"
+
+          # Check if it's a new day
+          if [ "$LAST_DATE" != "$CURRENT_DATE" ]; then
+            # Reset BUILDS_TODAY to 0 for the new day
+            BUILDS_TODAY=0
+            echo "Resetting BUILDS_TODAY to 0 for the new day"
+          else
+            # Calculate the number of builds today
+            BUILDS_TODAY=$(seq -f v$GITHUB_RUN_NUMBER.%g $(($GITHUB_RUN_NUMBER - 1)) | wc -l)
+            echo "Incrementing BUILDS_TODAY"
+          fi
+
+          # Store the current date for the next run
+          echo "LAST_BUILD_DATE=$CURRENT_DATE" >> $GITHUB_ENV
+
+          # Generate the build version with the number of builds today
+          BUILD_VERSION_GENERATED=$(date +v%Y.%m%d.$BUILDS_TODAY)
+          echo "Generated Build Version: $BUILD_VERSION_GENERATED"
+          echo "BUILD_VERSION=$BUILD_VERSION_GENERATED" >> $GITHUB_ENV
+          echo "BUILD=true" >> $GITHUB_ENV
+          echo "::set-output name=build_version::$BUILD_VERSION_GENERATED"
+
+      # Step 3: Login to Dockerhub
+      - name: Login to Dockerhub
+        run: docker login -u "${{ secrets.DKRHUB_NCATSSVCDVOPS_USERNAME }}" -p "${{ secrets.DKRHUB_NCATSSVCDVOPS_TOKEN_WRITE }}"
+
+      # Step 4: Build a Docker image
+      - name: Build a Docker image
+        run: docker build --no-cache -f ./api/Dockerfile --build-arg NPM_TOKEN=${{ secrets.NPM_INSTALL_TOKEN }} --build-arg BUILD_VERSION=$BUILD_VERSION -t ncats/aspire-network-visualizer-api:$BUILD_VERSION api/.
+
+        # Step 5: Run Snyk to check Docker image for vulnerabilities
+      - name: Run Snyk to check Docker image for vulnerabilities
+        continue-on-error: true
+        uses: snyk/actions/docker@master
+        id: docker-image-scan
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_CLI }}
+          ACTIONS_STEP_DEBUG: true
+        with:
+          command: monitor
+          image: ncats/aspire-network-visualizer-api:$BUILD_VERSION
+          args: --file=./api/Dockerfile
