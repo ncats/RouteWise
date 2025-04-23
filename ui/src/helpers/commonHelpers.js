@@ -1,4 +1,5 @@
 import { v4 as uuidv4 } from "uuid";
+import cloneDeep from 'lodash/cloneDeep';
 import * as colors from "./colors";
 
 export const graphLayouts = {
@@ -622,8 +623,9 @@ export const duplicateGraphSubstances = (graph) => {
    * Function to duplicate nodes substances within a graph that are reagents/reactants in multiple reactions. Only
    * substances with the starting material role are duplicated.
    */
-  // Clone the graph to prevent mutation
-  let new_graph = JSON.parse(JSON.stringify(graph));
+  // Use Lodash's cloneDeep to perform a deep copy of the graph
+  let new_graph = cloneDeep(graph);
+
   const substance_nodes = {};
   const sm_edges_map = {};
 

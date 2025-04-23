@@ -109,6 +109,7 @@ const CytoscapeRendering = ({ graph, layout }) => {
         if (!showReagents) {
           transformedGraph = removeAllReagents(transformedGraph);
         }
+
         // Duplicate starting substances
         if (duplicateReagents) {
           transformedGraph = duplicateGraphSubstances(transformedGraph);

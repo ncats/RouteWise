@@ -8,14 +8,12 @@
 6.  [Running containers on custom ports](#running-containers-on-custom-ports)
 7.  [Features](#features)
 8.  [API Endpoints](#api-endpoints)
-9.  [Inventory and Commercial Availability](#inventory-and-commercial-availability)
 
 ## Features
 
 ### Node Styles
 - **Reaction Nodes**: Always displayed as red rectangles unless `is_valid` is `false`, in which case they are displayed as red circles.
 
-- **is_valid**: This feature validates reaction nodes to determine their correctness. The `is_valid` field is displayed in the entity information panel for reaction nodes, providing users with immediate feedback on the validity of reactions.
 - **normalize_roles**: This function reassigns the roles of substances (reactants, reagents, and products) in a reaction SMILES (RXSMILES) string based on atom mapping. It ensures consistency by:
   1. Checking for atom mapping in the RXSMILES.
   2. Parsing the RXSMILES into reactants, reagents, and products.
@@ -201,6 +199,8 @@ The `availability` section in the JSON file provides detailed inventory informat
 }
 ```
 
+---
+
 #### Field Descriptions
 
 | Attribute | Description |
@@ -256,64 +256,10 @@ The `availability` section in the JSON file provides detailed inventory informat
 
 ---
 
-## Inventory and Commercial Availability
+### `POST /convert2aicp`
 
-### Inventory Status
-Provides information about the availability of substances in inventory. Includes:
-- **Available**: Boolean indicating if the substance is available in inventory.
-- **Locations**: Array of objects specifying the location details. Each object includes:
-  - `smiles`: SMILES representation of the substance.
-  - `room`: Room where the substance is stored.
-  - `position`: Position within the room.
-  - `quantity_weight`: Weight of the substance.
-  - `unit`: Unit of measurement for the weight.
+This endpoint converts input data into the AICP format. convert_askcos is an optional boolean to convert raw askcos graph data into AICP format
 
-### Commercial Availability
-Provides information about the commercial availability of substances. Includes:
-- **Available**: Boolean indicating if the substance is commercially available.
-- **Vendors**: Array of objects specifying vendor details. Each object includes:
-  - `smiles`: SMILES representation of the substance.
-  - `source`: Source/vendor name.
-  - `ppg`: Price per gram.
-  - `lead_time`: Lead time for delivery.
-  - `url`: URL for the vendor's product page.
-
-### `POST /convertASKCOS2aicp`
-
-This endpoint converts ASKCOS data into the AICP format.
-
-#### Request
-- **Method**: `POST`
-- **Content-Type**: `application/json`
-- **Body**: A JSON object containing ASKCOS data. Example:
-  ```json
-  {
-    "result": {
-      "graph": {
-        "nodes": [...],
-        "links": [...]
-      },
-      "paths": [...]
-    }
-  }
-  ```
-
-#### Response
-- **Content-Type**: `application/json`
-- **Body**: A JSON object containing the converted AICP data. Example:
-  ```json
-  {
-    "synth_graph": {
-      "nodes": [...],
-      "edges": [...]
-    },
-    "routes": {
-      "subgraphs": [...],
-      "num_subgraphs": 1
-    },
-    "availability": [...]
-  }
-  ```
 
 Use this endpoint to process ASKCOS data and render it in the AICP format for visualization.
 

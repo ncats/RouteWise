@@ -60,37 +60,6 @@ export const getMoleculeRdkitSvgBySmiles = async (baseUrl, smiles) => {
   }
 };
 
-const substanceNodes = ["substance"];
-const reactionNodes = ["reaction"];
-
-export const mapAicpGraphWithSVG = async (baseUrl, aicpGraph) => {
-  // Create an array to hold all promises
-  const promises = aicpGraph.nodes.map(async (node) => {
-    const nodeType = node.node_type.toLowerCase();
-    if (substanceNodes.includes(nodeType)) {
-      const svg = await getMoleculeSvg(baseUrl, node.node_label);
-      if (svg) {
-        const base64Svg = btoa(svg);
-        node.base64svg = base64Svg; // Add the base64 encoded SVG to the node
-      }
-    } else if (reactionNodes.includes(nodeType)) {
-      const svg = await getReactionSvg(baseUrl, node.node_label);
-      if (svg) {
-        const base64Svg = btoa(svg);
-        node.base64svg = base64Svg; // Add the base64 encoded SVG to the node
-      }
-    } else {
-      // Nothing for now
-    }
-  });
-
-  // Wait for all promises to resolve
-  await Promise.all(promises);
-
-  // Return the modified aicpGraph
-  return aicpGraph;
-};
-
 export const checkApiStatus = async (baseUrl) => {
   try {
     const url = `${baseUrl.trim()}/${apiStatusPath}`;
@@ -145,31 +114,6 @@ export const sendToCytoscape = async (baseUrl, cytoscapeJson) => {  // Receiving
 
   } catch (error) {
     console.error("Error sending to Cytoscape:", error.message);
-  }
-};
-
-export const validateRxnSmiles = async (baseUrl, rxsmiles) => {
-  try {
-    const url = `${baseUrl.trim()}/is_valid`;
-    const body = JSON.stringify({ rxsmiles });
-
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: body,
-    });
-
-    if (!response.ok) {
-      throw new Error(`Error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return data.is_valid; // Return validation result
-  } catch (error) {
-    console.error("Error validating RXSMILES:", error);
-    return null;
   }
 };
 
@@ -232,16 +176,16 @@ export const compute_balance = async (baseUrl, rxsmiles) => {
   }
 };
 
-// Helper function to call convertASKCOS2aicp endpoint
-export const convertASKCOS2aicp = async (ascosData) => {
-  const apiUrl = `${process.env.API_URL || "http://0.0.0.0:5099"}/convertASKCOS2aicp`;
+// Helper function to call convert2aicp endpoint
+export const convert2aicp = async (ascosData, askcosRoute) => {
+  const apiUrl = `${process.env.API_URL || "http://0.0.0.0:5099"}/convert2aicp`;
   try {
     const response = await fetch(apiUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(ascosData),
+      body: JSON.stringify({ graph_data: ascosData, convert_askcos: askcosRoute }),
     });
 
     if (!response.ok) {
@@ -251,7 +195,7 @@ export const convertASKCOS2aicp = async (ascosData) => {
     const data = await response.json();
     return data; // Return the converted data
   } catch (error) {
-    console.error("Error calling convertASKCOS2aicp:", error);
+    console.error("Error calling convert2aicp:", error);
     return null;
   }
 };

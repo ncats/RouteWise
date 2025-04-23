@@ -22,7 +22,6 @@ import {
   compute_balance, 
   hasAtomMapping, 
   normalizeRoles,
-  validateRxnSmiles,
 } from "./helpers/apiHelpers";
 
 const defaultApiStatus = { error: false };
@@ -88,7 +87,6 @@ function App() {
   const [showKetcher, setShowKetcher] = useState(false);
   const [ketcherSmiles, setKetcherSmiles] = useState("");
   const [balanceData, setBalanceData] = useState({});
-  const [isValidData, setIsValidData] = useState({});
 
   useEffect(() => {
     const checkStatus = async () => {
@@ -119,12 +117,6 @@ function App() {
     }));
   };
 
-  const addIsValidData = (reactionId, isValid) => {
-    setIsValidData((prev) => ({
-      ...prev,
-      [reactionId]: isValid,
-    }));
-  };
 
   const updateCytoscapeGraph = async (mappedGraph) => {
     const promises = [];
@@ -187,9 +179,9 @@ function App() {
                 } else {
                   console.error("Failed to fetch reaction SVG");
                 }
-                promises.push(combinedPromise);
               });
             });
+            promises.push(combinedPromise);
           } else {
             const combinedPromise = getReactionRdkitSvgByRxsmiles(
               appSettings.apiUrl,
@@ -227,15 +219,8 @@ function App() {
               }
               promises.push(balanceDataPromise);
             });
-          }
-  
-            const isValidPromise = validateRxnSmiles(appSettings.apiUrl, rxsmiles).then((isValid) => {
-            graphElement.data.is_valid = String(isValid);
-            graphElement.data.type = isValid === false ? "" : "custom";
-            addIsValidData(rxid, isValid);
-          });
+          };
 
-          promises.push(isValidPromise );
         }
       }
     });
@@ -290,8 +275,6 @@ function App() {
         reactionSources,
         setReactionSources,
         balanceData,
-        setIsValidData,
-        isValidData,
         setBalanceData,
       }}
     >

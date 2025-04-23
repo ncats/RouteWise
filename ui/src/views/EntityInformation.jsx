@@ -20,8 +20,6 @@ const EntityInformation = () => {
     aicpGraph,
     nodeSvgs,
     balanceData,
-    reactionSources,
-    isValidData
   } = useContext(MainContext);
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState(null);
@@ -72,10 +70,6 @@ const EntityInformation = () => {
           nodeInfo.tbi = balanceEntity.tbi;
         }
         
-        const validEntity = isValidData[nodeInfo.rxid];
-        if (validEntity !== undefined) {
-          nodeInfo.is_valid = validEntity; // Add is_valid field to reaction nodes
-        }
         if (!nodeInfo.base64svg && nodeSvgs[entityId]) {
           nodeInfo.base64svg = extractBase64FromDataURL(nodeSvgs[entityId]);
         }
@@ -273,6 +267,31 @@ const fillEntityData = async () => {
                             </Text>
                           </p>
                         )}
+                        {isSubstance && (
+                          <>
+                            <p>
+                              <b>Source Information:</b>{" "}
+                              <span
+                                className="link-like"
+                                onClick={() => setExpandSourceInfo(!expandSourceInfo)}
+                              >
+                                [{expandSourceInfo ? "hide" : "show"}]
+                              </span>
+                            </p>
+                            {expandSourceInfo && (
+                              <div style={{ borderLeft: "2px solid #1890ff", paddingLeft: "1rem" }}>
+                                <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
+                                  {entityInfo.provenance &&
+                                    Object.entries(entityInfo.provenance).map(([key, value]) => (
+                                      <Text key={key}>
+                                        <b>{formatLabel(key)}:</b> {Array.isArray(value) ? value.join(", ") : String(value)}
+                                      </Text>
+                                    ))}
+                                </div>
+                              </div>
+                            )}
+                          </>
+                        )}
                         {isAskcosNode === false && (
                           <>
                             <p>
@@ -440,22 +459,27 @@ const fillEntityData = async () => {
                       )}
                       <p>
                         <Text>
-                          <b>RX Name:</b> {entityInfo.rxname || ""}
+                          <b>RX Name:</b> {entityInfo.rxname || "N/A"}
                         </Text>
                       </p>
                       <p>
                         <Text>
-                          <b>RX Class:</b> {entityInfo.rxclass || ""}
+                          <b>RX Class:</b> {entityInfo.rxclass || "N/A"}
                         </Text>
                       </p>
                       <p>
                         <Text>
-                          <b>RX Valid:</b> {entityInfo.is_valid !== undefined && entityInfo.is_valid !== null ? entityInfo.is_valid.toString() : "N/A"}
+                        <b>RX Name Recognized:</b> {entityInfo.validation?.is_rxname_recognized !== undefined ? entityInfo.validation?.is_rxname_recognized.toString() : "N/A"}
                         </Text>
                       </p>
                       <p>
                         <Text>
-                        <b>RX Name Recognized:</b> {entityInfo.is_rxname_recognized !== undefined ? entityInfo.is_rxname_recognized.toString() : "false"}
+                          <b>RX Valid:</b> {entityInfo.validation?.is_valid !== undefined && entityInfo.validation?.is_valid !== null ? entityInfo.validation.is_valid.toString() : "N/A"}
+                        </Text>
+                      </p>
+                      <p>
+                        <Text>
+                          <b>Is Balanced:</b> {entityInfo.validation?.is_balanced !== undefined && entityInfo.validation?.is_balanced !== null ? entityInfo.validation.is_balanced.toString() : "N/A"}
                         </Text>
                       </p>
                       {isAskcosNode === false && (
