@@ -8,6 +8,7 @@ services:
       - "5099:5099"
     environment:
       - API_URL=${API_URL:-http://0.0.0.0:5099}
+      - CYTOSCAPE_URL=${CYTOSCAPE_URL:-http://host.docker.internal:1234/v1}
   ui:
     build:
       context: ./ui

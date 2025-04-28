@@ -67,7 +67,6 @@ const EntityInformation = () => {
         if (balanceEntity) {
           nodeInfo.pbi = balanceEntity.pbi;
           nodeInfo.rbi = balanceEntity.rbi;
-          nodeInfo.tbi = balanceEntity.tbi;
         }
         
         if (!nodeInfo.base64svg && nodeSvgs[entityId]) {
@@ -469,7 +468,7 @@ const fillEntityData = async () => {
                       </p>
                       <p>
                         <Text>
-                        <b>RX Name Recognized:</b> {entityInfo.validation?.is_rxname_recognized !== undefined ? entityInfo.validation?.is_rxname_recognized.toString() : "N/A"}
+                        <b>RX Name Recognized:</b> {entityInfo.validation?.is_rxname_recognized !== undefined && entityInfo.validation?.is_rxname_recognized !== null ? entityInfo.validation.is_rxname_recognized.toString() : "N/A"}
                         </Text>
                       </p>
                       <p>

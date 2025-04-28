@@ -117,9 +117,13 @@ export const sendToCytoscape = async (baseUrl, cytoscapeJson) => {  // Receiving
   }
 };
 
-export const normalizeRoles = async (baseUrl, rxsmiles) => {
+export const normalizeRoles = async (baseUrl, rxsmiles, normalizeRolesEnabled) => {
   const url = `${baseUrl.trim()}/normalize_roles`;
   const body = JSON.stringify({ rxsmiles });
+
+  if (!normalizeRolesEnabled) {
+    return rxsmiles; // Skip normalization if disabled
+  }
 
   try {
     const response = await fetch(url, {

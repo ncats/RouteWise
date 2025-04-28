@@ -30,7 +30,7 @@ from role_assigner_utils import RxsmilesAtomMappingException
 import re
 from werkzeug.utils import secure_filename
 
-CYTOSCAPE_URL = "http://localhost:1234/v1"
+CYTOSCAPE_URL = os.getenv("CYTOSCAPE_URL", "http://localhost:1234/v1")
 DEFAULT_STYLE_NAME = "New SynGPS API"
 
 # Set up logging

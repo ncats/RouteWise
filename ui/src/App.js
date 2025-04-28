@@ -118,7 +118,7 @@ function App() {
   };
 
 
-  const updateCytoscapeGraph = async (mappedGraph) => {
+  const updateCytoscapeGraph = async (mappedGraph, normalizeRolesEnabled = false) => {
     const promises = [];
     setSelectedEntity(null);
     setPreviewEntity(null);
@@ -160,7 +160,7 @@ function App() {
           // Check if RXSMILES has atom mapping
 
           if (hasAtomMapping(rxsmiles)) {
-            const combinedPromise = normalizeRoles(appSettings.apiUrl, rxsmiles).then((normalizedRxsmiles) => {
+            const combinedPromise = normalizeRoles(appSettings.apiUrl, rxsmiles, normalizeRolesEnabled).then((normalizedRxsmiles) => {
               updatedRxsmiles = normalizedRxsmiles;
               graphElement.data.rxsmiles = updatedRxsmiles; // Update RXSMILES in graph data
               return getReactionRdkitSvgByRxsmiles(

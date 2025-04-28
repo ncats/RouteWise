@@ -25,6 +25,7 @@ function removeTrailingSlashFromHostname(hostname) {
 export const generateRoomId = () => uuidv4();
 
 export const defaultAppSettings = {
+  normalizeRolesEnabled: false,
   roomId: generateRoomId(),
   graphSize: 50,
 apiUrl: removeTrailingSlashFromHostname(
@@ -340,8 +341,8 @@ export const cyStyles = [
       shape: "rectangle",
       width: "data(width)",
       height: "data(height)",
-      "border-color": colors.PINK.primary,
-      "background-color": colors.PINK.primary,
+      "border-color": colors.GOLD.primary,
+      "background-color": colors.GOLD.primary,
       "border-width": 2,
     },
   },
@@ -356,8 +357,8 @@ export const cyStyles = [
   {
     selector: 'node[srole="sm"]',
     style: {
-      "border-color": colors.GOLD.primary,
-      "background-color": colors.GOLD.primary,
+      "border-color": colors.PINK.primary,
+      "background-color": colors.PINK.primary,
     },
   },
   {

@@ -128,6 +128,18 @@ const Settings = () => {
             </Flex>
             <Divider style={{ margin: 0 }} />
             <Flex gap="middle">
+              <div>Enable Normalize Roles for Reactions</div>
+              <Switch
+                value={appSettings.normalizeRolesEnabled}
+                onChange={(checked) => {
+                  setAppSettings({ ...appSettings, normalizeRolesEnabled: checked });
+                  setAicpGraph(aicpGraph);
+                  const mappedData = mapGraphDataToCytoscape(aicpGraph);
+                  updateCytoscapeGraph(mappedData, checked);
+                }}
+              />
+            </Flex>
+            <Flex gap="middle">
               <div>Duplicate reagents and starting materials</div>
               <Switch
                 value={duplicateReagents}

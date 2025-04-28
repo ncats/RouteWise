@@ -12,7 +12,7 @@
 ## Features
 
 ### Node Styles
-- **Reaction Nodes**: Always displayed as red rectangles unless `is_valid` is `false`, in which case they are displayed as red circles.
+- **Reaction Nodes**: Always displayed as gold rectangles unless `is_valid` is `false`, in which case they are displayed as gold circles.
 
 - **normalize_roles**: This function reassigns the roles of substances (reactants, reagents, and products) in a reaction SMILES (RXSMILES) string based on atom mapping. It ensures consistency by:
   1. Checking for atom mapping in the RXSMILES.
@@ -33,6 +33,18 @@
 - **Example Graphs**: Includes two evidence-based route examples and an ASKCOS Route Sample. The ASKCOS Route Sample is parsed and converted internally into the graph format before rendering.
 - **Aggregate Yield Display**: Displays aggregate yield as "Agg Yield" on top of the graph for better visualization.
 - **User Settings**: Offers various settings that users can toggle to customize their experience, including graph rendering options and visualization preferences.
+
+  - **Enable Normalize Roles for Reactions**: This toggle allows users to enable or disable the normalization of reaction roles for RXN SMILES. When enabled, the application processes RXN SMILES to ensure consistent roles for reactants, reagents, and products. By default, this setting is disabled.
+
+  - **Show Structures for Substances**: This toggle allows users to show or hide graphical depictions of substances in the graph. When enabled, all depictions are shown; when disabled, only depictions for terminal molecules are shown.
+
+  - **Duplicate Reagents and Starting Materials**: This toggle allows users to duplicate reagents and starting materials in the graph.
+
+  - **Highlight Atom Indices in Depictions**: This toggle enables or disables the highlighting of atom indices in graphical depictions.
+
+  - **Set Edge Style**: Users can choose the style of edges in the graph, including options like "Round Taxi," "Straight," and "Segments."
+
+  - **Product Edge Thickness**: Users can adjust the thickness of product edges in the graph using a slider.
 
 
 
@@ -68,7 +80,7 @@ Optional (not required, but nice to have):
 
 2. Build the Docker containers:
    ```bash
-   docker-compose build
+   docker-compose build --parallel
    ```
 
 3. Start the containers:
@@ -133,7 +145,7 @@ Mandatory fields/attributes are marked with `*`.
 | --- | --- |
 | `node_type`* | Type of the node, can be: `reaction` (represented by red circle) or `substance` (square box, shading depending on the `srole`, see below) |
 | `node_label`* | Label for the node displayed on hover |
-| `srole`* | _Works with substance nodes only:_ can be `sm` (**starting material**), `tm` (**target molecule**) or `im` (**intermediate material**) that are shaded by yellow, blue, and gray, respectively. |
+| `srole`* | _Works with substance nodes only:_ can be `sm` (**starting material**), `tm` (**target molecule**) or `im` (**intermediate material**) that are shaded by red, blue, and gray, respectively. |
 | `canonical_smiles` | _Works with substance nodes only:_ Canonical SMILES representation of the substance. |
 | `base64svg` | If you want to include an image for the node, you can do that using this parameter. Check [this section](#showing-graphical-content-inside-the-nodes) for details |
 | `uuid` | Unique identifier for the node |
@@ -141,7 +153,7 @@ Mandatory fields/attributes are marked with `*`.
 | `rxsmiles` | _Works with reaction nodes only:_ SMILES representation of the reaction |
 | `original_rxsmiles` | _Works with reaction nodes only:_ The original SMILES representation of the reaction before any modifications. |
 | `yield_info` | _Works with reaction nodes only:_ Contains information on predicted yield and yield score. Options: <br> - `yield_predicted`: Predicted yield value <br> - `yield_score`: Yield score (e.g., a numerical score) |
-| `provenance` | _Works with reaction nodes only:_ Indicates if the reaction is in the USPTO and SAVI. Options: <br> - `is_in_uspto`: Boolean indicating if the reaction is in USPTO <br> - `is_in_savi`: Boolean indicating if the reaction is in SAVI <br> - `Patents`: Optional list of patent names associated with the reaction |
+| `provenance` | Indicates if the reaction is in the USPTO and SAVI. Options: <br> - `is_in_uspto`: Boolean indicating if the reaction is in USPTO <br> - `is_in_savi`: Boolean indicating if the reaction is in SAVI <br> - `Patents`: Optional list of patent names associated with the reaction <br> - `patent_paragraph_nums`: Maps paragraph numbers to the associated patents. |
 | `rxname` | _Works with reaction nodes only:_ Name of the reaction. |
 | `is_rxname_recognized` | _Works with reaction nodes only:_ Indicates whether the reaction name is recognized. |
 | `rxclass` | _Works with reaction nodes only:_ Class of the reaction. |
