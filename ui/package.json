@@ -36,7 +36,7 @@
     "cytoscape": "^3.28.1",
     "cytoscape-cola": "^2.5.1",
     "cytoscape-dagre": "^2.5.0",
-    "ketcher-react": "^2.26.0",
+    "ketcher-react": "^2.28.0",
     "ketcher-standalone": "^2.26.0",
     "react": "^18.2.0",
     "react-cytoscapejs": "^2.0.0",
