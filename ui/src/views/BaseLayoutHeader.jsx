@@ -108,7 +108,7 @@ const convertToCytoscapeJson = () => {
           <pre style={{ margin: 0 }}><b>Nodes:</b> {aicpGraph ? aicpGraph.synth_graph.nodes.length : "N/A"}</pre>
           <pre style={{ margin: 0 }}><b>Edges:</b> {aicpGraph ? aicpGraph.synth_graph.edges.length : "N/A"}</pre>
           <pre style={{ margin: 0 }}>
-            <b>Agg Yield:</b> {aicpGraph ? aicpGraph.routes.subgraphs[0].aggregate_yield.toFixed(2) : "N/A"}
+            <b>Agg Yield:</b> {aicpGraph && aicpGraph.routes && aicpGraph.routes.subgraphs && aicpGraph.routes.subgraphs[0] ? aicpGraph.routes.subgraphs[0].aggregate_yield.toFixed(2) : "N/A"}
           </pre>
 
           <Button disabled={!aicpGraph} type="primary" onClick={showModal} size="small">

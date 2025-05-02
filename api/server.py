@@ -209,7 +209,6 @@ class RouteSubgraph(BaseModel):
 
 class Routes(BaseModel):
     subgraphs: list[RouteSubgraph]
-    predicted: bool
     num_subgraphs: int
 
 class Availability(BaseModel):
@@ -220,10 +219,11 @@ class Availability(BaseModel):
 class InputFile(BaseModel):
     synth_graph: SynthGraph
     routes: Routes
-    availability: list[Availability]
+    availability: Optional[list[Availability]] = None
 
 @app.post("/upload_json_to_ui/", description="Upload a JSON file. Example file: public/json_example_1.json")
 async def upload_json_to_ui(file: UploadFile, room_id: str, convert_askcos: bool = False):
+    logger.info(f"Received upload request for room_id: {room_id}, convert_askcos: {convert_askcos}")
     try:
         # Parse the JSON file
         json_data = json.loads(await file.read())
@@ -233,6 +233,7 @@ async def upload_json_to_ui(file: UploadFile, room_id: str, convert_askcos: bool
             try:
                 json_data = await convert_to_aicp(ConvertToAicpRequest(graph_data=json_data, convert_askcos=convert_askcos))
             except Exception as e:
+                logger.error(f"Error converting ASKCOS data: {str(e)}")
                 raise HTTPException(status_code=500, detail=f"Error converting ASKCOS data: {str(e)}")
 
         # Validate the JSON data using Pydantic
@@ -240,19 +241,33 @@ async def upload_json_to_ui(file: UploadFile, room_id: str, convert_askcos: bool
 
         # Check if the room ID exists
         if room_id not in room_connections:
+            logger.warning(f"Room ID {room_id} not found in room_connections")
             raise HTTPException(status_code=404, detail="Room ID not found")
 
         # Save JSON data to the room directly
         save_room_data(room_id, validated_data.dict())
+        logger.info(f"Saved JSON data to room {room_id}")
 
         # Send the data to the WebSocket client associated with the room ID
-        await room_connections[room_id].send_json({"room_id": room_id, "data": validated_data.dict()})
+        if room_id in room_connections:
+            try:
+                await room_connections[room_id].send_json({"room_id": room_id, "data": validated_data.dict()})
+                logger.info(f"Sent JSON data to WebSocket for room {room_id}")
+            except RuntimeError as e:
+                logger.warning(f"Failed to send data to WebSocket for room {room_id}: {e}")
+            except Exception as e:
+                logger.error(f"Unexpected error while sending data to WebSocket for room {room_id}: {e}")
+        else:
+            logger.warning(f"Room ID {room_id} not found in active WebSocket connections: {list(room_connections.keys())}")
+        
 
         # Return only the JSON data to the front end
         return {"data": validated_data.dict()}
     except json.JSONDecodeError as e:
+        logger.error(f"Invalid JSON file: {str(e)}")
         raise HTTPException(status_code=400, detail=f"Invalid JSON file: {str(e)}")
     except ValidationError as e:
+        logger.error(f"Validation error: {str(e)}")
         raise HTTPException(status_code=422, detail=f"Validation error: {str(e)}")
 
 
@@ -270,6 +285,7 @@ async def websocket_endpoint(websocket: WebSocket):
     room_connections[room_id] = websocket
 
     await websocket.accept()
+    logger.info(f"New WebSocket connection established for room_id: {room_id}")
     await websocket.send_json({"room_id": room_id})
 
     try:
@@ -282,7 +298,10 @@ async def websocket_endpoint(websocket: WebSocket):
                         with open(os.path.join(DATA_DIR, file_name), "r") as file:
                             room_data = json.load(file)
                             if room_id_from_file in room_connections:
-                                await room_connections[room_id_from_file].send_json({"data": room_data})
+                                try:
+                                    await room_connections[room_id_from_file].send_json({"data": room_data})
+                                except RuntimeError as e:
+                                    logger.warning(f"Failed to send data to WebSocket for room {room_id_from_file}: {e}")
                             # Send data and delete the file after successful transmission
                         os.remove(os.path.join(DATA_DIR, file_name))
                 # Keep the WebSocket connection alive
@@ -291,8 +310,11 @@ async def websocket_endpoint(websocket: WebSocket):
                 # Handle timeout
                 pass
     except WebSocketDisconnect:
-        # Remove the WebSocket connection from the mapping
-        room_connections.pop(room_id, None)
+        # Log the disconnection and remove the WebSocket connection from the mapping
+        logger.warning(f"WebSocket disconnected for room {room_id}. Removing connection.")
+        if room_id in room_connections:
+            logger.info(f"Removing room_id {room_id} from room_connections due to WebSocket closure")
+            room_connections.pop(room_id, None)
 
 ################
 # HTML Content

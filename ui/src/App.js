@@ -68,7 +68,7 @@ function App() {
     return () => {
       websocket.close();
     };
-  }, [navigate]);
+  }, []);
   const [appSettings, setAppSettings] = useState(defaultAppSettings);
   const [graphSettings, setGraphSettings] = useState(defaultGraphSettings);
   const [networkGraph, setNetworkGraph] = useState(null);
