@@ -10,12 +10,12 @@ export const hasAtomMapping = (rxsmiles) => {
   return atomMappingRegex.test(rxsmiles);
 };
 
-export const getReactionRdkitSvgByRxsmiles = async (baseUrl, rxsmiles, highlight) => {
+export const getReactionRdkitSvgByRxsmiles = async (baseUrl, rxsmiles, highlight, showAtomIndices = false) => {
   // Encode the rxsmiles string to ensure it's safely passed in the URL
   const encodedRxsmiles = encodeURIComponent(rxsmiles);
 
   // Construct the URL with query parameters
-  const url = `${baseUrl.trim()}/${rxnSmiles2RdkitSvgPath}?rxsmiles=${encodedRxsmiles}&highlight=${highlight}&img_width=1800&img_height=600&base64_encode=true`;
+  const url = `${baseUrl.trim()}/${rxnSmiles2RdkitSvgPath}?rxsmiles=${encodedRxsmiles}&highlight=${highlight}&show_atom_indices=${showAtomIndices}&img_width=1800&img_height=600&base64_encode=true`;
 
 
   try {
@@ -90,18 +90,14 @@ export const getInchikeysFromGraph = (graph = []) => {
 }
 
 
-export const sendToCytoscape = async (baseUrl, cytoscapeJson) => {  // Receiving baseUrl as an argument
-  if (!cytoscapeJson) {
-    console.error("No graph data available.");
-    return;
-  }
+export const sendToCytoscape = async (baseUrl, aicpJson) => {  // Receiving baseUrl as an argument
 
   try {
 
     const uploadResponse = await fetch(`${baseUrl.trim()}/send_to_cytoscape/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(cytoscapeJson),  // Directly use the passed cytoscapeJson
+      body: JSON.stringify(aicpJson),  // Directly use the passed cytoscapeJson
     });
 
     if (!uploadResponse.ok) {

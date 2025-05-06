@@ -24,8 +24,6 @@ const ExampleGraphs = () => {
   const { setAicpGraph, updateCytoscapeGraph, appSettings } =
     useContext(MainContext);
 
-  const [subgraphIndex, setSubgraphIndex] = useState(0);
-
   const handleLoadExample = async (exampleFileName, askcosRoute) => {
     if (exampleFileName) {
       try {
@@ -40,6 +38,9 @@ const ExampleGraphs = () => {
         if (askcosRoute) {
           data = await convert2aicp(data, askcosRoute);
         }
+        // Clear the existing graph data
+        setAicpGraph(null);
+
         // Update the graph with the new data
         setAicpGraph(data);
       } catch (error) {

@@ -29,7 +29,7 @@
 - **Send To Cytoscape Button**: Allows users to send the current graph to Cytoscape. Ensure Cytoscape is running in the background for this feature to work.
 - **Route Selection Dropdown**: Includes the "SynthGraph" option to view the synthesis graph itself. Evidence routes are labeled as "Evidence 0", "Evidence 1", etc., and predicted routes are labeled as "Predicted 0", "Predicted 1", etc. For massive graphs with cycles (e.g., ASKCOS examples), use the force-directed layout for rendering.
 - **AICP/Cytoscape JSON Toggle**: Enables users to view JSON data in different formats, including AICP and Cytoscape formats.
-- **Upload JSON Functionality**: Provides options to upload JSON files, Cytoscape JSON files, and select example graphs from a dropdown menu. Users can also refer to the Jupyter notebook example for uploading JSON or use the Swagger documentation available at [http://0.0.0.0:5099/api/v1/docs/aicp/nv_api](http://0.0.0.0:5099/api/v1/docs/aicp/nv_api).
+- **Upload JSON Functionality**: Provides options to upload JSON files, Cytoscape JSON files, or pass JSON data directly in the request body using the `json_data` parameter. Users can also refer to the Jupyter notebook example for uploading JSON or use the Swagger documentation available at [http://0.0.0.0:5099/api/v1/docs/aicp/nv_api](http://0.0.0.0:5099/api/v1/docs/aicp/nv_api).
 - **Example Graphs**: Includes two evidence-based route examples and an ASKCOS Route Sample. The ASKCOS Route Sample is parsed and converted internally into the graph format before rendering.
 - **Aggregate Yield Display**: Displays aggregate yield as "Agg Yield" on top of the graph for better visualization.
 - **User Settings**: Offers various settings that users can toggle to customize their experience, including graph rendering options and visualization preferences.
@@ -41,6 +41,8 @@
   - **Duplicate Reagents and Starting Materials**: This toggle allows users to duplicate reagents and starting materials in the graph.
 
   - **Highlight Atom Indices in Depictions**: This toggle enables or disables the highlighting of atom indices in graphical depictions.
+
+  - **Show Atom Indices in Depiction**: This toggle allows users to display atom indices in molecular depictions. When enabled, atom indices are shown for atoms with mapping information, providing additional clarity in visualizing molecular structures.
 
   - **Set Edge Style**: Users can choose the style of edges in the graph, including options like "Round Taxi," "Straight," and "Segments."
 

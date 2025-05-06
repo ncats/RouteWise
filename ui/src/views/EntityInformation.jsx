@@ -32,9 +32,11 @@ const EntityInformation = () => {
   const [isAskcosNode, setIsAskcosNode] = useState(false);
   const [expandSmiles, setExpandSmiles] = useState(false);
   const [expandSourceInfo, setExpandSourceInfo] = useState(false);
+  const [expandYieldInfo, setExpandYieldInfo] = useState(false);
   
 
   const nodeRef = useRef(null);
+  const [expandEvidenceProtocolInfo, setExpandEvidenceProtocolInfo] = useState(false);
   const [expandEvidenceConditionInfo, setExpandEvidenceConditionInfo] = useState(false);
   const [expandInventoryLocations, setExpandInventoryLocations] = useState(false);
   const [expandPredictedConditionInfo, setExpandPredictedConditionInfo] = useState(false);
@@ -67,6 +69,7 @@ const EntityInformation = () => {
         if (balanceEntity) {
           nodeInfo.pbi = balanceEntity.pbi;
           nodeInfo.rbi = balanceEntity.rbi;
+          nodeInfo.tbi = balanceEntity.tbi;
         }
         
         if (!nodeInfo.base64svg && nodeSvgs[entityId]) {
@@ -75,16 +78,18 @@ const EntityInformation = () => {
       }
       
       if (nodeInfo) {
-  const availabilityItem = aicpGraph.availability?.find(
-    (item) => item.inchikey === nodeInfo.node_label
-  );
-  nodeInfo.inventory = availabilityItem
-    ? { ...availabilityItem.inventory, available: availabilityItem.inventory?.available || false }
-    : { available: false };
+  if (nodeInfo.node_type === "substance") {
+    const availabilityItem = aicpGraph.availability?.find(
+      (item) => item.inchikey === nodeInfo.node_label
+    );
+    nodeInfo.inventory = availabilityItem
+      ? { ...availabilityItem.inventory, available: availabilityItem.inventory?.available || false }
+      : { available: false };
 
-  nodeInfo.commercial_availability = availabilityItem
-    ? { ...availabilityItem.commercial_availability, vendors: availabilityItem.commercial_availability?.vendors || [], available: availabilityItem.commercial_availability?.available || false }
-    : { available: false };
+    nodeInfo.commercial_availability = availabilityItem
+      ? { ...availabilityItem.commercial_availability, vendors: availabilityItem.commercial_availability?.vendors || [], available: availabilityItem.commercial_availability?.available || false }
+      : { available: false };
+  }
 }
 return nodeInfo;
     } else if (entityType === "edge") {
@@ -445,7 +450,7 @@ const fillEntityData = async () => {
                       <p>
                         <b>rbi:</b> {entityInfo.rbi || "N/A"}{" "}
                         <b>pbi:</b> {entityInfo.pbi || "N/A"}{" "}
-                        <b>tbi:</b> {entityInfo.tbi || "N/A"}
+                        <b>tbi:</b> {entityInfo.tbi || "N/A"}{" "}
                       </p>
                       {isAskcosNode && (
                         <>
@@ -483,14 +488,38 @@ const fillEntityData = async () => {
                       </p>
                       {isAskcosNode === false && (
                         <p>
-                          <b>Source Information:</b>{" "}
+                        <b>Yield Information:</b>{" "}
+                        <span
+                          className="link-like"
+                          onClick={() => setExpandYieldInfo(!expandYieldInfo)}
+                        >
+                          [{expandYieldInfo ? "hide" : "show"}]
+                        </span>
+                      </p>,
+                        <>
+                        <p>
+                          <b>Yield Information:</b>{" "}
                           <span
                             className="link-like"
-                            onClick={() => setExpandSourceInfo(!expandSourceInfo)}
+                            onClick={() => setExpandYieldInfo(!expandYieldInfo)}
                           >
-                            [{expandSourceInfo ? "hide" : "show"}]
+                            [{expandYieldInfo ? "hide" : "show"}]
                           </span>
-                        </p>,
+                        </p>
+                        {expandYieldInfo && (
+                          <div style={{ borderLeft: "2px solid #1890ff", paddingLeft: "1rem" }}>
+                            <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
+                              {entityInfo.yield_info &&
+                                Object.entries(entityInfo.yield_info).map(([key, value]) => (
+                                  <Text key={key}>
+                                    <b>{formatLabel(key)}:</b> {typeof value === "number" ? value.toFixed(2) : Array.isArray(value) ? value.join(", ") : String(value)}
+                                  </Text>
+                                ))}
+                            </div>
+                          </div>
+                        )}
+
+                    
                         <>
                           <p>
                             <b>Source Information:</b>{" "}
@@ -513,16 +542,18 @@ const fillEntityData = async () => {
                               </div>
                             </div>
                           )}
+
+
                           <p>
                             <b>Evidence Protocol:</b>{" "}
                             <span
                               className="link-like"
-                              onClick={() => setExpandEvidenceConditionInfo(!expandEvidenceConditionInfo)}
+                              onClick={() => setExpandEvidenceProtocolInfo(!expandEvidenceProtocolInfo)}
                             >
-                              [{expandEvidenceConditionInfo ? "hide" : "show"}]
+                              [{expandEvidenceProtocolInfo ? "hide" : "show"}]
                             </span>
                           </p>
-                          {expandEvidenceConditionInfo && entityInfo.evidence_protocol && (
+                          {expandEvidenceProtocolInfo && entityInfo.evidence_protocol && (
                             <div style={{ borderLeft: "2px solid #1890ff", paddingLeft: "1rem" }}>
                               {Object.entries(entityInfo.evidence_protocol).map(([key, value]) => (
                                 <div key={key} style={{ marginBottom: "1rem" }}>
@@ -540,6 +571,7 @@ const fillEntityData = async () => {
                               ))}
                             </div>
                           )}
+
                           <p>
                             <b>Evidence Conditions Information:</b>{" "}
                             <span
@@ -569,6 +601,7 @@ const fillEntityData = async () => {
                               ))}
                             </div>
                           )}
+                          
                           <p>
                             <b>Predicted Conditions Information:</b>{" "}
                             <span
@@ -621,13 +654,10 @@ const fillEntityData = async () => {
                             </div>
                           )}
                         </>
-
-                        
+                        </>
                       )}
-
                     </>
                   )}
-
                   </div>
                 </>
               )}

@@ -27,6 +27,9 @@ const Settings = () => {
   const [openSettings, setOpenSettings] = useState(false);
   const [openLegend, setOpenLegend] = useState(false);
 
+  const [normalizeRolesEnabled, setNormalizeRolesEnabled] = useState(false);
+  const [highlightAtoms, setHighlightAtoms] = useState(false);
+  const [showAtomIndices, setAtomIndices] = useState(false);
   const {
     setCytoscapeGraph,
     appSettings,
@@ -39,8 +42,6 @@ const Settings = () => {
     setLayout,
     duplicateReagents,
     setDuplicateReagents,
-    highlightAtoms,
-    setHighlightAtoms,
     aicpGraph,
     updateCytoscapeGraph,
   } = useContext(MainContext);
@@ -97,6 +98,18 @@ const Settings = () => {
         content={
           <Flex gap="middle" vertical>
             <Flex gap="middle">
+              <div>Show Atom Indices in Depiction</div>
+              <Switch
+                value={showAtomIndices}
+                onChange={(checked) => {
+                  setAtomIndices(checked);
+                  setAicpGraph(aicpGraph);
+                  const mappedData = mapGraphDataToCytoscape(aicpGraph);
+                  updateCytoscapeGraph(mappedData, checked, highlightAtoms, checked );
+                }}
+              />
+            </Flex>
+            <Flex gap="middle">
               <div>Show structures for the substances</div>
               <Switch
                 value={appSettings.showStructures}
@@ -130,12 +143,12 @@ const Settings = () => {
             <Flex gap="middle">
               <div>Enable Normalize Roles for Reactions</div>
               <Switch
-                value={appSettings.normalizeRolesEnabled}
+                value={normalizeRolesEnabled}
                 onChange={(checked) => {
-                  setAppSettings({ ...appSettings, normalizeRolesEnabled: checked });
+                  setNormalizeRolesEnabled(checked);
                   setAicpGraph(aicpGraph);
                   const mappedData = mapGraphDataToCytoscape(aicpGraph);
-                  updateCytoscapeGraph(mappedData, checked);
+                  updateCytoscapeGraph(mappedData, checked, highlightAtoms, showAtomIndices );
                 }}
               />
             </Flex>
@@ -158,9 +171,8 @@ const Settings = () => {
                   setAicpGraph(aicpGraph);
 
                   const mappedData = mapGraphDataToCytoscape(aicpGraph);
-
                   // Update Cytoscape Graph (this will trigger re-fetching SVGs with or without highlighting)
-                  updateCytoscapeGraph(mappedData);
+                  updateCytoscapeGraph(mappedData, normalizeRolesEnabled, checked, showAtomIndices);
                 }}
               />
             </Flex>

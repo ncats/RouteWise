@@ -2,7 +2,7 @@
 #
 # Organization: National Center for Advancing Translational Sciences (NCATS/NIH)
 
-from typing import Optional
+from typing import Optional, Union
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, UploadFile
 from pydantic import ValidationError
 from fastapi.responses import HTMLResponse, JSONResponse
@@ -40,6 +40,7 @@ handler.setFormatter(formatter)
 
 # Create a logger
 logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger.setLevel(logging.INFO)
 logger.addHandler(handler)
 
@@ -189,14 +190,19 @@ class Node(BaseModel):
     node_label: str
     node_type: str
     uuid: str
-    route_assembly_type: dict
-    rxid: Optional[str] = None
-    rxsmiles: Optional[str] = None
-    yield_info: Optional[dict] = None
+
+class ReactionNode(Node):
     validation: Optional[dict] = None
+    yield_info: Optional[dict] = None
+    rxsmiles: Optional[str] = None
+    rxid: Optional[str] = None
+    route_assembly_type: dict
+
+class SubstanceNode(Node):
     srole: Optional[str] = None
     inchikey: Optional[str] = None
     canonical_smiles: Optional[str] = None
+    route_assembly_type: dict
 
 
 class Edge(BaseModel):
@@ -209,12 +215,12 @@ class Edge(BaseModel):
 
 
 class SynthGraph(BaseModel):
-    nodes: list[Node]
+    nodes: list[Union[ReactionNode, SubstanceNode]]
     edges: list[Edge]
 
 
 class RouteSubgraph(BaseModel):
-    aggregate_yield: float
+    aggregated_yield: float
     route_index: int
     route_status: str
     method: str
@@ -238,13 +244,26 @@ class InputFile(BaseModel):
     availability: Optional[list[Availability]] = None
 
 
-@app.post("/upload_json_to_ui/", description="Upload a JSON file. Example file: public/json_example_1.json")
-async def upload_json_to_ui(file: UploadFile, room_id: str, convert_askcos: bool = False):
+@app.post("/upload_json_to_ui/", description="Upload a JSON file or provide JSON text in the request body. Example file: public/json_example_1.json")
+async def upload_json_to_ui(room_id: str, convert_askcos: bool = False, file: Optional[Union[UploadFile, str]] = None, json_data: Optional[Union[dict,str]] = None):
+    if file and file.filename.strip() != "":
+        json_data = json.loads(await file.read())
+    elif isinstance(json_data, dict):
+        json_data = json_data
+    elif isinstance(json_data, str):
+        json_data = json.loads(json_data)
+    else:
+        raise HTTPException(status_code=400, detail="Either a valid file or JSON text must be provided.")
     logger.info(
         f"Received upload request for room_id: {room_id}, convert_askcos: {convert_askcos}")
     try:
-        # Parse the JSON file
-        json_data = json.loads(await file.read())
+        # Parse the JSON file or text
+        if file:
+            json_data = json.loads(await file.read())
+        elif json_data:
+            json_data = json_data
+        else:
+            raise HTTPException(status_code=400, detail="Either a file or JSON text must be provided.")
 
         # If convert_askcos is True, process ASKCOS data
         if convert_askcos:
@@ -378,9 +397,8 @@ async def getWsTestHtml():
 
 # Endpoint to convert reaction smiles to SVG
 @app.get("/rxsmiles2svg")
-async def rxsmiles_to_svg_endpoint(rxsmiles: str = 'CCO.CC(=O)O>>CC(=O)OCC.O', highlight: bool = True, base64_encode: bool = True):
-    svg = reaction_smiles_to_image(
-        rxsmiles, align=False, transparent=False, highlight=highlight, retro=False)
+async def rxsmiles_to_svg_endpoint(rxsmiles: str = 'CCO.CC(=O)O>>CC(=O)OCC.O', highlight: bool = True, base64_encode: bool = True, show_atom_indices: bool = False):
+    svg = reaction_smiles_to_image(rxsmiles, align=False, transparent=False, highlight=highlight, retro=False, show_atom_indices=show_atom_indices)
     svg = svg.replace('"', "'")
     if base64_encode:
         svg = base64.b64encode(svg.encode('utf-8')).decode('utf-8')
@@ -504,8 +522,44 @@ def apply_layout(network_suid, layout_type):
 
 
 def load_example_payload():
-    with open("send_cytoscape_example.json", "r") as file:
+    with open("json_example_1.json", "r") as file:
         return json.load(file)
+    
+
+def convert_to_cytoscape_json(aicp_graph):
+
+    synth_graph = aicp_graph["synth_graph"]
+    subgraphs = aicp_graph.get("routes", {}).get("subgraphs", [])
+
+    if not subgraphs:
+        raise ValueError("No subgraphs found in the 'routes.subgraphs' section.")
+
+    subgraph = subgraphs[0]
+    route_node_labels = set(subgraph["route_node_labels"])
+
+    # Filter nodes
+    filtered_nodes = [
+        {"data": {**node, "id": node["node_label"]}}
+        for node in synth_graph["nodes"]
+        if node["node_label"] in route_node_labels
+    ]
+
+    # Filter edges
+    filtered_edges = [
+        {"data": {**edge, "source": edge["start_node"], "target": edge["end_node"]}}
+        for edge in synth_graph["edges"]
+        if edge["start_node"] in route_node_labels and edge["end_node"] in route_node_labels
+    ]
+
+    # Retain "routes" and "inventory" sections
+    return {
+        "data": {"name": "test"},
+        "directed": True,
+        "multigraph": False,
+        "elements": {"nodes": filtered_nodes, "edges": filtered_edges},
+        "routes": aicp_graph.get("routes"),
+        "inventory": aicp_graph.get("inventory"),
+    }
 
 
 def assign_srole(parsed_data):
@@ -548,6 +602,7 @@ def assign_srole(parsed_data):
 def send_to_cytoscape(network_json: dict = load_example_payload(), layout_type: str = "hierarchical"):
     """ Uploads a Cytoscape JSON network and applies the default style """
     try:
+        network_json = convert_to_cytoscape_json(network_json)
         # Send the network to Cytoscape without custom headers
         response = requests.post(
             f"{CYTOSCAPE_URL}/networks?format=cyjs", json=network_json)

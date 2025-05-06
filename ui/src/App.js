@@ -79,6 +79,7 @@ function App() {
   const [cytoscapeGraph, setCytoscapeGraph] = useState([]);
   const [aicpGraph, setAicpGraph] = useState(null);
   const [layout, setLayout] = useState(graphLayouts.HIERARCHICAL);
+  const [subgraphIndex, setSubgraphIndex] = useState(0);
   const [nodeSvgs, setNodeSvgs] = useState({});
   const [reactionSources, setReactionSources] = useState({});
   const [zoomLevel, setZoomLevel] = useState();
@@ -87,7 +88,6 @@ function App() {
   const [apiStatus, setApiStatus] = useState(defaultApiStatus);
   const [showReagents, setShowReagents] = useState(false);
   const [duplicateReagents, setDuplicateReagents] = useState(true);
-  const [highlightAtoms, setHighlightAtoms] = useState(true);
   const [showKetcher, setShowKetcher] = useState(false);
   const [ketcherSmiles, setKetcherSmiles] = useState("");
   const [balanceData, setBalanceData] = useState({});
@@ -122,7 +122,7 @@ function App() {
   };
 
 
-  const updateCytoscapeGraph = async (mappedGraph, normalizeRolesEnabled = false) => {
+  const updateCytoscapeGraph = async (mappedGraph, normalizeRolesEnabled = false, highlightAtoms = false, show_atom_indices = false) => {
     const promises = [];
     setSelectedEntity(null);
     setPreviewEntity(null);
@@ -167,10 +167,12 @@ function App() {
             const combinedPromise = normalizeRoles(appSettings.apiUrl, rxsmiles, normalizeRolesEnabled).then((normalizedRxsmiles) => {
               updatedRxsmiles = normalizedRxsmiles;
               graphElement.data.rxsmiles = updatedRxsmiles; // Update RXSMILES in graph data
+              
               return getReactionRdkitSvgByRxsmiles(
                 appSettings.apiUrl,
                 updatedRxsmiles,
-                highlightAtoms
+                highlightAtoms,
+                show_atom_indices
               ).then((svg) => {
                 if (svg) {
                   const svgUrl = `data:image/svg+xml;base64,${svg}`;
@@ -190,7 +192,8 @@ function App() {
             const combinedPromise = getReactionRdkitSvgByRxsmiles(
               appSettings.apiUrl,
               rxsmiles,
-              highlightAtoms
+              highlightAtoms,
+              show_atom_indices
             ).then((svg) => {
               if (svg) {
                 const svgUrl = `data:image/svg+xml;base64,${svg}`;
@@ -274,8 +277,8 @@ function App() {
         setKetcherSmiles,
         duplicateReagents,
         setDuplicateReagents,
-        highlightAtoms,
-        setHighlightAtoms,
+        subgraphIndex,
+        setSubgraphIndex,
         reactionSources,
         setReactionSources,
         balanceData,

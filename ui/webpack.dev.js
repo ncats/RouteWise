@@ -6,6 +6,7 @@ module.exports = merge(common, {
   mode: "development",
   devtool: "source-map",
   devServer: {
+    historyApiFallback: true,
     static: {
       directory: path.join(__dirname, "public"),
       publicPath: '/public',

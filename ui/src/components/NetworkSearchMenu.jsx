@@ -8,7 +8,7 @@ import { mapGraphDataToCytoscape } from "../helpers/commonHelpers";
 const NetworkSearchMenu = () => {
   const { setSelectedEntity, setPreviewEntity, setReactionSources, setCytoscapeGraph, setAicpGraph, aicpGraph, updateCytoscapeGraph } = useContext(MainContext);
   const [selectedRetrievalOption, setSelectedRetrievalOption] = useState("synthesis-route-search");
-  const [subgraphIndex, setSubgraphIndex] = useState(0);
+  const { subgraphIndex, setSubgraphIndex } = useContext(MainContext);
 
   const handleRetrievalOptionChange = (option) => {
     setSelectedRetrievalOption(option);

@@ -8,7 +8,7 @@ const { Text } = Typography;
 
 const BaseLayoutHeader = () => {
   const [appSettings, setAppSettings] = useState(defaultAppSettings);
-  const { aicpGraph, setShowReagents, showReagents, setAicpGraph, updateCytoscapeGraph } = useContext(MainContext);
+  const { aicpGraph, setShowReagents, showReagents, setAicpGraph, updateCytoscapeGraph, subgraphIndex, cytoscapeGraph } = useContext(MainContext);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isCytoscape, setIsCytoscape] = useState(false);
 
@@ -105,10 +105,18 @@ const convertToCytoscapeJson = () => {
 
       <div>
         <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
-          <pre style={{ margin: 0 }}><b>Nodes:</b> {aicpGraph ? aicpGraph.synth_graph.nodes.length : "N/A"}</pre>
-          <pre style={{ margin: 0 }}><b>Edges:</b> {aicpGraph ? aicpGraph.synth_graph.edges.length : "N/A"}</pre>
           <pre style={{ margin: 0 }}>
-            <b>Agg Yield:</b> {aicpGraph && aicpGraph.routes && aicpGraph.routes.subgraphs && aicpGraph.routes.subgraphs[0] ? aicpGraph.routes.subgraphs[0].aggregate_yield.toFixed(2) : "N/A"}
+            <b>Nodes:</b> {cytoscapeGraph?.filter((item) => item.data?.nodeType)?.length || "N/A"}
+          </pre>
+          <pre style={{ margin: 0 }}>
+            <b>Edges:</b> {cytoscapeGraph?.filter((item) => item.data?.edge_type)?.length || "N/A"}
+          </pre>
+          <pre style={{ margin: 0 }}>
+            <b>Agg Yield:</b> {(() => {
+            return aicpGraph && aicpGraph.routes && aicpGraph.routes.subgraphs && aicpGraph.routes.subgraphs[subgraphIndex]
+              ? aicpGraph.routes.subgraphs[subgraphIndex].aggregated_yield.toFixed(2)
+              : "N/A";
+            })()}
           </pre>
 
           <Button disabled={!aicpGraph} type="primary" onClick={showModal} size="small">
@@ -127,7 +135,7 @@ const convertToCytoscapeJson = () => {
           <Button
             type="primary"
             disabled={!aicpGraph}
-            onClick={() => sendToCytoscape(appSettings.apiUrl, convertToCytoscapeJson(showReagents))}
+            onClick={() => sendToCytoscape(appSettings.apiUrl, aicpGraph)}
             style={{ marginTop: "10px" }}
           >
             Send to Cytoscape

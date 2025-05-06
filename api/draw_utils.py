@@ -6,6 +6,9 @@ import io
 import itertools
 import re
 import traceback as tb
+import logging
+
+logger = logging.getLogger(__name__)
 
 import rdkit.Chem as Chem
 import rdkit.Chem.Draw as Draw
@@ -195,6 +198,7 @@ def mol_to_image(
     highlight_bonds=None,
     highlight_atom_colors=None,
     highlight_bond_colors=None,
+    show_atom_indices=False,
     reference=None,
     options=None,
     **kwargs,
@@ -224,6 +228,7 @@ def mol_to_image(
             colors
         highlight_bond_colors (dict, optional): map from bond indices to highlight
             colors
+        show_atom_indices (bool, optional): if true show atom indices in depiction 
         reference (str, optional): reference molecule to align drawing to based on MCS
         options (MolDrawOptions, optional): custom options object
         **kwargs: passed to Draw.PrepareMolForDrawing
@@ -240,9 +245,15 @@ def mol_to_image(
 
     if bw_atoms:
         options.useBWAtomPalette()
+    if show_atom_indices:
+        for atom in mol.GetAtoms():
+            atom.SetProp("atomNote", str(atom.GetAtomMapNum() if atom.GetAtomMapNum() > 0 else ""))
     if clear_map:
         [a.SetAtomMapNum(0) for a in mol.GetAtoms()]
+    if show_atom_indices:
+        mol.UpdatePropertyCache(False)
     if abbreviate and not highlight_atoms and not highlight_bonds and clear_map:
+        mol.UpdatePropertyCache(False)
         mol = rdAbbreviations.CondenseMolAbbreviations(mol, ABBREVIATIONS)
     if update:
         mol.UpdatePropertyCache(False)  # From legacy code, not sure if truly necessary
@@ -254,6 +265,7 @@ def mol_to_image(
         if abbreviate and not highlight_atoms and not highlight_bonds and clear_map:
             reference = rdAbbreviations.CondenseMolAbbreviations(reference, ABBREVIATIONS)
         mol = align_molecule(mol, reference)
+
 
     mol = Draw.PrepareMolForDrawing(mol, **kwargs)
     options.prepareMolsBeforeDrawing = False  # Already prepared
@@ -454,6 +466,7 @@ def molecule_smiles_to_image(
     abbreviate=True,
     split=True,
     reference=None,
+    show_atom_indices=True,
     **kwargs,
 ):
     """
@@ -471,6 +484,7 @@ def molecule_smiles_to_image(
         split (bool, optional): split and draw molecule fragments separately,
             ignored if highlight=True (default: True)
         reference (str, optional): reference molecule to align drawing to based on MCS
+        show_atom_indices (bool, optional): if true show atom indices in depiction 
         **kwargs: Passed to mol_to_image
 
     Returns:
@@ -479,11 +493,12 @@ def molecule_smiles_to_image(
         bytes if svg=False and return_png=True
     """
     if not highlight and split:
-        mols = [Chem.MolFromSmiles(smi) for smi in smiles.split(".")]
+        mols = [Chem.MolFromSmarts(smi) if show_atom_indices else Chem.MolFromSmiles(smi) for smi in smiles.split(".")]
         images = [mol_to_image(mol, svg=svg, transparent=transparent, abbreviate=abbreviate, reference=reference, **kwargs) for mol in mols]
         return combine_images_horizontally(images, transparent=transparent, return_png=return_png)
 
-    mol = Chem.MolFromSmiles(smiles)
+    mol = Chem.MolFromSmarts(smiles) if show_atom_indices else Chem.MolFromSmiles(smiles)
+    # iterate over mol to look for atom index property
     if highlight and reacting_atoms is not None:
         try:
             if len(reacting_atoms) == mol.GetNumAtoms():
@@ -578,7 +593,7 @@ def determine_highlight_colors(mol, frag_map, frag_idx=None):
 
 
 
-def reaction_smiles_to_image(smiles, svg=True, transparent=True, return_png=True, retro=False, highlight=False, align=False, plus=True, update=True, **kwargs):
+def reaction_smiles_to_image(smiles, svg=True, transparent=True, return_png=True, retro=False, highlight=False, align=False, plus=True, update=True, show_atom_indices=False,**kwargs):
     """
     Create image of the provided reaction SMILES string. Omits agents.
 
@@ -592,6 +607,7 @@ def reaction_smiles_to_image(smiles, svg=True, transparent=True, return_png=True
         align (bool, optional): if True, reactants will be aligned to first product (default: False)
         plus (bool, optional): whether include a plus sign between reactants (default: True)
         update (bool, optional): if True, run UpdatePropertyCache before drawing (default: False)
+        show_atom_indices (bool, optional): if true show atom indices in depiction 
         **kwargs: passed to mol_to_image
 
     Returns:
@@ -603,8 +619,8 @@ def reaction_smiles_to_image(smiles, svg=True, transparent=True, return_png=True
     reactants = parsed_smiles.reactants
     products = parsed_smiles.products
     # agents = parsed_smiles.reagents # Commented out as agents are not currently used
-    r_mols = [Chem.MolFromSmiles(r) for r in reactants] if reactants else []
-    p_mols = [Chem.MolFromSmiles(p) for p in products] if products else []
+    r_mols = [Chem.MolFromSmarts(r) if show_atom_indices else Chem.MolFromSmiles(r) for r in reactants] if reactants else []
+    p_mols = [Chem.MolFromSmarts(p) if show_atom_indices else Chem.MolFromSmiles(p) for p in products] if products else []
 
     if highlight:
         atom_frag_map = {}
@@ -619,20 +635,20 @@ def reaction_smiles_to_image(smiles, svg=True, transparent=True, return_png=True
             kwargs["reference"] = products[0]
         if plus and i > 0:
             images.append(draw_plus(svg=svg, transparent=transparent))
-        smiles = Chem.MolToSmiles(mol)
+        smiles = Chem.MolToSmarts(mol) if show_atom_indices else Chem.MolToSmiles(mol)
         if smiles.count(".") > 1:
             images.append(molecule_smiles_to_image(smiles, svg=svg, transparent=transparent, **kwargs))
         else:
-            images.append(mol_to_image(mol, svg=svg, transparent=transparent, update=update, **kwargs))
+            images.append(mol_to_image(mol, svg=svg, transparent=transparent, update=update, show_atom_indices=show_atom_indices, **kwargs))
 
     images.append(draw_arrow(retro=retro, svg=svg, transparent=transparent))
 
     for i, mol in enumerate(p_mols):
+
         if highlight:
             kwargs.update(determine_highlight_colors(mol, atom_frag_map))
         if plus and i > 0:
             images.append(draw_plus(svg=svg, transparent=transparent))
-        images.append(mol_to_image(mol, svg=svg, transparent=transparent, update=update, **kwargs))
+        images.append(mol_to_image(mol, svg=svg, transparent=transparent, update=update, show_atom_indices=show_atom_indices, **kwargs))
 
     return combine_images_horizontally(images, transparent=transparent, return_png=return_png)
-
