@@ -4,12 +4,11 @@
 
 from typing import List, Optional, Union
 from fastapi import FastAPI, Query, WebSocket, WebSocketDisconnect, HTTPException, UploadFile, File, Form, Body
-from pydantic import ConfigDict, ValidationError
+from pydantic import ConfigDict, ValidationError, BaseModel
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 import os
 import json
-from pydantic import BaseModel
 import requests
 import uuid
 import logging
@@ -17,13 +16,7 @@ from uvicorn.logging import DefaultFormatter
 import json
 import asyncio
 from askcos_models import TreeSearchResponse
-from askcos_models import TreeSearchResponse
 from draw_utils import reaction_smiles_to_image
-from askcos_conversion_utils import (
-    NoPathsFoundInAskcosResponse,
-    NoResultFoundInAskcosResponse,
-    askcos_tree2synth_paths_with_graph
-)
 from askcos_conversion_utils import (
     NoPathsFoundInAskcosResponse,
     NoResultFoundInAskcosResponse,
@@ -41,6 +34,8 @@ from api_models import (
 from role_assigner_utils import RxsmilesAtomMappingException
 import re
 from werkzeug.utils import secure_filename
+from collections.abc import MutableMapping
+
 
 CYTOSCAPE_URL = os.getenv("CYTOSCAPE_URL", "http://localhost:1234/v1")
 DEFAULT_STYLE_NAME = "New SynGPS API"
@@ -52,8 +47,6 @@ handler.setFormatter(formatter)
 
 # Create a logger
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO,
-                    format='%(asctime)s - %(levelname)s - %(message)s')
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s - %(levelname)s - %(message)s')
 logger.setLevel(logging.INFO)
@@ -207,7 +200,6 @@ class Node(BaseModel):
     uuid: str
 
 
-
 class ReactionNode(Node):
     validation: Optional[dict] = None
     yield_info: Optional[dict] = None
@@ -217,7 +209,6 @@ class ReactionNode(Node):
     rxclass: Optional[str] = None
     rxname: Optional[str] = None
     original_rxsmiles: Optional[str] = None
-    route_assembly_type: Optional[dict] = None
     evidence_protocol: Optional[dict] = None
     evidence_conditions_info: Optional[dict] = None
     predicted_conditions_info: Optional[dict] = None
@@ -351,12 +342,8 @@ async def upload_json_file(
 room_connections: dict[str, WebSocket] = {}
 
 
-
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
-    """
-    WebSocket endpoint for handling WebSocket connections.
-    """
     """
     WebSocket endpoint for handling WebSocket connections.
     """
@@ -386,8 +373,6 @@ async def websocket_endpoint(websocket: WebSocket):
                                 except RuntimeError as e:
                                     logger.warning(
                                         f"Failed to send data to WebSocket for room {room_id_from_file}: {e}")
-                                    logger.warning(
-                                        f"Failed to send data to WebSocket for room {room_id_from_file}: {e}")
                             # Send data and delete the file after successful transmission
                         os.remove(os.path.join(DATA_DIR, file_name))
                 # Keep the WebSocket connection alive
@@ -399,11 +384,7 @@ async def websocket_endpoint(websocket: WebSocket):
         # Log the disconnection and remove the WebSocket connection from the mapping
         logger.warning(
             f"WebSocket disconnected for room {room_id}. Removing connection.")
-        logger.warning(
-            f"WebSocket disconnected for room {room_id}. Removing connection.")
         if room_id in room_connections:
-            logger.info(
-                f"Removing room_id {room_id} from room_connections due to WebSocket closure")
             logger.info(
                 f"Removing room_id {room_id} from room_connections due to WebSocket closure")
             room_connections.pop(room_id, None)
@@ -462,21 +443,6 @@ async def rxsmiles_to_svg_endpoint(rxsmiles: str = 'CCO.CC(=O)O>>CC(=O)OCC.O', h
     """
     svg = reaction_smiles_to_image(rxsmiles, align=False, transparent=False,
                                    highlight=highlight, retro=False, show_atom_indices=show_atom_indices)
-    """
-    Generates an SVG for a given reaction SMILES string.
-
-    Args:
-    - rxsmiles (str): The reaction SMILES string.
-    - highlight (bool): Whether to highlight the reactants and products.
-    - base64_encode (bool): Whether to encode the SVG as base64.
-    - show_atom_indices (bool): Whether to show atom indices in the SVG.
-
-    Returns:
-    - If base64_encode is True, returns a JSON response with the original reaction SMILES and the base64-encoded SVG.
-    - If base64_encode is False, returns a JSON response with the original reaction SMILES and the SVG.
-    """
-    svg = reaction_smiles_to_image(rxsmiles, align=False, transparent=False,
-                                   highlight=highlight, retro=False, show_atom_indices=show_atom_indices)
     svg = svg.replace('"', "'")
     if base64_encode:
         svg = base64.b64encode(svg.encode('utf-8')).decode('utf-8')
@@ -489,18 +455,6 @@ async def rxsmiles_to_svg_endpoint(rxsmiles: str = 'CCO.CC(=O)O>>CC(=O)OCC.O', h
 
 @app.get("/molsmiles2svg")
 async def smiles_to_svg_endpoint(mol_smiles: str = 'Cc1cc(Br)cc(C)c1C1C(=O)CCC1=O', img_width: int = 300, img_height: int = 300, base64_encode: bool = True):
-    """
-    Generates an SVG for a given molecule SMILES string.
-
-    Args:
-    - mol_smiles (str, optional): The SMILES string of the molecule to be drawn. Defaults to 'Cc1cc(Br)cc(C)c1C1C(=O)CCC1=O'.
-    - img_width (int, optional): The width of the SVG image. Defaults to 300.
-    - img_height (int, optional): The height of the SVG image. Defaults to 300.
-    - base64_encode (bool, optional): Whether to encode the SVG as a base64 string. Defaults to True.
-
-    Returns:
-    - JSONResponse: A JSON response containing the SMILES string and either the SVG string or the base64-encoded SVG string.
-    """
     """
     Generates an SVG for a given molecule SMILES string.
 
@@ -628,39 +582,48 @@ def load_example_payload():
         return json.load(file)
 
 
+def flatten_dict(d, parent_key='', sep='_'):
+    """
+    Flattens a nested dictionary. For example:
+    {"a": {"b": 1}} → {"a_b": 1}
+    """
+    items = []
+    for k, v in d.items():
+        new_key = f"{parent_key}{sep}{k}" if parent_key else k
+        if isinstance(v, MutableMapping):
+            items.extend(flatten_dict(v, new_key, sep=sep).items())
+        else:
+            items.append((new_key, v))
+    return dict(items)
+
+
 def convert_to_cytoscape_json(aicp_graph, synth_graph_key="synth_graph"):
 
     synth_graph = aicp_graph[synth_graph_key]
     routes = aicp_graph.get("routes", [])
-    synth_graph = aicp_graph[synth_graph_key]
-    routes = aicp_graph.get("routes", [])
 
-    if not routes or len(routes) == 0:
-        raise ValueError("No routes found in the 'routes' object.")
-    if not routes or len(routes) == 0:
+    if not routes:
         raise ValueError("No routes found in the 'routes' object.")
 
     route = routes[0]
     route_node_labels = set(route["route_node_labels"])
-    route = routes[0]
-    route_node_labels = set(route["route_node_labels"])
 
-    # Filter nodes
+    # Flatten node properties and include "id"
     filtered_nodes = [
-        {"data": {**node, "id": node["node_label"]}}
+        {"data": {**flatten_dict(node), "id": node["node_label"]}}
         for node in synth_graph["nodes"]
         if node["node_label"] in route_node_labels
     ]
 
-    # Filter edges
+    # Flatten edge properties and include "source"/"target"
     filtered_edges = [
         {"data": {
-            **edge, "source": edge["start_node"], "target": edge["end_node"]}}
+            **flatten_dict(edge), "source": edge["start_node"], "target": edge["end_node"]
+        }}
         for edge in synth_graph["edges"]
         if edge["start_node"] in route_node_labels and edge["end_node"] in route_node_labels
     ]
 
-    # Retain "routes" and "inventory" sections
     return {
         "data": {"name": "test"},
         "directed": True,
@@ -712,12 +675,7 @@ def send_to_cytoscape(network_json: dict = load_example_payload(), layout_type: 
     """ 
     Uploads a Cytoscape JSON network and applies the default style/
     """
-def send_to_cytoscape(network_json: dict = load_example_payload(), layout_type: str = "hierarchical", synth_graph_key: str = "synth_graph"):
-    """ 
-    Uploads a Cytoscape JSON network and applies the default style/
-    """
     try:
-        network_json = convert_to_cytoscape_json(network_json, synth_graph_key)
         network_json = convert_to_cytoscape_json(network_json, synth_graph_key)
         # Send the network to Cytoscape without custom headers
         response = requests.post(
@@ -798,12 +756,6 @@ async def normalize_rxsmiles_roles(request: NormalizeRoleRequest) -> NormalizeRo
 
     Returns:
     - dict: A dictionary containing the original RXN Smiles string and the normalized RXN Smiles string.
-
-    Args:
-    - rxsmiles (str): A reaction SMILES string in the format 'reactants > reagents > products'.
-
-    Returns:
-    - dict: A dictionary containing the original RXN Smiles string and the normalized RXN Smiles string.
     """
     rxsmiles = request.rxsmiles
 
@@ -826,15 +778,6 @@ async def normalize_rxsmiles_roles(request: NormalizeRoleRequest) -> NormalizeRo
 
 @app.get("/compute_all_bi")
 async def compute_all_bi(rxsmiles: Optional[str] = "ClC(Cl)(O[C:5](=[O:11])OC(Cl)(Cl)Cl)Cl.[Cl:13][C:14]1[CH:19]=[CH:18][C:17]([C:20]2[N:21]=[C:22]([CH:31]3[CH2:36][CH2:35][NH:34][CH2:33][CH2:32]3)[S:23][C:24]=2[C:25]2[CH:30]=[CH:29][CH:28]=[CH:27][CH:26]=2)=[CH:16][CH:15]=1.C(N(CC)CC)C.Cl.[CH3:45][NH:46][OH:47].[Cl-].[NH4+]>ClCCl.O>[Cl:13][C:14]1[CH:19]=[CH:18][C:17]([C:20]2[N:21]=[C:22]([CH:31]3[CH2:36][CH2:35][N:34]([C:5](=[O:11])[N:46]([OH:47])[CH3:45])[CH2:33][CH2:32]3)[S:23][C:24]=2[C:25]2[CH:30]=[CH:29][CH:28]=[CH:27][CH:26]=2)=[CH:16][CH:15]=1"):
-    """
-    Calculates all balance indices for the given reaction smiles.
-
-    Args:
-    - rxsmiles (str): The reaction smiles string.
-
-    Returns:
-    - dict: A dictionary containing the calculated balance indices.
-    """
     """
     Calculates all balance indices for the given reaction smiles.
 

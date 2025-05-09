@@ -137,7 +137,7 @@
         "canonical_smiles": "C1COCCN1",
         "srole": "sm",
         "route_assembly_type": {
-          "is_predicted": true,
+          "is_predicted": false,
           "is_evidence": true
         },
         "provenance": {

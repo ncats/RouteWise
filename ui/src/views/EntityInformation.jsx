@@ -34,6 +34,7 @@ const EntityInformation = () => {
   const [expandSmiles, setExpandSmiles] = useState(false);
   const [expandSourceInfo, setExpandSourceInfo] = useState(false);
   const [expandYieldInfo, setExpandYieldInfo] = useState(false);
+  const [expandValidationInfo, setExpandValidationInfo] = useState(false);
   const [svgToShow, setSvgToShow] = useState(null);
 
   const nodeRef = useRef(null);
@@ -57,6 +58,8 @@ const EntityInformation = () => {
     setEntityInfo(null);
     setExpandSmiles(false);
     setExpandSourceInfo(false);
+    setExpandYieldInfo(false);
+    setExpandValidationInfo(false);
   };
 
   // Close the modal when aicpGraph changes
@@ -137,10 +140,14 @@ const EntityInformation = () => {
         setMode("preview");
         setExpandSmiles(false);
         setExpandSourceInfo(false);
+        setExpandYieldInfo(false);
+        setExpandValidationInfo(false);
       } else {
         setOpen(false);
         setMode(null);
         setExpandSourceInfo(false);
+        setExpandYieldInfo(false);
+        setExpandValidationInfo(false);
       }
     }
   }, [previewEntity]);
@@ -153,10 +160,14 @@ const EntityInformation = () => {
       setMode("selected");
       setExpandSmiles(false);
       setExpandSourceInfo(false);
+      setExpandYieldInfo(false);
+      setExpandValidationInfo(false);
     } else if (!(open && mode === "preview")) {
       setOpen(false);
       setMode(null);
       setExpandSourceInfo(false);
+      setExpandYieldInfo(false);
+      setExpandValidationInfo(false);
     }
   }, [selectedEntity]);
 
@@ -190,6 +201,9 @@ const EntityInformation = () => {
           setIsReaction(false);
           setIsAskcosNode(false);
           setExpandSmiles(false);
+          setExpandSourceInfo(false);
+          setExpandYieldInfo(false);
+          setExpandValidationInfo(false);
         }
       } catch (error) {
         console.error(error.message);
@@ -562,12 +576,6 @@ const EntityInformation = () => {
                             </Text>
                           </p>
                         )}
-                        {/* Add the new line here */}
-                        <p>
-                          <b>rbi:</b> {entityInfo.rbi || "N/A"} <b>pbi:</b>{" "}
-                          {entityInfo.pbi || "N/A"} <b>tbi:</b>{" "}
-                          {entityInfo.tbi || "N/A"}{" "}
-                        </p>
                         {isAskcosNode && (
                           <>
                             <p>
@@ -589,33 +597,52 @@ const EntityInformation = () => {
                           </Text>
                         </p>
                         <p>
-                          <Text>
-                            <b>RX Name Recognized:</b>{" "}
-                            {entityInfo.validation?.is_rxname_recognized !==
-                              undefined &&
-                            entityInfo.validation?.is_rxname_recognized !== null
-                              ? entityInfo.validation.is_rxname_recognized.toString()
-                              : "N/A"}
-                          </Text>
+                          <b>Validation Information</b>{" "}
+                          <span
+                            className="link-like"
+                            onClick={() =>
+                              setExpandValidationInfo(!expandValidationInfo)
+                            }
+                          >
+                            [{expandValidationInfo ? "hide" : "show"}]
+                          </span>
                         </p>
-                        <p>
-                          <Text>
-                            <b>RX Valid:</b>{" "}
-                            {entityInfo.validation?.is_valid !== undefined &&
-                            entityInfo.validation?.is_valid !== null
-                              ? entityInfo.validation.is_valid.toString()
-                              : "N/A"}
-                          </Text>
-                        </p>
-                        <p>
-                          <Text>
-                            <b>Is Balanced:</b>{" "}
-                            {entityInfo.validation?.is_balanced !== undefined &&
-                            entityInfo.validation?.is_balanced !== null
-                              ? entityInfo.validation.is_balanced.toString()
-                              : "N/A"}
-                          </Text>
-                        </p>
+                        {expandValidationInfo && (
+                          <div
+                            style={{
+                              borderLeft: "2px solid #1890ff",
+                              paddingLeft: "1rem",
+                            }}
+                          >
+                            <p>
+                              <b>RBI:</b> {entityInfo.rbi || "N/A"} <b>PBI:</b>{" "}
+                              {entityInfo.pbi || "N/A"} <b>TBI:</b>{" "}
+                              {entityInfo.tbi || "N/A"}{" "}
+                            </p>
+                            <p>
+                              <Text>
+                                <b>Is RX Name Recognized:</b>{" "}
+                                {entityInfo.validation?.is_rxname_recognized
+                                  ? "Yes"
+                                  : "No"}
+                              </Text>
+                            </p>
+                            <p>
+                              <Text>
+                                <b>Is RX Valid:</b>{" "}
+                                {entityInfo.validation?.is_valid ? "Yes" : "No"}
+                              </Text>
+                            </p>
+                            <p>
+                              <Text>
+                                <b>Is Balanced:</b>{" "}
+                                {entityInfo.validation?.is_balanced
+                                  ? "Yes"
+                                  : "No"}
+                              </Text>
+                            </p>
+                          </div>
+                        )}
                         {isAskcosNode === false &&
                           ((
                             <p>
@@ -695,22 +722,34 @@ const EntityInformation = () => {
                                   >
                                     <div
                                       style={{
-                                        display: "flex",
+                                        display: "grid",
+                                        gridTemplateColumns: "repeat(3, 1fr)",
                                         gap: "1rem",
-                                        alignItems: "center",
+                                        alignItems: "start",
                                       }}
                                     >
                                       {entityInfo.provenance &&
                                         Object.entries(
                                           entityInfo.provenance
-                                        ).map(([key, value]) => (
-                                          <Text key={key}>
-                                            <b>{formatLabel(key)}:</b>{" "}
-                                            {Array.isArray(value)
-                                              ? value.join(", ")
-                                              : String(value)}
-                                          </Text>
-                                        ))}
+                                        ).map(([key, value]) => {
+                                          const formattedValue = Array.isArray(
+                                            value
+                                          )
+                                            ? value.join(", ")
+                                            : value === true || value === "true"
+                                            ? "Yes"
+                                            : value === false ||
+                                              value === "false"
+                                            ? "No"
+                                            : String(value);
+
+                                          return (
+                                            <Text key={key}>
+                                              <b>{formatLabel(key)}:</b>{" "}
+                                              {formattedValue}
+                                            </Text>
+                                          );
+                                        })}
                                     </div>
                                   </div>
                                 )}
