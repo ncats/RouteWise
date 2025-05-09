@@ -183,7 +183,6 @@ def save_room_data(room_id, data):
 @app.get("/")
 async def root():
     return {"message": "Welcome to the FastAPI server. Visit /api/v1/docs/aicp/nv_api for API documentation."}
-    return {"message": "Welcome to the FastAPI server. Visit /api/v1/docs/aicp/nv_api for API documentation."}
 
 
 async def get_room_data(room_id: str):
@@ -629,8 +628,6 @@ def load_example_payload():
         return json.load(file)
 
 
-
-def convert_to_cytoscape_json(aicp_graph, synth_graph_key="synth_graph"):
 def convert_to_cytoscape_json(aicp_graph, synth_graph_key="synth_graph"):
 
     synth_graph = aicp_graph[synth_graph_key]
@@ -657,8 +654,6 @@ def convert_to_cytoscape_json(aicp_graph, synth_graph_key="synth_graph"):
 
     # Filter edges
     filtered_edges = [
-        {"data": {
-            **edge, "source": edge["start_node"], "target": edge["end_node"]}}
         {"data": {
             **edge, "source": edge["start_node"], "target": edge["end_node"]}}
         for edge in synth_graph["edges"]
@@ -929,5 +924,4 @@ async def convert_to_aicp(request: ConvertToAicpRequest) -> dict:
         }
     else:
         raise HTTPException(
-            status_code=400, detail="Unsupported conversion format")
             status_code=400, detail="Unsupported conversion format")
