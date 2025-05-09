@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from "uuid";
-import cloneDeep from 'lodash/cloneDeep';
+import cloneDeep from "lodash/cloneDeep";
 import * as colors from "./colors";
 
 export const graphLayouts = {
@@ -28,14 +28,14 @@ export const defaultAppSettings = {
   normalizeRolesEnabled: false,
   roomId: generateRoomId(),
   graphSize: 50,
-apiUrl: removeTrailingSlashFromHostname(
+  apiUrl: removeTrailingSlashFromHostname(
     process.env.API_URL || "http://0.0.0.0:5099"
   ),
-uploadJsonToUiStreamUrl: `${process.env.API_URL}/upload_json_to_ui/stream`,
+  uploadJsonToUiStreamUrl: `${process.env.API_URL}/upload_json_to_ui/stream`,
   appBasePath: process.env.REACT_APP_BASE_PATH || "/",
   staticContentPath:
     process.env.REACT_APP_STATIC_CONTENT_PATH || "http://localhost:4204",
-  showStructures: false,
+  showAllSubstanceStructure: false,
   edgeCurveStyle: curveStyles.ROUND_TAXI,
   productEdgeThickness: 7,
 };
@@ -75,7 +75,7 @@ export const mapGraphData = (data) => {
   };
 };
 
-export const mapGraphDataToCytoscape = (data, subgraphIndex = 0) => {
+export const mapGraphDataToCytoscape = (data, routeIndex = 0) => {
   const flattenObject = (obj) => {
     return Object.keys(obj).reduce((acc, key) => {
       const value = obj[key];
@@ -89,43 +89,62 @@ export const mapGraphDataToCytoscape = (data, subgraphIndex = 0) => {
     }, {});
   };
 
-  // Extract synth_graph
-  const synthGraph = data.synth_graph || {};
+  // Extract evidenceSynthGraph and predictedSynthGraph
+  const evidenceSynthGraph =
+    data.synth_graph || data.evidence_synth_graph || {};
+  const predictedSynthGraph = data.predictive_synth_graph || {};
 
   // Extract route_node_labels from the selected subgraph
-  const routeNodeLabels = new Set();
-  const subgraphs = data.routes?.subgraphs || [];
+  const routes = data.routes;
 
-  if (subgraphs.length === 0) {
-    throw new Error("No subgraphs found in the 'routes.subgraphs' section.");
-  }
+  let filteredNodes;
+  let filteredEdges;
 
-  if (subgraphIndex < -1 || subgraphIndex >= subgraphs.length) {
-    throw new Error("Invalid subgraph index.");
-  }
-  let filteredNodes = synthGraph.nodes || [];
-  let filteredEdges = synthGraph.edges || [];
+  if (routeIndex >= 0) {
+    const routeNodeLabels = new Set();
+    const route = routes[routeIndex];
+    const predictedRoute = route["predicted"] || false;
 
-  if (subgraphIndex !== -1) {
-    const subgraph = subgraphs[subgraphIndex];
-    subgraph.route_node_labels.forEach((label) => routeNodeLabels.add(label));
+    const graph = predictedRoute ? predictedSynthGraph : evidenceSynthGraph;
+    filteredNodes = graph.nodes || [];
+    filteredEdges = graph.edges || [];
+
+    route.route_node_labels.forEach((label) => routeNodeLabels.add(label));
+
     // Filter nodes
-    filteredNodes = (synthGraph.nodes || []).filter((node) =>
+    filteredNodes = (filteredNodes || []).filter((node) =>
       routeNodeLabels.has(node.node_label)
     );
-  
+
     // Filter edges: keep edge only if both ends are in routeNodeLabels
-    filteredEdges = (synthGraph.edges || []).filter(
+    filteredEdges = (filteredEdges || []).filter(
       (edge) =>
         routeNodeLabels.has(edge.start_node) &&
         routeNodeLabels.has(edge.end_node)
     );
+  } else if (routeIndex === -1) {
+    filteredNodes = evidenceSynthGraph.nodes;
+    filteredEdges = evidenceSynthGraph.edges;
+  } else if (routeIndex === -2) {
+    filteredNodes = predictedSynthGraph.nodes;
+    filteredEdges = predictedSynthGraph.edges;
+  } else {
+    throw new Error("Invalid subgraph index.");
   }
+
+  const substanceBag = new Set();
 
   // Map filtered nodes to Cytoscape format
   const nodes = filteredNodes.map((node) => {
     const flatNode = flattenObject(node);
     const nodeType = flatNode.node_type?.toLowerCase() || "unknown";
+
+    // Add substance to bag
+    if (nodeType === "substance") {
+      substanceBag.add(flatNode.node_label);
+    }
+
+    // Return Cytoscape node
     return {
       data: {
         id: flatNode.node_label,
@@ -138,6 +157,10 @@ export const mapGraphDataToCytoscape = (data, subgraphIndex = 0) => {
         ...flatNode,
         provenance: flatNode.provenance ?? {},
         conditions_info: flatNode.conditions_info ?? {},
+        route_assembly_type: flatNode.route_assembly_type ?? {},
+        evidence_protocol: flatNode.evidence_protocol ?? {},
+        evidence_conditions_info: flatNode.evidence_conditions_info ?? {},
+        predicted_conditions_info: flatNode.predicted_conditions_info ?? {},
       },
     };
   });
@@ -145,6 +168,18 @@ export const mapGraphDataToCytoscape = (data, subgraphIndex = 0) => {
   // Map filtered edges to Cytoscape format
   const edges = filteredEdges.map((edge) => {
     const flatEdge = flattenObject(edge);
+    const edgeType = flatEdge.edge_type?.toLowerCase() || "unknown";
+
+    // Remove reactants from substanceBag
+    if (edgeType === "reactant_of") {
+      substanceBag.delete(flatEdge.start_node);
+    }
+
+    // Remove products from substanceBag
+    if (edgeType === "product_of") {
+      substanceBag.delete(flatEdge.end_node);
+    }
+
     return {
       data: {
         id: flatEdge.uuid,
@@ -155,13 +190,19 @@ export const mapGraphDataToCytoscape = (data, subgraphIndex = 0) => {
     };
   });
 
+  // Label each reagent substance with "reagent" tag
+  substanceBag.forEach((substance) => {
+    nodes.forEach((node) => {
+      if (node.data.node_label === substance) {
+        node.data.reagent_only = true;
+      }
+    });
+  });
+
   return [...nodes, ...edges];
 };
 
-
-
-
-// Funciton to map reaction w/ components to a cytoscape graph, this is for one step reactions only
+// Function to map reaction w/ components to a cytoscape graph, this is for one step reactions only
 export const mapReactionDataToGraph = (raw_data) => {
   const data = { ...raw_data };
   const nodes = [];
@@ -182,7 +223,6 @@ export const mapReactionDataToGraph = (raw_data) => {
   data.node_type = "reaction";
   data.uuid = uuidv4();
   nodes.push(data);
-
 
   // Push reactants
   if (raw_reactants) {
@@ -247,8 +287,8 @@ export const mapReactionDataToGraph = (raw_data) => {
   return {
     nodes,
     edges,
-  }
-}
+  };
+};
 
 // Function to map substance/reaction smiles to a graph
 export const mapGraphWithSmiles = (graph, reactions, substances) => {
@@ -299,9 +339,7 @@ export const cyOptions = {
   avoidOverlap: true, // if true, prevents overlap of node bounding boxes
   handleDisconnected: true, // if true, avoids disconnected components from overlapping
   convergenceThreshold: 0.01, // when the alpha value (system energy) falls below this value, the layout stops
-  nodeSpacing: function (node) {
-    return 10;
-  }, // extra spacing around nodes
+  nodeSpacing: 10, // extra spacing around nodes
   flow: undefined, // use DAG/tree flow layout if specified, e.g. { axis: 'y', minSeparation: 30 }
   alignment: undefined, // relative alignment constraints on nodes, e.g. {vertical: [[{node: node1, offset: 0}, {node: node2, offset: 5}]], horizontal: [[{node: node3}, {node: node4}], [{node: node5}, {node: node6}]]}
   gapInequalities: undefined, // list of inequality constraints for the gap between the nodes, e.g. [{"axis":"y", "left":node1, "right":node2, "gap":25}]
@@ -362,10 +400,28 @@ export const cyStyles = [
     },
   },
   {
+    selector: 'node[srole="sm"][type="custom"]',
+    style: {
+      "border-color": colors.PINK.primary,
+      "background-color": colors.PINK.primary,
+      width: "data(width)",
+      height: "data(height)",
+    },
+  },
+  {
     selector: 'node[srole="im"]',
     style: {
       "border-color": colors.GRAY.primary,
       "background-color": colors.GRAY.primary,
+    },
+  },
+  {
+    selector: 'node[srole="im"][type="custom"]',
+    style: {
+      "border-color": colors.GRAY.primary,
+      "background-color": colors.GRAY.primary,
+      width: "data(width)",
+      height: "data(height)",
     },
   },
   {
@@ -434,7 +490,6 @@ export const cyStyles = [
     },
   },
 ];
-
 
 export const isDAG = (cy) => {
   let visited = {}; // Track visited nodes
@@ -505,6 +560,23 @@ export const mapStylesToCytoscape = (styles, appSettings) => {
   // additional check to prevent error if edgeStyle is not found
   if (edgeStyle) {
     edgeStyle.style["curve-style"] = appSettings.edgeCurveStyle;
+  }
+
+  // update product edge thickness
+  if (appSettings.productEdgeThickness) {
+    const selectorToUpdate = "edge[edge_type = 'product_of']";
+    const updatedStyle = {
+      width: appSettings.productEdgeThickness,
+    };
+    const styleObject = _styles.find(
+      (item) => item.selector === selectorToUpdate
+    );
+
+    if (styleObject) {
+      Object.assign(styleObject.style, updatedStyle); // Merge new styles
+    } else {
+      console.error(`Selector "${selectorToUpdate}" not found!`);
+    }
   }
 
   return _styles;
@@ -701,12 +773,12 @@ export const convertCytoscapeToNormalFormat = (cytoData) => {
 
   // If there are nodes, process them
   if (cytoData.elements && cytoData.elements.nodes) {
-    convertedData.nodes = cytoData.elements.nodes.map((node) => node.data);  // Extracting the `data` field from each node
+    convertedData.nodes = cytoData.elements.nodes.map((node) => node.data); // Extracting the `data` field from each node
   }
 
   // If there are edges, process them
   if (cytoData.elements && cytoData.elements.edges) {
-    convertedData.edges = cytoData.elements.edges.map((edge) => edge.data);  // Extracting the `data` field from each edge
+    convertedData.edges = cytoData.elements.edges.map((edge) => edge.data); // Extracting the `data` field from each edge
   }
 
   return convertedData;

@@ -14,9 +14,13 @@ const exampleJsonFiles = [
     fileName: "json_example_2.json",
   },
   {
-    name: "ASKCOS Route Sample",
+    name: "Raw ASKCOS Sample",
     fileName: "askcos_route_sample.json",
     askcosRoute: true
+  },
+  {
+    name: "Hybrid Routes Example",
+    fileName: "hybrid_routes_example.json"
   }
 ];
 

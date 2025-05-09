@@ -6,8 +6,25 @@ import { Select } from "antd";
 import { mapGraphDataToCytoscape } from "../helpers/commonHelpers";
 
 const NetworkSearchMenu = () => {
-  const { setSelectedEntity, setPreviewEntity, setReactionSources, setCytoscapeGraph, setAicpGraph, aicpGraph, updateCytoscapeGraph } = useContext(MainContext);
-  const [selectedRetrievalOption, setSelectedRetrievalOption] = useState("synthesis-route-search");
+  const {
+    setSelectedEntity,
+    setPreviewEntity,
+    setReactionSources,
+    setCytoscapeGraph,
+    setAicpGraph,
+    aicpGraph,
+    updateCytoscapeGraph,
+    setUsePredictedGraph,
+    preserveSubgraphIndexRef,
+  } = useContext(MainContext);
+  const [selectedRetrievalOption, setSelectedRetrievalOption] = useState(
+    "synthesis-route-search"
+  );
+  const [evidenceSynthGraph, setEvidenceSynthGraph] = useState(null);
+  const [predictedSynthGraph, setPredictedSynthGraph] = useState(null);
+  const [routeOptions, setRouteOptions] = useState(null);
+  const [dropdownDisabled, setDropdownDisabled] = useState(true);
+  const [selectedOption, setSelectedOption] = useState(null);
   const { subgraphIndex, setSubgraphIndex } = useContext(MainContext);
 
   const handleRetrievalOptionChange = (option) => {
@@ -20,34 +37,99 @@ const NetworkSearchMenu = () => {
     setAicpGraph(null);
   };
 
+  // When aicpGraph changes, update the synth graph states
   useEffect(() => {
-    if (aicpGraph && aicpGraph.routes.subgraphs && aicpGraph.routes.subgraphs.length > 0 && subgraphIndex < aicpGraph.routes.subgraphs.length) {
-      let data = aicpGraph;
-      const mappedData = mapGraphDataToCytoscape(data, subgraphIndex);
-      updateCytoscapeGraph(mappedData);
+    if (aicpGraph) {
+      setEvidenceSynthGraph(
+        aicpGraph.synth_graph || aicpGraph.evidence_synth_graph || null
+      );
+      setPredictedSynthGraph(aicpGraph.predictive_synth_graph || null);
+      setRouteOptions(aicpGraph.routes || null);
     }
-  }, [subgraphIndex, aicpGraph]);
+  }, [aicpGraph]);
+
+  // Update dropdownDisabled based on the updated state values
+  useEffect(() => {
+    const shouldDisable =
+      evidenceSynthGraph == null &&
+      predictedSynthGraph == null &&
+      routeOptions == null;
+    setDropdownDisabled(shouldDisable);
+
+    if (!shouldDisable) {
+      if (preserveSubgraphIndexRef.current) {
+        preserveSubgraphIndexRef.current = false;
+        return;
+      }
+
+      if (routeOptions) {
+        onRouteChange("Route 0");
+      } else if (evidenceSynthGraph) {
+        onRouteChange("SynthGraph");
+      } else if (predictedSynthGraph) {
+        onRouteChange("PredictiveGraph");
+      }
+    }
+  }, [evidenceSynthGraph, predictedSynthGraph, routeOptions]);
+
+  // On route change
+  const onRouteChange = (value) => {
+    setSelectedOption(value);
+    if (value == "SynthGraph") {
+      setSubgraphIndex(-1);
+      setUsePredictedGraph(false);
+    } else if (value == "PredictiveGraph") {
+      setSubgraphIndex(-2);
+      setUsePredictedGraph(true);
+    } else {
+      const index = parseInt(value.split(" ")[1]);
+      setSubgraphIndex(index);
+      if (aicpGraph.routes[index].predicted) {
+        setUsePredictedGraph(true);
+      } else {
+        setUsePredictedGraph(false);
+      }
+    }
+  };
 
   return (
     <div id="NetworkSearchMenu" className="Network-search-menu">
-      <div className="Graph-selector-container" style={{ display: 'flex', gap: '10px' }}>
+      <div
+        className="Graph-selector-container"
+        style={{ display: "flex", gap: "10px" }}
+      >
         <Select
           defaultValue="Upload-JSON"
           onChange={handleRetrievalOptionChange}
         >
           <Select.Option value="json">Upload JSON</Select.Option>
-          <Select.Option value="cytoscape-json">Upload Cytoscape JSON</Select.Option>
+          <Select.Option value="cytoscape-json">
+            Upload Cytoscape JSON
+          </Select.Option>
           <Select.Option value="examples">Example Graphs</Select.Option>
         </Select>
         <Select
-          defaultValue="Route 0"
-          onChange={(value) => setSubgraphIndex(value === "SynthGraph" ? -1 : parseInt(value.replace('Route ', ''), 10))}
+          placeholder="Select Synthesis Route"
+          disabled={dropdownDisabled}
+          value={selectedOption}
+          onChange={(value) => onRouteChange(value)}
         >
-          <Select.Option value="SynthGraph">SynthGraph</Select.Option>
-          {aicpGraph && aicpGraph.routes.subgraphs && aicpGraph.routes.subgraphs.length > 0 ? (
-            Array.from({ length: aicpGraph.routes.subgraphs.length }, (_, i) => (
+          {aicpGraph && evidenceSynthGraph && (
+            <Select.Option value="SynthGraph">
+              Evidence Synth Graph
+            </Select.Option>
+          )}
+          {aicpGraph && predictedSynthGraph && (
+            <Select.Option value="PredictiveGraph">
+              Predicted Synth Graph
+            </Select.Option>
+          )}
+          {aicpGraph && aicpGraph.routes && aicpGraph.routes.length > 0 ? (
+            Array.from({ length: aicpGraph.routes.length }, (_, i) => (
               <Select.Option key={i} value={`Route ${i}`}>
-                {aicpGraph.routes.predicted ? `Predicted ${i + 1}` : `Evidence ${i + 1}`}
+                {aicpGraph.routes[i].predicted
+                  ? `Predicted ${i + 1}`
+                  : `Evidence ${i + 1}`}
               </Select.Option>
             ))
           ) : (
@@ -56,11 +138,14 @@ const NetworkSearchMenu = () => {
         </Select>
       </div>
       <div className="Graph-form-container">
-      {selectedRetrievalOption === "json" && <UploadJson convertToNormalFormat={false} />}
-      {selectedRetrievalOption === "cytoscape-json" && <UploadJson convertToNormalFormat={true} />}
-      {selectedRetrievalOption === "examples" && <ExampleGraphs />}
-    </div>
-
+        {selectedRetrievalOption === "json" && (
+          <UploadJson convertToNormalFormat={false} />
+        )}
+        {selectedRetrievalOption === "cytoscape-json" && (
+          <UploadJson convertToNormalFormat={true} />
+        )}
+        {selectedRetrievalOption === "examples" && <ExampleGraphs />}
+      </div>
     </div>
   );
 };

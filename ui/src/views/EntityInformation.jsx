@@ -20,6 +20,7 @@ const EntityInformation = () => {
     aicpGraph,
     nodeSvgs,
     balanceData,
+    usePredictedGraph,
   } = useContext(MainContext);
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState(null);
@@ -33,13 +34,17 @@ const EntityInformation = () => {
   const [expandSmiles, setExpandSmiles] = useState(false);
   const [expandSourceInfo, setExpandSourceInfo] = useState(false);
   const [expandYieldInfo, setExpandYieldInfo] = useState(false);
-  
+  const [svgToShow, setSvgToShow] = useState(null);
 
   const nodeRef = useRef(null);
-  const [expandEvidenceProtocolInfo, setExpandEvidenceProtocolInfo] = useState(false);
-  const [expandEvidenceConditionInfo, setExpandEvidenceConditionInfo] = useState(false);
-  const [expandInventoryLocations, setExpandInventoryLocations] = useState(false);
-  const [expandPredictedConditionInfo, setExpandPredictedConditionInfo] = useState(false);
+  const [expandEvidenceProtocolInfo, setExpandEvidenceProtocolInfo] =
+    useState(false);
+  const [expandEvidenceConditionInfo, setExpandEvidenceConditionInfo] =
+    useState(false);
+  const [expandInventoryLocations, setExpandInventoryLocations] =
+    useState(false);
+  const [expandPredictedConditionInfo, setExpandPredictedConditionInfo] =
+    useState(false);
   const [expandOriginalSmiles, setExpandOriginalSmiles] = useState(false);
   const [expandCommercialVendors, setExpandCommercialVendors] = useState(false);
 
@@ -54,15 +59,24 @@ const EntityInformation = () => {
     setExpandSourceInfo(false);
   };
 
+  // Close the modal when aicpGraph changes
+  useEffect(() => {
+    handleClose();
+  }, [aicpGraph]);
+
   const lookupEntity = async (entityId, entityType) => {
     // if entity id ends with '(#)', remove it
     entityId = entityId.replace(/\s\(\d+\)$/, "");
-  
+
     if (entityType === "node") {
-      const nodeInfo = aicpGraph.synth_graph.nodes.find(
+      const synthGraph = usePredictedGraph
+        ? aicpGraph.predictive_synth_graph
+        : aicpGraph.synth_graph || aicpGraph.evidence_synth_graph;
+
+      const nodeInfo = synthGraph.nodes.find(
         (node) => node.node_label === entityId || node.node_id === entityId
       ); // Look up by node_label or node_id to work with askcos and aicp nodes
-      
+
       if (nodeInfo) {
         // Add pbi, rbi, and tbi from balanceData if they exist
         const balanceEntity = balanceData[nodeInfo.rxid];
@@ -71,34 +85,48 @@ const EntityInformation = () => {
           nodeInfo.rbi = balanceEntity.rbi;
           nodeInfo.tbi = balanceEntity.tbi;
         }
-        
-        if (!nodeInfo.base64svg && nodeSvgs[entityId]) {
-          nodeInfo.base64svg = extractBase64FromDataURL(nodeSvgs[entityId]);
+
+        if (nodeSvgs[entityId]) {
+          setSvgToShow(extractBase64FromDataURL(nodeSvgs[entityId]));
+        } else {
+          setSvgToShow(nodeInfo.base64svg);
         }
       }
-      
-      if (nodeInfo) {
-  if (nodeInfo.node_type === "substance") {
-    const availabilityItem = aicpGraph.availability?.find(
-      (item) => item.inchikey === nodeInfo.node_label
-    );
-    nodeInfo.inventory = availabilityItem
-      ? { ...availabilityItem.inventory, available: availabilityItem.inventory?.available || false }
-      : { available: false };
 
-    nodeInfo.commercial_availability = availabilityItem
-      ? { ...availabilityItem.commercial_availability, vendors: availabilityItem.commercial_availability?.vendors || [], available: availabilityItem.commercial_availability?.available || false }
-      : { available: false };
-  }
-}
-return nodeInfo;
+      if (nodeInfo) {
+        if (nodeInfo.node_type === "substance") {
+          const availabilityItem = aicpGraph.availability?.find(
+            (item) => item.inchikey === nodeInfo.node_label
+          );
+          nodeInfo.inventory = availabilityItem
+            ? {
+                ...availabilityItem.inventory,
+                available: availabilityItem.inventory?.available || false,
+              }
+            : { available: false };
+
+          nodeInfo.commercial_availability = availabilityItem
+            ? {
+                ...availabilityItem.commercial_availability,
+                vendors:
+                  availabilityItem.commercial_availability?.vendors || [],
+                available:
+                  availabilityItem.commercial_availability?.available || false,
+              }
+            : { available: false };
+        }
+      }
+      return nodeInfo;
     } else if (entityType === "edge") {
-      return aicpGraph.synth_graph.edges.find((edge) => edge.uuid === entityId); // edge id is uuid
+      const synthGraph = usePredictedGraph
+        ? aicpGraph.predictive_synth_graph
+        : aicpGraph.synth_graph || aicpGraph.evidence_synth_graph;
+
+      return synthGraph.edges.find((edge) => edge.uuid === entityId); // edge id is uuid
     } else {
       return null;
     }
   };
-  
 
   useEffect(() => {
     if (!(open && mode === "selected")) {
@@ -118,7 +146,7 @@ return nodeInfo;
   }, [previewEntity]);
 
   useEffect(() => {
-if (selectedEntity) {
+    if (selectedEntity) {
       setEntityId(selectedEntity[0]);
       setEntityType(selectedEntity[1]);
       setOpen(true);
@@ -133,7 +161,7 @@ if (selectedEntity) {
   }, [selectedEntity]);
 
   useEffect(() => {
-const fillEntityData = async () => {
+    const fillEntityData = async () => {
       try {
         if (entityId && entityType) {
           const entity = await lookupEntity(entityId, entityType);
@@ -228,9 +256,9 @@ const fillEntityData = async () => {
               )}
               {entityInfo && entityType === "node" && (
                 <>
-                  {entityInfo.base64svg && (
+                  {svgToShow && (
                     <img
-                      src={`data:image/svg+xml;base64,${entityInfo.base64svg}`}
+                      src={`data:image/svg+xml;base64,${svgToShow}`}
                       alt="SVG"
                       style={{
                         maxWidth: "100%",
@@ -240,16 +268,16 @@ const fillEntityData = async () => {
                       }}
                     />
                   )}
-                  {!entityInfo.base64svg && (
+                  {!svgToShow && (
                     <p>
                       <b>No SVG available.</b>
                     </p>
                   )}
-                  <div style={{ maxHeight: '350px', overflowY: 'auto' }}>
+                  <div style={{ maxHeight: "350px", overflowY: "scroll" }}>
                     {entityInfo.node_type && isSubstance && (
                       <>
                         <p>
-                        <Text>
+                          <Text>
                             <b>Inchikey:</b> {entityInfo.inchikey}
                           </Text>
                         </p>
@@ -277,20 +305,38 @@ const fillEntityData = async () => {
                               <b>Source Information:</b>{" "}
                               <span
                                 className="link-like"
-                                onClick={() => setExpandSourceInfo(!expandSourceInfo)}
+                                onClick={() =>
+                                  setExpandSourceInfo(!expandSourceInfo)
+                                }
                               >
                                 [{expandSourceInfo ? "hide" : "show"}]
                               </span>
                             </p>
                             {expandSourceInfo && (
-                              <div style={{ borderLeft: "2px solid #1890ff", paddingLeft: "1rem" }}>
-                                <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
+                              <div
+                                style={{
+                                  borderLeft: "2px solid #1890ff",
+                                  paddingLeft: "1rem",
+                                }}
+                              >
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    gap: "1rem",
+                                    alignItems: "center",
+                                  }}
+                                >
                                   {entityInfo.provenance &&
-                                    Object.entries(entityInfo.provenance).map(([key, value]) => (
-                                      <Text key={key}>
-                                        <b>{formatLabel(key)}:</b> {Array.isArray(value) ? value.join(", ") : String(value)}
-                                      </Text>
-                                    ))}
+                                    Object.entries(entityInfo.provenance).map(
+                                      ([key, value]) => (
+                                        <Text key={key}>
+                                          <b>{formatLabel(key)}:</b>{" "}
+                                          {Array.isArray(value)
+                                            ? value.join(", ")
+                                            : String(value)}
+                                        </Text>
+                                      )
+                                    )}
                                 </div>
                               </div>
                             )}
@@ -308,86 +354,152 @@ const fillEntityData = async () => {
                             </p>
                             <div>
                               <p>
-                              <Text>
-                                <b>Inventory Status:</b> {entityInfo?.inventory?.available === undefined ? "Unknown" : entityInfo?.inventory?.available ? "Available" : "Not Available"}
-                              </Text>
+                                <Text>
+                                  <b>Inventory Status:</b>{" "}
+                                  {entityInfo?.inventory?.available ===
+                                  undefined
+                                    ? "Unknown"
+                                    : entityInfo?.inventory?.available
+                                    ? "Available"
+                                    : "Not Available"}
+                                </Text>
                               </p>
-                              {entityInfo?.inventory?.available && entityInfo?.inventory?.locations && (
-                                <>
-                                  <p>
-                                    <Text>
-                                      <b>Inventory Locations:</b>{" "}
-                                      <span
-                                        className="link-like"
-                                        onClick={() => setExpandInventoryLocations(!expandInventoryLocations)}
+                              {entityInfo?.inventory?.available &&
+                                entityInfo?.inventory?.locations && (
+                                  <>
+                                    <p>
+                                      <Text>
+                                        <b>Inventory Locations:</b>{" "}
+                                        <span
+                                          className="link-like"
+                                          onClick={() =>
+                                            setExpandInventoryLocations(
+                                              !expandInventoryLocations
+                                            )
+                                          }
+                                        >
+                                          [
+                                          {expandInventoryLocations
+                                            ? "hide"
+                                            : "show"}
+                                          ]
+                                        </span>
+                                      </Text>
+                                    </p>
+                                    {expandInventoryLocations && (
+                                      <div
+                                        style={{
+                                          borderLeft: "2px solid #1890ff",
+                                          paddingLeft: "1rem",
+                                          marginTop: "0.5rem",
+                                        }}
                                       >
-                                        [{expandInventoryLocations ? "hide" : "show"}]
-                                      </span>
-                                    </Text>
-                                  </p>
-                                  {expandInventoryLocations && (
-                                    <div style={{ borderLeft: "2px solid #1890ff", paddingLeft: "1rem", marginTop: "0.5rem" }}>
-                                      {entityInfo.inventory.locations.map((location, index) => (
-                                        <div key={index} style={{ marginBottom: "1rem" }}>
-                                          {Object.entries(location).map(([key, value]) => (
-                                            <p key={key}>
-                                              <Text>
-                                                <b>{formatLabel(key)}:</b> {value || "N/A"}
-                                              </Text>
-                                            </p>
-                                          ))}
-                                        </div>
-                                      ))}
-                                    </div>
-                                  )}
-                                </>
-                              )}
+                                        {entityInfo.inventory.locations.map(
+                                          (location, index) => (
+                                            <div
+                                              key={index}
+                                              style={{ marginBottom: "1rem" }}
+                                            >
+                                              {Object.entries(location).map(
+                                                ([key, value]) => (
+                                                  <p key={key}>
+                                                    <Text>
+                                                      <b>{formatLabel(key)}:</b>{" "}
+                                                      {value || "N/A"}
+                                                    </Text>
+                                                  </p>
+                                                )
+                                              )}
+                                            </div>
+                                          )
+                                        )}
+                                      </div>
+                                    )}
+                                  </>
+                                )}
                               {entityInfo?.commercial_availability && (
                                 <div style={{ marginTop: "1rem" }}>
                                   <p>
                                     <Text>
-                                      <b>Commercial Availability:</b> {entityInfo.commercial_availability.available ? "Available" : "Not Available"}
+                                      <b>Commercial Availability:</b>{" "}
+                                      {entityInfo.commercial_availability
+                                        .available
+                                        ? "Available"
+                                        : "Not Available"}
                                     </Text>
                                   </p>
                                 </div>
                               )}
-                              {entityInfo?.commercial_availability?.available && entityInfo?.commercial_availability?.vendors && (
-                                <>
-                                  <p>
-                                    <Text>
-                                      <b>Commercial Vendors:</b>{" "}
-                                      <span
-                                        className="link-like"
-                                        onClick={() => setExpandCommercialVendors(!expandCommercialVendors)}
+                              {entityInfo?.commercial_availability?.available &&
+                                entityInfo?.commercial_availability
+                                  ?.vendors && (
+                                  <>
+                                    <p>
+                                      <Text>
+                                        <b>Commercial Vendors:</b>{" "}
+                                        <span
+                                          className="link-like"
+                                          onClick={() =>
+                                            setExpandCommercialVendors(
+                                              !expandCommercialVendors
+                                            )
+                                          }
+                                        >
+                                          [
+                                          {expandCommercialVendors
+                                            ? "hide"
+                                            : "show"}
+                                          ]
+                                        </span>
+                                      </Text>
+                                    </p>
+                                    {expandCommercialVendors && (
+                                      <div
+                                        style={{
+                                          borderLeft: "2px solid #1890ff",
+                                          paddingLeft: "1rem",
+                                          marginTop: "0.5rem",
+                                        }}
                                       >
-                                        [{expandCommercialVendors ? "hide" : "show"}]
-                                      </span>
-                                    </Text>
-                                  </p>
-                                  {expandCommercialVendors && (
-                                    <div style={{ borderLeft: "2px solid #1890ff", paddingLeft: "1rem", marginTop: "0.5rem" }}>
-                                      {entityInfo.commercial_availability.vendors.map((vendor, index) => (
-                                        <div key={index} style={{ marginBottom: "1rem" }}>
-                                          {Object.entries(vendor).map(([key, value]) => (
-                                            <p key={key}>
-                                              <Text>
-                                                <b>{formatLabel(key)}:</b>{" "}
-                                                {key === "url" ? (
-                                                  <a href={value.startsWith("http") ? value : `https://${value}`} target="_blank" rel="noopener noreferrer">
-                                                    {value}
-                                                  </a>
-                                                ) : (
-                                                  value || "N/A"
-                                                )}
-                                              </Text>
-                                            </p>
-                                          ))}
-                                        </div>
-                                      ))}
-                                    </div>
-                                  )}
-                                </>
-                              )}
+                                        {entityInfo.commercial_availability.vendors.map(
+                                          (vendor, index) => (
+                                            <div
+                                              key={index}
+                                              style={{ marginBottom: "1rem" }}
+                                            >
+                                              {Object.entries(vendor).map(
+                                                ([key, value]) => (
+                                                  <p key={key}>
+                                                    <Text>
+                                                      <b>{formatLabel(key)}:</b>{" "}
+                                                      {key === "url" ? (
+                                                        <a
+                                                          href={
+                                                            value.startsWith(
+                                                              "http"
+                                                            )
+                                                              ? value
+                                                              : `https://${value}`
+                                                          }
+                                                          target="_blank"
+                                                          rel="noopener noreferrer"
+                                                        >
+                                                          {value}
+                                                        </a>
+                                                      ) : (
+                                                        value || "N/A"
+                                                      )}
+                                                    </Text>
+                                                  </p>
+                                                )
+                                              )}
+                                            </div>
+                                          )
+                                        )}
+                                      </div>
+                                    )}
+                                  </>
+                                )}
                             </div>
                           </>
                         )}
@@ -395,7 +507,8 @@ const fillEntityData = async () => {
                           <>
                             <p>
                               <Text>
-                                <b>Prediction Source:</b> {entityInfo.data_source}
+                                <b>Prediction Source:</b>{" "}
+                                {entityInfo.data_source}
                               </Text>
                             </p>
                           </>
@@ -403,261 +516,459 @@ const fillEntityData = async () => {
                       </>
                     )}
                     {entityInfo.node_type && isReaction && (
-                    <>
-                      <p>
-                        <Text copyable={{ text: entityInfo.rxid }}>
-                          <b>RXID:</b>{" "}
-                          {entityInfo.rxid}
-                        </Text>
-                      </p>
-                      <p>
-                        <b>RX SMILES:</b>{" "}
-                        <span
-                          className="link-like"
-                          onClick={() => setExpandSmiles(!expandSmiles)}
-                        >
-                          [{expandSmiles ? "hide" : "show"}]
-                        </span>
-                      </p>
-                      {expandSmiles && (
+                      <>
                         <p>
-                          <Text
-                            copyable={{ text: entityInfo.rxsmiles || "N/A" }}
-                          >
-                            {entityInfo.rxsmiles || "N/A"}
+                          <Text copyable={{ text: entityInfo.rxid }}>
+                            <b>RXID:</b> {entityInfo.rxid}
                           </Text>
                         </p>
-                      )}
-                      <p>
-                        <b>Original RX SMILES:</b>{" "}
-                        <span
-                          className="link-like"
-                          onClick={() => setExpandOriginalSmiles(!expandOriginalSmiles)}
-                        >
-                          [{expandOriginalSmiles ? "hide" : "show"}]
-                        </span>
-                      </p>
-                      {expandOriginalSmiles && (
                         <p>
-                          <Text
-                            copyable={{ text: entityInfo.original_rxsmiles || "N/A" }}
-                          >
-                            {entityInfo.original_rxsmiles || "N/A"}
-                          </Text>
-                        </p>
-                      )}
-                      {/* Add the new line here */}
-                      <p>
-                        <b>rbi:</b> {entityInfo.rbi || "N/A"}{" "}
-                        <b>pbi:</b> {entityInfo.pbi || "N/A"}{" "}
-                        <b>tbi:</b> {entityInfo.tbi || "N/A"}{" "}
-                      </p>
-                      {isAskcosNode && (
-                        <>
-                          <p>
-                            <Text>
-                              <b>Prediction Source:</b> {entityInfo.data_source}
-                            </Text>
-                          </p>
-                        </>
-                      )}
-                      <p>
-                        <Text>
-                          <b>RX Name:</b> {entityInfo.rxname || "N/A"}
-                        </Text>
-                      </p>
-                      <p>
-                        <Text>
-                          <b>RX Class:</b> {entityInfo.rxclass || "N/A"}
-                        </Text>
-                      </p>
-                      <p>
-                        <Text>
-                        <b>RX Name Recognized:</b> {entityInfo.validation?.is_rxname_recognized !== undefined && entityInfo.validation?.is_rxname_recognized !== null ? entityInfo.validation.is_rxname_recognized.toString() : "N/A"}
-                        </Text>
-                      </p>
-                      <p>
-                        <Text>
-                          <b>RX Valid:</b> {entityInfo.validation?.is_valid !== undefined && entityInfo.validation?.is_valid !== null ? entityInfo.validation.is_valid.toString() : "N/A"}
-                        </Text>
-                      </p>
-                      <p>
-                        <Text>
-                          <b>Is Balanced:</b> {entityInfo.validation?.is_balanced !== undefined && entityInfo.validation?.is_balanced !== null ? entityInfo.validation.is_balanced.toString() : "N/A"}
-                        </Text>
-                      </p>
-                      {isAskcosNode === false && (
-                        <p>
-                        <b>Yield Information:</b>{" "}
-                        <span
-                          className="link-like"
-                          onClick={() => setExpandYieldInfo(!expandYieldInfo)}
-                        >
-                          [{expandYieldInfo ? "hide" : "show"}]
-                        </span>
-                      </p>,
-                        <>
-                        <p>
-                          <b>Yield Information:</b>{" "}
+                          <b>RX SMILES:</b>{" "}
                           <span
                             className="link-like"
-                            onClick={() => setExpandYieldInfo(!expandYieldInfo)}
+                            onClick={() => setExpandSmiles(!expandSmiles)}
                           >
-                            [{expandYieldInfo ? "hide" : "show"}]
+                            [{expandSmiles ? "hide" : "show"}]
                           </span>
                         </p>
-                        {expandYieldInfo && (
-                          <div style={{ borderLeft: "2px solid #1890ff", paddingLeft: "1rem" }}>
-                            <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
-                              {entityInfo.yield_info &&
-                                Object.entries(entityInfo.yield_info).map(([key, value]) => (
-                                  <Text key={key}>
-                                    <b>{formatLabel(key)}:</b> {typeof value === "number" ? value.toFixed(2) : Array.isArray(value) ? value.join(", ") : String(value)}
-                                  </Text>
-                                ))}
-                            </div>
-                          </div>
+                        {expandSmiles && (
+                          <p>
+                            <Text
+                              copyable={{ text: entityInfo.rxsmiles || "N/A" }}
+                            >
+                              {entityInfo.rxsmiles || "N/A"}
+                            </Text>
+                          </p>
                         )}
-
-                    
-                        <>
+                        <p>
+                          <b>Original RX SMILES:</b>{" "}
+                          <span
+                            className="link-like"
+                            onClick={() =>
+                              setExpandOriginalSmiles(!expandOriginalSmiles)
+                            }
+                          >
+                            [{expandOriginalSmiles ? "hide" : "show"}]
+                          </span>
+                        </p>
+                        {expandOriginalSmiles && (
                           <p>
-                            <b>Source Information:</b>{" "}
-                            <span
-                              className="link-like"
-                              onClick={() => setExpandSourceInfo(!expandSourceInfo)}
+                            <Text
+                              copyable={{
+                                text: entityInfo.original_rxsmiles || "N/A",
+                              }}
                             >
-                              [{expandSourceInfo ? "hide" : "show"}]
-                            </span>
+                              {entityInfo.original_rxsmiles || "N/A"}
+                            </Text>
                           </p>
-                          {expandSourceInfo && (
-                            <div style={{ borderLeft: "2px solid #1890ff", paddingLeft: "1rem" }}>
-                              <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
-                                {entityInfo.provenance &&
-                                  Object.entries(entityInfo.provenance).map(([key, value]) => (
-                                    <Text key={key}>
-                                      <b>{formatLabel(key)}:</b> {Array.isArray(value) ? value.join(", ") : String(value)}
-                                    </Text>
-                                  ))}
-                              </div>
-                            </div>
-                          )}
-
-
-                          <p>
-                            <b>Evidence Protocol:</b>{" "}
-                            <span
-                              className="link-like"
-                              onClick={() => setExpandEvidenceProtocolInfo(!expandEvidenceProtocolInfo)}
-                            >
-                              [{expandEvidenceProtocolInfo ? "hide" : "show"}]
-                            </span>
-                          </p>
-                          {expandEvidenceProtocolInfo && entityInfo.evidence_protocol && (
-                            <div style={{ borderLeft: "2px solid #1890ff", paddingLeft: "1rem" }}>
-                              {Object.entries(entityInfo.evidence_protocol).map(([key, value]) => (
-                                <div key={key} style={{ marginBottom: "1rem" }}>
-                                  <Text>
-                                    <b>{key}:</b>
-                                  </Text>
-                                  <div style={{ borderLeft: "2px solid #1890ff", paddingLeft: "1rem", marginTop: "0.5rem" }}>
-                                    <p>
-                                      <Text>
-                                        {value.protocol_text}
-                                      </Text>
-                                    </p>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-
-                          <p>
-                            <b>Evidence Conditions Information:</b>{" "}
-                            <span
-                              className="link-like"
-                              onClick={() => setExpandEvidenceConditionInfo(!expandEvidenceConditionInfo)}
-                            >
-                              [{expandEvidenceConditionInfo ? "hide" : "show"}]
-                            </span>
-                          </p>
-                          {expandEvidenceConditionInfo && entityInfo.evidence_conditions_info && (
-                            <div style={{ borderLeft: "2px solid #1890ff", paddingLeft: "1rem" }}>
-                              {Object.entries(entityInfo.evidence_conditions_info).map(([mainKey, subValue]) => (
-                                <div key={mainKey} style={{ marginBottom: "1rem" }}>
-                                  <Text>
-                                    <b>{mainKey}:</b>
-                                  </Text>
-                                  <div style={{ borderLeft: "2px solid #1890ff", paddingLeft: "1rem", marginTop: "0.5rem" }}>
-                                    {Object.entries(subValue).map(([subKey, subVal]) => (
-                                      <p key={subKey}>
-                                        <Text>
-                                          <b>{formatLabel(subKey)}:</b> {subVal}
-                                        </Text>
-                                      </p>
-                                    ))}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                          
-                          <p>
-                            <b>Predicted Conditions Information:</b>{" "}
-                            <span
-                              className="link-like"
-                              onClick={() => setExpandPredictedConditionInfo(!expandPredictedConditionInfo)}
-                            >
-                              [{expandPredictedConditionInfo ? "hide" : "show"}]
-                            </span>
-                          </p>
-                          {expandPredictedConditionInfo && entityInfo.predicted_conditions_info && (
-                            <div style={{ borderLeft: "2px solid #1890ff", paddingLeft: "1rem" }}>
-                              {Object.entries(entityInfo.predicted_conditions_info).map(([methodKey, methodValue]) => (
-                                <div key={methodKey} style={{ marginBottom: "1rem" }}>
-                                  <Text>
-                                    <b>Method:</b>
-                                  </Text>
-                                  <div style={{ borderLeft: "2px solid #1890ff", paddingLeft: "1rem", marginTop: "0.5rem" }}>
-                                    {Object.entries(methodValue).map(([predictionKey, predictionValue]) => (
-                                      <div key={predictionKey} style={{ marginBottom: "1rem" }}>
-                                        <div style={{ marginBottom: "1rem" }}>
-                                          <Text>
-                                            <b>{predictionKey}:</b>
+                        )}
+                        {/* Add the new line here */}
+                        <p>
+                          <b>rbi:</b> {entityInfo.rbi || "N/A"} <b>pbi:</b>{" "}
+                          {entityInfo.pbi || "N/A"} <b>tbi:</b>{" "}
+                          {entityInfo.tbi || "N/A"}{" "}
+                        </p>
+                        {isAskcosNode && (
+                          <>
+                            <p>
+                              <Text>
+                                <b>Prediction Source:</b>{" "}
+                                {entityInfo.data_source}
+                              </Text>
+                            </p>
+                          </>
+                        )}
+                        <p>
+                          <Text>
+                            <b>RX Name:</b> {entityInfo.rxname || "N/A"}
+                          </Text>
+                        </p>
+                        <p>
+                          <Text>
+                            <b>RX Class:</b> {entityInfo.rxclass || "N/A"}
+                          </Text>
+                        </p>
+                        <p>
+                          <Text>
+                            <b>RX Name Recognized:</b>{" "}
+                            {entityInfo.validation?.is_rxname_recognized !==
+                              undefined &&
+                            entityInfo.validation?.is_rxname_recognized !== null
+                              ? entityInfo.validation.is_rxname_recognized.toString()
+                              : "N/A"}
+                          </Text>
+                        </p>
+                        <p>
+                          <Text>
+                            <b>RX Valid:</b>{" "}
+                            {entityInfo.validation?.is_valid !== undefined &&
+                            entityInfo.validation?.is_valid !== null
+                              ? entityInfo.validation.is_valid.toString()
+                              : "N/A"}
+                          </Text>
+                        </p>
+                        <p>
+                          <Text>
+                            <b>Is Balanced:</b>{" "}
+                            {entityInfo.validation?.is_balanced !== undefined &&
+                            entityInfo.validation?.is_balanced !== null
+                              ? entityInfo.validation.is_balanced.toString()
+                              : "N/A"}
+                          </Text>
+                        </p>
+                        {isAskcosNode === false &&
+                          ((
+                            <p>
+                              <b>Yield Information:</b>{" "}
+                              <span
+                                className="link-like"
+                                onClick={() =>
+                                  setExpandYieldInfo(!expandYieldInfo)
+                                }
+                              >
+                                [{expandYieldInfo ? "hide" : "show"}]
+                              </span>
+                            </p>
+                          ),
+                          (
+                            <>
+                              <p>
+                                <b>Yield Information:</b>{" "}
+                                <span
+                                  className="link-like"
+                                  onClick={() =>
+                                    setExpandYieldInfo(!expandYieldInfo)
+                                  }
+                                >
+                                  [{expandYieldInfo ? "hide" : "show"}]
+                                </span>
+                              </p>
+                              {expandYieldInfo && (
+                                <div
+                                  style={{
+                                    borderLeft: "2px solid #1890ff",
+                                    paddingLeft: "1rem",
+                                  }}
+                                >
+                                  <div
+                                    style={{
+                                      display: "flex",
+                                      gap: "1rem",
+                                      alignItems: "center",
+                                    }}
+                                  >
+                                    {entityInfo.yield_info &&
+                                      Object.entries(entityInfo.yield_info).map(
+                                        ([key, value]) => (
+                                          <Text key={key}>
+                                            <b>{formatLabel(key)}:</b>{" "}
+                                            {typeof value === "number"
+                                              ? value.toFixed(2)
+                                              : Array.isArray(value)
+                                              ? value.join(", ")
+                                              : String(value)}
                                           </Text>
-                                          <div style={{ borderLeft: "2px solid #1890ff", paddingLeft: "1rem", marginTop: "0.5rem" }}>
-                                            {Object.entries(predictionValue).map(([key, val]) => (
-                                              <div key={key} style={{ marginBottom: "0.5rem" }}>
-                                                <Text>
-                                                  <b>{formatLabel(key)}:</b>
-                                                </Text>
-                                                <div style={{ borderLeft: "2px solid #1890ff", paddingLeft: "1rem", marginTop: "0.5rem" }}>
-                                                  {typeof val === "object" && val !== null
-                                                    ? Object.entries(val).map(([innerKey, innerVal]) => (
-                                                        <p key={innerKey}>
-                                                          <Text>
-                                                            <b>{formatLabel(innerKey)}:</b> {innerVal}
-                                                          </Text>
-                                                        </p>
-                                                      ))
-                                                    : <Text>{val}</Text>}
-                                                </div>
-                                              </div>
-                                            ))}
+                                        )
+                                      )}
+                                  </div>
+                                </div>
+                              )}
+
+                              <>
+                                <p>
+                                  <b>Source Information:</b>{" "}
+                                  <span
+                                    className="link-like"
+                                    onClick={() =>
+                                      setExpandSourceInfo(!expandSourceInfo)
+                                    }
+                                  >
+                                    [{expandSourceInfo ? "hide" : "show"}]
+                                  </span>
+                                </p>
+                                {expandSourceInfo && (
+                                  <div
+                                    style={{
+                                      borderLeft: "2px solid #1890ff",
+                                      paddingLeft: "1rem",
+                                    }}
+                                  >
+                                    <div
+                                      style={{
+                                        display: "flex",
+                                        gap: "1rem",
+                                        alignItems: "center",
+                                      }}
+                                    >
+                                      {entityInfo.provenance &&
+                                        Object.entries(
+                                          entityInfo.provenance
+                                        ).map(([key, value]) => (
+                                          <Text key={key}>
+                                            <b>{formatLabel(key)}:</b>{" "}
+                                            {Array.isArray(value)
+                                              ? value.join(", ")
+                                              : String(value)}
+                                          </Text>
+                                        ))}
+                                    </div>
+                                  </div>
+                                )}
+
+                                <p>
+                                  <b>Evidence Protocol:</b>{" "}
+                                  <span
+                                    className="link-like"
+                                    onClick={() =>
+                                      setExpandEvidenceProtocolInfo(
+                                        !expandEvidenceProtocolInfo
+                                      )
+                                    }
+                                  >
+                                    [
+                                    {expandEvidenceProtocolInfo
+                                      ? "hide"
+                                      : "show"}
+                                    ]
+                                  </span>
+                                </p>
+                                {expandEvidenceProtocolInfo &&
+                                  entityInfo.evidence_protocol && (
+                                    <div
+                                      style={{
+                                        borderLeft: "2px solid #1890ff",
+                                        paddingLeft: "1rem",
+                                      }}
+                                    >
+                                      {Object.entries(
+                                        entityInfo.evidence_protocol
+                                      ).map(([key, value]) => (
+                                        <div
+                                          key={key}
+                                          style={{ marginBottom: "1rem" }}
+                                        >
+                                          <Text>
+                                            <b>{key}:</b>
+                                          </Text>
+                                          <div
+                                            style={{
+                                              borderLeft: "2px solid #1890ff",
+                                              paddingLeft: "1rem",
+                                              marginTop: "0.5rem",
+                                            }}
+                                          >
+                                            <p>
+                                              <Text>{value}</Text>
+                                            </p>
                                           </div>
                                         </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </>
-                        </>
-                      )}
-                    </>
-                  )}
+                                      ))}
+                                    </div>
+                                  )}
+
+                                <p>
+                                  <b>Evidence Conditions Information:</b>{" "}
+                                  <span
+                                    className="link-like"
+                                    onClick={() =>
+                                      setExpandEvidenceConditionInfo(
+                                        !expandEvidenceConditionInfo
+                                      )
+                                    }
+                                  >
+                                    [
+                                    {expandEvidenceConditionInfo
+                                      ? "hide"
+                                      : "show"}
+                                    ]
+                                  </span>
+                                </p>
+                                {expandEvidenceConditionInfo &&
+                                  entityInfo.evidence_conditions_info && (
+                                    <div
+                                      style={{
+                                        borderLeft: "2px solid #1890ff",
+                                        paddingLeft: "1rem",
+                                      }}
+                                    >
+                                      {Object.entries(
+                                        entityInfo.evidence_conditions_info
+                                      ).map(([mainKey, subValue]) => (
+                                        <div
+                                          key={mainKey}
+                                          style={{ marginBottom: "1rem" }}
+                                        >
+                                          <Text>
+                                            <b>{mainKey}:</b>
+                                          </Text>
+                                          <div
+                                            style={{
+                                              borderLeft: "2px solid #1890ff",
+                                              paddingLeft: "1rem",
+                                              marginTop: "0.5rem",
+                                            }}
+                                          >
+                                            {Object.entries(subValue).map(
+                                              ([subKey, subVal]) => (
+                                                <p key={subKey}>
+                                                  <Text>
+                                                    <b>
+                                                      {formatLabel(subKey)}:
+                                                    </b>{" "}
+                                                    {subVal}
+                                                  </Text>
+                                                </p>
+                                              )
+                                            )}
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+
+                                <p>
+                                  <b>Predicted Conditions Information:</b>{" "}
+                                  <span
+                                    className="link-like"
+                                    onClick={() =>
+                                      setExpandPredictedConditionInfo(
+                                        !expandPredictedConditionInfo
+                                      )
+                                    }
+                                  >
+                                    [
+                                    {expandPredictedConditionInfo
+                                      ? "hide"
+                                      : "show"}
+                                    ]
+                                  </span>
+                                </p>
+                                {expandPredictedConditionInfo &&
+                                  entityInfo.predicted_conditions_info && (
+                                    <div
+                                      style={{
+                                        borderLeft: "2px solid #1890ff",
+                                        paddingLeft: "1rem",
+                                      }}
+                                    >
+                                      {Object.entries(
+                                        entityInfo.predicted_conditions_info
+                                      ).map(([methodKey, methodValue]) => (
+                                        <div
+                                          key={methodKey}
+                                          style={{ marginBottom: "1rem" }}
+                                        >
+                                          <Text>
+                                            <b>Method:</b>
+                                          </Text>
+                                          <div
+                                            style={{
+                                              borderLeft: "2px solid #1890ff",
+                                              paddingLeft: "1rem",
+                                              marginTop: "0.5rem",
+                                            }}
+                                          >
+                                            {Object.entries(methodValue).map(
+                                              ([
+                                                predictionKey,
+                                                predictionValue,
+                                              ]) => (
+                                                <div
+                                                  key={predictionKey}
+                                                  style={{
+                                                    marginBottom: "1rem",
+                                                  }}
+                                                >
+                                                  <div
+                                                    style={{
+                                                      marginBottom: "1rem",
+                                                    }}
+                                                  >
+                                                    <Text>
+                                                      <b>{predictionKey}:</b>
+                                                    </Text>
+                                                    <div
+                                                      style={{
+                                                        borderLeft:
+                                                          "2px solid #1890ff",
+                                                        paddingLeft: "1rem",
+                                                        marginTop: "0.5rem",
+                                                      }}
+                                                    >
+                                                      {Object.entries(
+                                                        predictionValue
+                                                      ).map(([key, val]) => (
+                                                        <div
+                                                          key={key}
+                                                          style={{
+                                                            marginBottom:
+                                                              "0.5rem",
+                                                          }}
+                                                        >
+                                                          <Text>
+                                                            <b>
+                                                              {formatLabel(key)}
+                                                              :
+                                                            </b>
+                                                          </Text>
+                                                          <div
+                                                            style={{
+                                                              borderLeft:
+                                                                "2px solid #1890ff",
+                                                              paddingLeft:
+                                                                "1rem",
+                                                              marginTop:
+                                                                "0.5rem",
+                                                            }}
+                                                          >
+                                                            {typeof val ===
+                                                              "object" &&
+                                                            val !== null ? (
+                                                              Object.entries(
+                                                                val
+                                                              ).map(
+                                                                ([
+                                                                  innerKey,
+                                                                  innerVal,
+                                                                ]) => (
+                                                                  <p
+                                                                    key={
+                                                                      innerKey
+                                                                    }
+                                                                  >
+                                                                    <Text>
+                                                                      <b>
+                                                                        {formatLabel(
+                                                                          innerKey
+                                                                        )}
+                                                                        :
+                                                                      </b>{" "}
+                                                                      {innerVal}
+                                                                    </Text>
+                                                                  </p>
+                                                                )
+                                                              )
+                                                            ) : (
+                                                              <Text>{val}</Text>
+                                                            )}
+                                                          </div>
+                                                        </div>
+                                                      ))}
+                                                    </div>
+                                                  </div>
+                                                </div>
+                                              )
+                                            )}
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                              </>
+                            </>
+                          ))}
+                      </>
+                    )}
                   </div>
                 </>
               )}

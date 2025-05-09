@@ -42,6 +42,23 @@ const CytoscapeRendering = ({ graph, layout }) => {
   const [messageApi, contextHolder] = message.useMessage();
 
   useEffect(() => {
+    const clonedStyles = [ ...cyStyles ];
+
+    // Update edge thickness
+    const selectorToUpdate = "edge[edge_type = 'product_of']";
+    const updatedStyle = {
+      width: appSettings.productEdgeThickness,
+    };
+    const styleObject = clonedStyles.find(
+      (item) => item.selector === selectorToUpdate
+    );
+  
+    if (styleObject) {
+      Object.assign(styleObject.style, updatedStyle); // Merge new styles
+    } else {
+      console.error(`Selector "${selectorToUpdate}" not found!`);
+    }
+
     // update cytoscape styles based on app settings
     const style = mapStylesToCytoscape(cyStyles, appSettings);
 
@@ -91,9 +108,6 @@ const CytoscapeRendering = ({ graph, layout }) => {
       }
     };
   }, [
-    appSettings.showStructures,
-    appSettings.edgeCurveStyle,
-    appSettings.productEdgeThickness,
     graph,
     showReagents,
   ]);
@@ -126,7 +140,7 @@ const CytoscapeRendering = ({ graph, layout }) => {
           notDAGError,
         });
 
-        cyRef.current.layout({ name: layout, ...cyOptions }).run(); // we have to apply layout right before the run, otherwise it won't work (check `isHeadless` issue)
+        cyRef.current.layout({ name: layout, ...cyOptions, nodeSpacing: layout === graphLayouts.FORCE_DIRECTED ? 20 : 10 }).run(); // we have to apply layout right before the run, otherwise it won't work (check `isHeadless` issue)
         cyRef.current.resize();
       }
     } catch (error) {
@@ -140,13 +154,26 @@ const CytoscapeRendering = ({ graph, layout }) => {
     }
   }, [
     graph, 
-    layout, 
     showReagents, 
-    duplicateReagents,
-    appSettings.showStructures,
-    appSettings.edgeCurveStyle,
-    appSettings.productEdgeThickness
+    duplicateReagents
   ]);
+
+  useEffect(() => {
+    if (cyRef.current) {
+      // Generate updated styles
+      const updatedStyles = mapStylesToCytoscape(cyStyles, appSettings);
+  
+      // Apply new styles directly to Cytoscape
+      cyRef.current.style().fromJson(updatedStyles).update();
+
+      // App node spacing depending on graph layout
+      const nodeSpacing = layout === graphLayouts.FORCE_DIRECTED ? 20 : 10;
+      cyRef.current.layout({ name: layout, ...cyOptions, nodeSpacing }).run();
+      
+      // Trigger a redraw
+      cyRef.current.resize();
+    }
+  }, [layout, appSettings.productEdgeThickness, appSettings.edgeCurveStyle, appSettings]);
 
   useEffect(() => {
     const cy = cyRef.current;

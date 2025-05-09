@@ -4,17 +4,21 @@
     "reaction_steps": 3,
     "query_type": "shortest_path",
     "leaves_as_sm": true,
-    "include_graph_svgs": false,
+    "include_availability_info": true,
     "annotate_reactions": true,
     "graph_backend": "memgraph",
     "top_n_routes": 3,
     "include_route_candidates": false,
-    "include_combination_graphs": false,
-    "synthesis_graph_json": {
-      "additionalProp1": {}
-    }
+    "include_combination_graphs": false
   },
   "synth_graph": {
+    "time_info": {
+      "synth_graph_time": 0.3561239242553711
+    },
+    "summary": {
+      "num_edges": 10,
+      "num_nodes": 11
+    },
     "nodes": [
       {
         "node_label": "ASPIRE-1031938939769803553",
@@ -33,12 +37,8 @@
           "is_in_aicp": false,
           "is_in_uspto_full": true,
           "is_in_savi_130k": false,
-          "patents": [
-            "US20140142084A1"
-          ],
-          "patent_paragraph_nums": [
-            370
-          ]
+          "patents": ["US20140142084A1"],
+          "patent_paragraph_nums": [370]
         },
         "validation": {
           "is_balanced": false,
@@ -137,7 +137,7 @@
         "canonical_smiles": "C1COCCN1",
         "srole": "sm",
         "route_assembly_type": {
-          "is_predicted": false,
+          "is_predicted": true,
           "is_evidence": true
         },
         "provenance": {
@@ -184,12 +184,8 @@
           "is_in_aicp": false,
           "is_in_uspto_full": true,
           "is_in_savi_130k": false,
-          "patents": [
-            "US20140142084A1"
-          ],
-          "patent_paragraph_nums": [
-            322
-          ]
+          "patents": ["US20140142084A1"],
+          "patent_paragraph_nums": [322]
         },
         "validation": {
           "is_balanced": true,
@@ -480,43 +476,32 @@
       "MIYKMXBFKWSDPI-UHFFFAOYSA-N"
     ]
   },
-  "combination_graphs": {
-    "subgraphs": [],
-    "num_subgraphs": 0
-  },
-  "route_candidates": {
-    "subgraphs": [],
-    "num_subgraphs": 0
-  },
-  "routes": {
-    "subgraphs": [
-      {
-        "aggregated_yield": 25.49,
-        "route_index": 1,
-        "route_status": "Viable Synthesis Route",
-        "method": "AICP",
-        "route_node_labels": [
-          "ASPIRE-1031938939769803553",
-          "HHYFEYBWNZJVFQ-UHFFFAOYSA-N",
-          "UIIMBOGNXHQVGW-UHFFFAOYSA-M",
-          "ZMXDDKWLCZADIW-UHFFFAOYSA-N",
-          "PKBJQBLRHFDLLI-UHFFFAOYSA-N",
-          "YNAVUWVOSKDBBP-UHFFFAOYSA-N",
-          "VWLQRINORISZIU-UHFFFAOYSA-N",
-          "ASPIRE-4334160758657817050",
-          "GOPYZMJAIPBUGX-UHFFFAOYSA-N",
-          "WSLDOOZREJYCGB-UHFFFAOYSA-N",
-          "MIYKMXBFKWSDPI-UHFFFAOYSA-N"
-        ]
-      }
-    ],
-    "num_subgraphs": 1
-  },
+  "routes": [
+    {
+      "aggregated_yield": 25.488644,
+      "route_index": 1,
+      "route_status": "Viable Synthesis Route",
+      "method": "AICP",
+      "route_node_labels": [
+        "ASPIRE-1031938939769803553",
+        "HHYFEYBWNZJVFQ-UHFFFAOYSA-N",
+        "UIIMBOGNXHQVGW-UHFFFAOYSA-M",
+        "ZMXDDKWLCZADIW-UHFFFAOYSA-N",
+        "PKBJQBLRHFDLLI-UHFFFAOYSA-N",
+        "YNAVUWVOSKDBBP-UHFFFAOYSA-N",
+        "VWLQRINORISZIU-UHFFFAOYSA-N",
+        "ASPIRE-4334160758657817050",
+        "GOPYZMJAIPBUGX-UHFFFAOYSA-N",
+        "WSLDOOZREJYCGB-UHFFFAOYSA-N",
+        "MIYKMXBFKWSDPI-UHFFFAOYSA-N"
+      ]
+    }
+  ],
   "time_info": {
-    "synth_graph_time": 0.27620792388916016,
-    "enumerate_routes_time": 0.005039691925048828,
-    "aggregated_yield_time": 0.003970146179199219,
-    "rank_routes_time": 0.000022411346435546875
+    "synth_graph_time": 0.3561239242553711,
+    "enumerate_routes_time": 0.0015001296997070312,
+    "aggregated_yield_time": 0.22696805000305176,
+    "rank_routes_time": 0.000003814697265625
   },
   "summary": {
     "num_routes": 1,

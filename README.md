@@ -30,7 +30,7 @@
 - **Route Selection Dropdown**: Includes the "SynthGraph" option to view the synthesis graph itself. Evidence routes are labeled as "Evidence 0", "Evidence 1", etc., and predicted routes are labeled as "Predicted 0", "Predicted 1", etc. For massive graphs with cycles (e.g., ASKCOS examples), use the force-directed layout for rendering.
 - **AICP/Cytoscape JSON Toggle**: Enables users to view JSON data in different formats, including AICP and Cytoscape formats.
 - **Upload JSON Functionality**: Provides options to upload JSON files, Cytoscape JSON files, or pass JSON data directly in the request body using the `json_data` parameter. Users can also refer to the Jupyter notebook example for uploading JSON or use the Swagger documentation available at [http://0.0.0.0:5099/api/v1/docs/aicp/nv_api](http://0.0.0.0:5099/api/v1/docs/aicp/nv_api).
-- **Example Graphs**: Includes two evidence-based route examples and an ASKCOS Route Sample. The ASKCOS Route Sample is parsed and converted internally into the graph format before rendering.
+- **Example Graphs**: Includes two evidence-based route examples, an ASKCOS Route Sample and one hybrid example which includes both evidence and predicted routes. The ASKCOS Route Sample is parsed and converted internally into the graph format before rendering.
 - **Aggregate Yield Display**: Displays aggregate yield as "Agg Yield" on top of the graph for better visualization.
 - **User Settings**: Offers various settings that users can toggle to customize their experience, including graph rendering options and visualization preferences.
 
@@ -40,9 +40,9 @@
 
   - **Duplicate Reagents and Starting Materials**: This toggle allows users to duplicate reagents and starting materials in the graph.
 
-  - **Highlight Atom Indices in Depictions**: This toggle enables or disables the highlighting of atom indices in graphical depictions.
+  - **Highlight Atom Indices in Reaction Depictions**: This toggle enables or disables the highlighting of atom indices in graphical depictions.
 
-  - **Show Atom Indices in Depiction**: This toggle allows users to display atom indices in molecular depictions. When enabled, atom indices are shown for atoms with mapping information, providing additional clarity in visualizing molecular structures.
+  - **Show Atom Indices in Reaction Depiction**: This toggle allows users to display atom indices in molecular depictions. When enabled, atom indices are shown for atoms with mapping information, providing additional clarity in visualizing molecular structures.
 
   - **Set Edge Style**: Users can choose the style of edges in the graph, including options like "Round Taxi," "Straight," and "Segments."
 
@@ -82,12 +82,12 @@ Optional (not required, but nice to have):
 
 2. Build the Docker containers:
    ```bash
-   docker-compose build --parallel
+   docker compose build --parallel
    ```
 
 3. Start the containers:
    ```bash
-   docker-compose up -d
+   docker compose up -d
    ```
 
 4. Open the Swagger documentation in your browser:
@@ -118,20 +118,17 @@ If you open any of the attached to this repo examples in JSON format - you may n
     "nodes": [],
     "edges": []
   },
-  "routes": {
-    "subgraphs": [
+  "routes": [
       {
         "aggregate_yield": 58.,
+        "predicted": false,
         "route_index": 1,
-        "route_status": "Viable Route Candidate",
+        "route_status": "Viable Synthesis Route",
         "method": "AICP",
         "route_node_labels": [...
         ]
       }
-    ],
-    "predicted": false,
-    "num_subgraphs": 1
-  }
+    ]
 }
 ```
 

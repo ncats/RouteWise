@@ -2,9 +2,9 @@
 #
 # Organization: National Center for Advancing Translational Sciences (NCATS/NIH)
 
-from typing import Optional, Union
+from typing import List, Optional, Union
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, UploadFile
-from pydantic import ValidationError
+from pydantic import ConfigDict, ValidationError
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 import os
@@ -16,7 +16,13 @@ import logging
 from uvicorn.logging import DefaultFormatter
 import json
 import asyncio
+from askcos_models import TreeSearchResponse
 from draw_utils import reaction_smiles_to_image
+from askcos_conversion_utils import (
+    NoPathsFoundInAskcosResponse,
+    NoResultFoundInAskcosResponse,
+    askcos_tree2synth_paths_with_graph
+)
 from rdkit import Chem
 from rdkit.Chem import Draw
 import base64
@@ -40,7 +46,8 @@ handler.setFormatter(formatter)
 
 # Create a logger
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO,
+                    format='%(asctime)s - %(levelname)s - %(message)s')
 logger.setLevel(logging.INFO)
 logger.addHandler(handler)
 
@@ -167,7 +174,7 @@ def save_room_data(room_id, data):
 
 @app.get("/")
 async def root():
-    return {"message": "Welcome to the FastAPI server. Visit /docs for API documentation."}
+    return {"message": "Welcome to the FastAPI server. Visit /api/v1/docs/aicp/nv_api for API documentation."}
 
 
 async def get_room_data(room_id: str):
@@ -191,12 +198,21 @@ class Node(BaseModel):
     node_type: str
     uuid: str
 
+
 class ReactionNode(Node):
     validation: Optional[dict] = None
     yield_info: Optional[dict] = None
     rxsmiles: Optional[str] = None
     rxid: Optional[str] = None
     route_assembly_type: dict
+    rxclass: Optional[str] = None
+    rxname: Optional[str] = None
+    original_rxsmiles: Optional[str] = None
+    route_assembly_type: Optional[dict] = None
+    evidence_protocol: Optional[dict] = None
+    evidence_conditions_info: Optional[dict] = None
+    predicted_conditions_info: Optional[dict] = None
+
 
 class SubstanceNode(Node):
     srole: Optional[str] = None
@@ -215,21 +231,20 @@ class Edge(BaseModel):
 
 
 class SynthGraph(BaseModel):
+    # Define model configuration
+    model_config = ConfigDict(extra="ignore", arbitrary_types_allowed=True)
+    
     nodes: list[Union[ReactionNode, SubstanceNode]]
     edges: list[Edge]
 
 
-class RouteSubgraph(BaseModel):
+class Route(BaseModel):
     aggregated_yield: float
     route_index: int
     route_status: str
     method: str
+    predicted: bool
     route_node_labels: list[str]
-
-
-class Routes(BaseModel):
-    subgraphs: list[RouteSubgraph]
-    num_subgraphs: int
 
 
 class Availability(BaseModel):
@@ -240,69 +255,84 @@ class Availability(BaseModel):
 
 class InputFile(BaseModel):
     synth_graph: SynthGraph
-    routes: Routes
+    routes: List[Route]
     availability: Optional[list[Availability]] = None
 
 
-@app.post("/upload_json_to_ui/", description="Upload a JSON file or provide JSON text in the request body. Example file: public/json_example_1.json")
-async def upload_json_to_ui(room_id: str, convert_askcos: bool = False, file: Optional[Union[UploadFile, str]] = None, json_data: Optional[Union[dict,str]] = None):
-    if file and file.filename.strip() != "":
-        json_data = json.loads(await file.read())
-    elif isinstance(json_data, dict):
-        json_data = json_data
-    elif isinstance(json_data, str):
-        json_data = json.loads(json_data)
-    else:
-        raise HTTPException(status_code=400, detail="Either a valid file or JSON text must be provided.")
-    logger.info(
-        f"Received upload request for room_id: {room_id}, convert_askcos: {convert_askcos}")
-    try:
-        # Parse the JSON file or text
-        if file:
-            json_data = json.loads(await file.read())
-        elif json_data:
-            json_data = json_data
-        else:
-            raise HTTPException(status_code=400, detail="Either a file or JSON text must be provided.")
+@app.post("/upload_json_to_ui/")
+async def upload_json_to_ui(
+    room_id: str,
+    convert_from_askcos: bool = False,
+    file: Optional[Union[UploadFile]] = None,
+    json_data: Optional[Union[dict]] = None
+):
+    """
+    Uploads a specified JSON to a Room ID for the NV UI. This endpoint can be used to upload a JSON file or provide JSON text in the request body. 
+    The room ID must come from the NV UI. If you want to upload an ASKCOS JSON you can convert it with `convert_from_askcos`.
 
-        # If convert_askcos is True, process ASKCOS data
-        if convert_askcos:
+    Args:
+    - room_id (str): The room ID to upload the JSON to.
+    - convert_from_askcos (bool, optional): Whether to convert the JSON from ASKCOS format. Defaults to False.
+    - file (Optional[Union[UploadFile]], optional): The JSON file to upload. Defaults to None.
+    - json_data (Optional[Union[dict]], optional): The JSON text to upload. Defaults to None.
+
+    Returns:
+        dict: A dictionary containing the status of the upload.
+    """
+    logger.info(
+        f"Received upload request for room_id: {room_id}, convert_from_askcos: {convert_from_askcos}")
+
+    # Check if room id is valid
+    if room_id not in room_connections:
+        raise HTTPException(
+            status_code=400, detail=f"Invalid room ID: {room_id}")
+
+    try:
+        if file and file.filename is not None and file.filename.strip() != "":
+            file_content = await file.read()
+            json_data = json.loads(file_content)
+            logger.info(f"Processed JSON file: {file.filename}")
+        elif isinstance(json_data, str):
+            json_data = json.loads(json_data)
+        elif isinstance(json_data, dict):
+            pass  # Already in desired form
+        else:
+            raise HTTPException(
+                status_code=400, detail="Either a valid file or JSON text must be provided.")
+
+        if convert_from_askcos:
             try:
-                json_data = await convert_to_aicp(ConvertToAicpRequest(graph_data=json_data, convert_askcos=convert_askcos))
+                json_data = await convert_to_aicp(ConvertToAicpRequest(source_data=json_data, convert_from="askcos"))
             except Exception as e:
                 logger.error(f"Error converting ASKCOS data: {str(e)}")
                 raise HTTPException(
                     status_code=500, detail=f"Error converting ASKCOS data: {str(e)}")
 
-        # Validate the JSON data using Pydantic
         validated_data = InputFile(**json_data)
 
-        # Check if the room ID exists
         if room_id not in room_connections:
             logger.warning(f"Room ID {room_id} not found in room_connections")
             raise HTTPException(status_code=404, detail="Room ID not found")
 
-        # Save JSON data to the room directly
         save_room_data(room_id, validated_data.dict())
         logger.info(f"Saved JSON data to room {room_id}")
 
-        # Send the data to the WebSocket client associated with the room ID
-        if room_id in room_connections:
-            try:
-                await room_connections[room_id].send_json({"type": "new-graph", "room_id": room_id, "data": validated_data.dict()})
-                logger.info(f"Sent JSON data to WebSocket for room {room_id}")
-            except RuntimeError as e:
-                logger.warning(
-                    f"Failed to send data to WebSocket for room {room_id}: {e}")
-            except Exception as e:
-                logger.error(
-                    f"Unexpected error while sending data to WebSocket for room {room_id}: {e}")
-        else:
+        try:
+            await room_connections[room_id].send_json({
+                "type": "new-graph",
+                "room_id": room_id,
+                "data": validated_data.dict()
+            })
+            logger.info(f"Sent JSON data to WebSocket for room {room_id}")
+        except RuntimeError as e:
             logger.warning(
-                f"Room ID {room_id} not found in active WebSocket connections: {list(room_connections.keys())}")
+                f"Failed to send data to WebSocket for room {room_id}: {e}")
+        except Exception as e:
+            logger.error(
+                f"Unexpected error while sending data to WebSocket for room {room_id}: {e}")
 
-        # Return only the JSON data to the front end
         return {"data": validated_data.dict()}
+
     except json.JSONDecodeError as e:
         logger.error(f"Invalid JSON file: {str(e)}")
         raise HTTPException(
@@ -317,8 +347,12 @@ async def upload_json_to_ui(room_id: str, convert_askcos: bool = False, file: Op
 # Maintain a mapping of room IDs to WebSocket connections
 room_connections: dict[str, WebSocket] = {}
 
+
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
+    """
+    WebSocket endpoint for handling WebSocket connections.
+    """
     # Generate a unique room ID
     while True:
         room_id = str(uuid.uuid4())
@@ -343,7 +377,8 @@ async def websocket_endpoint(websocket: WebSocket):
                                 try:
                                     await room_connections[room_id_from_file].send_json({"type": "new-graph", "room_id": room_id, "data": room_data})
                                 except RuntimeError as e:
-                                    logger.warning(f"Failed to send data to WebSocket for room {room_id_from_file}: {e}")
+                                    logger.warning(
+                                        f"Failed to send data to WebSocket for room {room_id_from_file}: {e}")
                             # Send data and delete the file after successful transmission
                         os.remove(os.path.join(DATA_DIR, file_name))
                 # Keep the WebSocket connection alive
@@ -353,9 +388,11 @@ async def websocket_endpoint(websocket: WebSocket):
                 pass
     except WebSocketDisconnect:
         # Log the disconnection and remove the WebSocket connection from the mapping
-        logger.warning(f"WebSocket disconnected for room {room_id}. Removing connection.")
+        logger.warning(
+            f"WebSocket disconnected for room {room_id}. Removing connection.")
         if room_id in room_connections:
-            logger.info(f"Removing room_id {room_id} from room_connections due to WebSocket closure")
+            logger.info(
+                f"Removing room_id {room_id} from room_connections due to WebSocket closure")
             room_connections.pop(room_id, None)
 
 
@@ -390,7 +427,6 @@ async def getWsTestHtml():
     return HTMLResponse(html_content)
 
 
-
 ###################
 # Helper Endpoints
 ###################
@@ -398,7 +434,21 @@ async def getWsTestHtml():
 # Endpoint to convert reaction smiles to SVG
 @app.get("/rxsmiles2svg")
 async def rxsmiles_to_svg_endpoint(rxsmiles: str = 'CCO.CC(=O)O>>CC(=O)OCC.O', highlight: bool = True, base64_encode: bool = True, show_atom_indices: bool = False):
-    svg = reaction_smiles_to_image(rxsmiles, align=False, transparent=False, highlight=highlight, retro=False, show_atom_indices=show_atom_indices)
+    """
+    Generates an SVG for a given reaction SMILES string.
+
+    Args:
+    - rxsmiles (str): The reaction SMILES string.
+    - highlight (bool): Whether to highlight the reactants and products.
+    - base64_encode (bool): Whether to encode the SVG as base64.
+    - show_atom_indices (bool): Whether to show atom indices in the SVG.
+
+    Returns:
+    - If base64_encode is True, returns a JSON response with the original reaction SMILES and the base64-encoded SVG.
+    - If base64_encode is False, returns a JSON response with the original reaction SMILES and the SVG.
+    """
+    svg = reaction_smiles_to_image(rxsmiles, align=False, transparent=False,
+                                   highlight=highlight, retro=False, show_atom_indices=show_atom_indices)
     svg = svg.replace('"', "'")
     if base64_encode:
         svg = base64.b64encode(svg.encode('utf-8')).decode('utf-8')
@@ -411,6 +461,18 @@ async def rxsmiles_to_svg_endpoint(rxsmiles: str = 'CCO.CC(=O)O>>CC(=O)OCC.O', h
 
 @app.get("/molsmiles2svg")
 async def smiles_to_svg_endpoint(mol_smiles: str = 'Cc1cc(Br)cc(C)c1C1C(=O)CCC1=O', img_width: int = 300, img_height: int = 300, base64_encode: bool = True):
+    """
+    Generates an SVG for a given molecule SMILES string.
+
+    Args:
+    - mol_smiles (str, optional): The SMILES string of the molecule to be drawn. Defaults to 'Cc1cc(Br)cc(C)c1C1C(=O)CCC1=O'.
+    - img_width (int, optional): The width of the SVG image. Defaults to 300.
+    - img_height (int, optional): The height of the SVG image. Defaults to 300.
+    - base64_encode (bool, optional): Whether to encode the SVG as a base64 string. Defaults to True.
+
+    Returns:
+    - JSONResponse: A JSON response containing the SMILES string and either the SVG string or the base64-encoded SVG string.
+    """
     if not mol_smiles:
         logger.error("Empty SMILES string provided")
         raise HTTPException(
@@ -524,18 +586,18 @@ def apply_layout(network_suid, layout_type):
 def load_example_payload():
     with open("json_example_1.json", "r") as file:
         return json.load(file)
-    
 
-def convert_to_cytoscape_json(aicp_graph):
 
-    synth_graph = aicp_graph["synth_graph"]
-    subgraphs = aicp_graph.get("routes", {}).get("subgraphs", [])
+def convert_to_cytoscape_json(aicp_graph, synth_graph_key="synth_graph"):
 
-    if not subgraphs:
-        raise ValueError("No subgraphs found in the 'routes.subgraphs' section.")
+    synth_graph = aicp_graph[synth_graph_key]
+    routes = aicp_graph.get("routes", [])
 
-    subgraph = subgraphs[0]
-    route_node_labels = set(subgraph["route_node_labels"])
+    if not routes or len(routes) == 0:
+        raise ValueError("No routes found in the 'routes' object.")
+
+    route = routes[0]
+    route_node_labels = set(route["route_node_labels"])
 
     # Filter nodes
     filtered_nodes = [
@@ -546,7 +608,8 @@ def convert_to_cytoscape_json(aicp_graph):
 
     # Filter edges
     filtered_edges = [
-        {"data": {**edge, "source": edge["start_node"], "target": edge["end_node"]}}
+        {"data": {
+            **edge, "source": edge["start_node"], "target": edge["end_node"]}}
         for edge in synth_graph["edges"]
         if edge["start_node"] in route_node_labels and edge["end_node"] in route_node_labels
     ]
@@ -599,10 +662,12 @@ def assign_srole(parsed_data):
 
 
 @app.post("/send_to_cytoscape/", response_model=dict)
-def send_to_cytoscape(network_json: dict = load_example_payload(), layout_type: str = "hierarchical"):
-    """ Uploads a Cytoscape JSON network and applies the default style """
+def send_to_cytoscape(network_json: dict = load_example_payload(), layout_type: str = "hierarchical", synth_graph_key: str = "synth_graph"):
+    """ 
+    Uploads a Cytoscape JSON network and applies the default style/
+    """
     try:
-        network_json = convert_to_cytoscape_json(network_json)
+        network_json = convert_to_cytoscape_json(network_json, synth_graph_key)
         # Send the network to Cytoscape without custom headers
         response = requests.post(
             f"{CYTOSCAPE_URL}/networks?format=cyjs", json=network_json)
@@ -676,6 +741,12 @@ async def normalize_rxsmiles_roles(request: NormalizeRoleRequest) -> NormalizeRo
     """
     Normalizes the roles of a reaction from a RXN Smiles string. Input string must be a valid RXN Smiles
     with atom mapping.
+
+    Args:
+    - rxsmiles (str): A reaction SMILES string in the format 'reactants > reagents > products'.
+
+    Returns:
+    - dict: A dictionary containing the original RXN Smiles string and the normalized RXN Smiles string.
     """
     rxsmiles = request.rxsmiles
 
@@ -698,6 +769,15 @@ async def normalize_rxsmiles_roles(request: NormalizeRoleRequest) -> NormalizeRo
 
 @app.get("/compute_all_bi")
 async def compute_all_bi(rxsmiles: Optional[str] = "ClC(Cl)(O[C:5](=[O:11])OC(Cl)(Cl)Cl)Cl.[Cl:13][C:14]1[CH:19]=[CH:18][C:17]([C:20]2[N:21]=[C:22]([CH:31]3[CH2:36][CH2:35][NH:34][CH2:33][CH2:32]3)[S:23][C:24]=2[C:25]2[CH:30]=[CH:29][CH:28]=[CH:27][CH:26]=2)=[CH:16][CH:15]=1.C(N(CC)CC)C.Cl.[CH3:45][NH:46][OH:47].[Cl-].[NH4+]>ClCCl.O>[Cl:13][C:14]1[CH:19]=[CH:18][C:17]([C:20]2[N:21]=[C:22]([CH:31]3[CH2:36][CH2:35][N:34]([C:5](=[O:11])[N:46]([OH:47])[CH3:45])[CH2:33][CH2:32]3)[S:23][C:24]=2[C:25]2[CH:30]=[CH:29][CH:28]=[CH:27][CH:26]=2)=[CH:16][CH:15]=1"):
+    """
+    Calculates all balance indices for the given reaction smiles.
+
+    Args:
+    - rxsmiles (str): The reaction smiles string.
+
+    Returns:
+    - dict: A dictionary containing the calculated balance indices.
+    """
     try:
         # Ensure rxsmiles is provided
         if rxsmiles is None:
@@ -722,153 +802,59 @@ async def compute_all_bi(rxsmiles: Optional[str] = "ClC(Cl)(O[C:5](=[O:11])OC(Cl
 
 @app.post("/convert2aicp", summary="Convert to AICP format")
 async def convert_to_aicp(request: ConvertToAicpRequest) -> dict:
-    graph_data = request.graph_data
-    convert_askcos = request.convert_askcos
     """
-    Converts to AICP format.
+    Converts a graph format to AICP. Currently only converts from askcos but could be expanded in the future.
+
+    Args:
+    - request (ConvertToAicpRequest): The request object containing the graph data and conversion source
+
+    Returns:
+    -  dict: The converted graph data
     """
-    if convert_askcos:
-        try:
-            # Initialize the result structure
-            parsed_data = {
-                "synth_graph": {
-                    "nodes": [],
-                    "edges": []
-                },
-                "routes": {
-                    "method": "ASKCOS",
+
+    source_data = request.source_data
+    conversion_source = request.convert_from
+
+    if conversion_source not in ["askcos"]:
+        raise HTTPException(
+            status_code=400, detail=f"Invalid conversion source: {conversion_source}")
+
+    if conversion_source == "askcos":
+        synth_graph, paths = askcos_tree2synth_paths_with_graph(TreeSearchResponse(**source_data), USE_RETRO_RXN_RENDERING=False)
+
+        # Flatten node and edge data into list of objects
+        nodes = [
+            {**{k: v for k, v in attrs.items() if k != "node_id"}, "node_id": n}
+            for n, attrs in synth_graph.nodes(data=True)
+        ]
+
+        edges = [
+            dict(source=u, target=v, **attrs)
+            for u, v, attrs in synth_graph.edges(data=True)
+        ]
+
+        # Loop through routes
+        final_routes = []
+        for route in paths:
+            final_routes.append(
+                {
+                    "aggregated_yield": 0.0,
                     "predicted": True,
-                    "subgraphs": [],
-                    "num_subgraphs": 0
+                    "route_index": route["path_index"],
+                    "route_status": "Predicted Synthesis Route",
+                    "method": "ASKCOS v2",
+                    "route_node_labels": route["nodes"]
                 }
-            }
+            )
 
-            # Access the actual data from the 'result' field
-            result = graph_data.get("result", {})
-
-            # Parsing graph nodes
-            availability = []
-            for node in result.get("graph", {}).get("nodes", []):
-                is_reaction = node.get("type") == "reaction"
-                is_substance = node.get("type") == "chemical"
-
-                node_data = {
-                    "node_label": node.get("id"),
-                    "node_type": "reaction" if is_reaction else "substance",
-                    "uuid": node.get("id", ""),
-                    "route_assembly_type": {
-                        "is_predicted": True,
-                        "is_evidence": False,
-                    },
-                }
-
-                if is_reaction:
-                    node_data.update({
-                        "rxid": str(node.get("template", {}).get("index", "")),
-                        "rxsmiles": node.get("id", ""),
-                        "yield_info": {
-                            "yield_predicted": node.get("scscore"),
-                            "yield_score": node.get("scscore")
-                        },
-                        "validation": {
-                            "is_balanced": False
-                        },
-                    })
-                elif is_substance:
-                    node_data.update({
-                        "inchikey": node.get("id", ""),
-                        "canonical_smiles": node.get("id", ""),
-                        "srole": "",
-                    })
-                    if is_substance and node.get("properties"):
-                        availability_item = {
-                            "inchikey": node.get("id", ""),
-                            "inventory": {
-                                "available": False,
-                                "locations": [
-                                    {
-                                        "smiles": node.get("smiles", ""),
-                                        "room": "",
-                                        "position": "",
-                                        "quantity_weight": "",
-                                        "unit": ""
-                                    }
-                                ]
-                            },
-                            "commercial_availability": {
-                                "available": False,
-                                "vendors": [
-                                    {
-                                        "smiles": node.get("smiles", ""),
-                                        "source": "",
-                                        "ppg": "",
-                                        "lead_time": "",
-                                        "url": ""
-                                    }
-                                ]
-                            }
-                        }
-                        availability.append(availability_item)
-
-                parsed_data["synth_graph"]["nodes"].append(node_data)
-
-            node_type_map = {node["node_label"]: node["node_type"]
-                             for node in parsed_data["synth_graph"]["nodes"]}
-
-            # Parsing graph edges (links)
-            for link in result.get("graph", {}).get("links", []):
-                target = link.get("target", "")
-                source = link.get("source", "")
-
-                target_node_type = node_type_map.get(source)
-                edge_type = "reactant_of" if target_node_type == "reaction" else "product_of"
-
-                edge_data = {
-                    "start_node": target,
-                    "end_node": source,
-                    "edge_label": f"{target}|{source}",
-                    "edge_type": edge_type,
-                    "provenance": {
-                        "is_in_aicp": False
-                    },
-                    "uuid": f"{target}|{source}",
-                    "inchikey": target if edge_type == "product_of" else source,
-                    "rxid": source if edge_type == "product_of" else "",
-                    "route_assembly_type": {
-                        "is_predicted": True,
-                        "is_evidence": False
-                    }
-                }
-
-                parsed_data["synth_graph"]["edges"].append(edge_data)
-
-            # Parse routes
-            parsed_data["routes"]["subgraphs"] = []
-            parsed_data["routes"]["num_subgraphs"] = len(
-                result.get("paths", []))
-
-            route_node_labels = set()
-            for path in result.get("paths", []):
-                subgraph_data = {
-                    "aggregate_yield": 0.0,
-                    "route_index": len(parsed_data["routes"]["subgraphs"]),
-                    "route_status": "Viable Route",
-                    "method": "ASKCOS",
-                    "route_node_labels": [node.get("smiles", "") for node in path.get("nodes", [])],
-                }
-                parsed_data["routes"]["subgraphs"].append(subgraph_data)
-                route_node_labels.update(subgraph_data["route_node_labels"])
-
-            # Filter availability to include only substances in route subgraphs
-            parsed_data["availability"] = [
-                item for item in availability if item["inchikey"] in route_node_labels]
-
-            parsed_data = assign_srole(parsed_data)
-
-            return parsed_data
-        except Exception as e:
-            raise HTTPException(
-                status_code=500, detail=f"Error converting ASKCOS data: {str(e)}")
+        # Return converted graph
+        return { 
+            "predictive_synth_graph": {
+                "nodes": nodes,
+                "edges": edges
+            }, 
+            "routes": final_routes
+        }
     else:
         raise HTTPException(
-            status_code=400, detail="Error converting data: Invalid request")
+            status_code=400, detail="Unsupported conversion format")

@@ -228,7 +228,7 @@ def mol_to_image(
             colors
         highlight_bond_colors (dict, optional): map from bond indices to highlight
             colors
-        show_atom_indices (bool, optional): if true show atom indices in depiction 
+        show_atom_indices (bool, optional): if true show atom indices in reaction depiction 
         reference (str, optional): reference molecule to align drawing to based on MCS
         options (MolDrawOptions, optional): custom options object
         **kwargs: passed to Draw.PrepareMolForDrawing
@@ -484,7 +484,7 @@ def molecule_smiles_to_image(
         split (bool, optional): split and draw molecule fragments separately,
             ignored if highlight=True (default: True)
         reference (str, optional): reference molecule to align drawing to based on MCS
-        show_atom_indices (bool, optional): if true show atom indices in depiction 
+        show_atom_indices (bool, optional): if true show atom indices in reaction depiction 
         **kwargs: Passed to mol_to_image
 
     Returns:
@@ -607,7 +607,7 @@ def reaction_smiles_to_image(smiles, svg=True, transparent=True, return_png=True
         align (bool, optional): if True, reactants will be aligned to first product (default: False)
         plus (bool, optional): whether include a plus sign between reactants (default: True)
         update (bool, optional): if True, run UpdatePropertyCache before drawing (default: False)
-        show_atom_indices (bool, optional): if true show atom indices in depiction 
+        show_atom_indices (bool, optional): if true show atom indices in reaction depiction 
         **kwargs: passed to mol_to_image
 
     Returns:
@@ -619,8 +619,9 @@ def reaction_smiles_to_image(smiles, svg=True, transparent=True, return_png=True
     reactants = parsed_smiles.reactants
     products = parsed_smiles.products
     # agents = parsed_smiles.reagents # Commented out as agents are not currently used
-    r_mols = [Chem.MolFromSmarts(r) if show_atom_indices else Chem.MolFromSmiles(r) for r in reactants] if reactants else []
-    p_mols = [Chem.MolFromSmarts(p) if show_atom_indices else Chem.MolFromSmiles(p) for p in products] if products else []
+    r_mols = [Chem.MolFromSmiles(r) for r in reactants]
+    p_mols = [Chem.MolFromSmiles(p) for p in products]
+
 
     if highlight:
         atom_frag_map = {}
