@@ -3,7 +3,7 @@
 # Organization: National Center for Advancing Translational Sciences (NCATS/NIH)
 
 from typing import List, Optional, Union
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, UploadFile
+from fastapi import FastAPI, Query, WebSocket, WebSocketDisconnect, HTTPException, UploadFile, File, Form, Body
 from pydantic import ConfigDict, ValidationError
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -204,7 +204,7 @@ class ReactionNode(Node):
     yield_info: Optional[dict] = None
     rxsmiles: Optional[str] = None
     rxid: Optional[str] = None
-    route_assembly_type: dict
+    route_assembly_type: Optional[dict] = None
     rxclass: Optional[str] = None
     rxname: Optional[str] = None
     original_rxsmiles: Optional[str] = None
@@ -218,104 +218,69 @@ class SubstanceNode(Node):
     srole: Optional[str] = None
     inchikey: Optional[str] = None
     canonical_smiles: Optional[str] = None
-    route_assembly_type: dict
+    route_assembly_type: Optional[dict] = None
 
 
 class Edge(BaseModel):
-    start_node: str
-    end_node: str
-    edge_label: str
-    edge_type: str
-    uuid: str
-    route_assembly_type: dict
+    start_node: Optional[str] = None
+    end_node: Optional[str] = None
+    edge_label: Optional[str] = None
+    edge_type: Optional[str] = None
+    uuid: Optional[str] = None
+    route_assembly_type: Optional[dict] = None
 
 
 class SynthGraph(BaseModel):
     # Define model configuration
     model_config = ConfigDict(extra="ignore", arbitrary_types_allowed=True)
-    
+
     nodes: list[Union[ReactionNode, SubstanceNode]]
     edges: list[Edge]
 
 
 class Route(BaseModel):
-    aggregated_yield: float
-    route_index: int
-    route_status: str
-    method: str
-    predicted: bool
+    aggregated_yield: Optional[float] = None
+    route_index: Optional[int] = None
+    route_status: Optional[str] = None
+    method: Optional[str] = None
+    predicted: Optional[bool] = None
     route_node_labels: list[str]
 
 
 class Availability(BaseModel):
-    inchikey: str
-    inventory: dict
-    commercial_availability: dict
+    inchikey: Optional[str] = None
+    inventory: Optional[dict] = None
+    commercial_availability: Optional[dict] = None
 
 
 class InputFile(BaseModel):
     synth_graph: SynthGraph
-    routes: List[Route]
+    routes: Optional[List[Route]] = None
     availability: Optional[list[Availability]] = None
 
 
-@app.post("/upload_json_to_ui/")
-async def upload_json_to_ui(
-    room_id: str,
-    convert_from_askcos: bool = False,
-    file: Optional[Union[UploadFile]] = None,
-    json_data: Optional[Union[dict]] = None
+@app.post("/upload_json_body/")
+async def upload_json_body(
+    room_id: str = Query(...),
+    convert_from_askcos: bool = Query(False),
+    json_data: dict = Body(...)
 ):
     """
-    Uploads a specified JSON to a Room ID for the NV UI. This endpoint can be used to upload a JSON file or provide JSON text in the request body. 
-    The room ID must come from the NV UI. If you want to upload an ASKCOS JSON you can convert it with `convert_from_askcos`.
-
-    Args:
-    - room_id (str): The room ID to upload the JSON to.
-    - convert_from_askcos (bool, optional): Whether to convert the JSON from ASKCOS format. Defaults to False.
-    - file (Optional[Union[UploadFile]], optional): The JSON file to upload. Defaults to None.
-    - json_data (Optional[Union[dict]], optional): The JSON text to upload. Defaults to None.
-
-    Returns:
-        dict: A dictionary containing the status of the upload.
+    Accepts a raw JSON payload via application/json.
     """
     logger.info(
-        f"Received upload request for room_id: {room_id}, convert_from_askcos: {convert_from_askcos}")
+        f"[JSON Body] Room ID: {room_id}, convert_from_askcos: {convert_from_askcos}")
 
-    # Check if room id is valid
     if room_id not in room_connections:
         raise HTTPException(
             status_code=400, detail=f"Invalid room ID: {room_id}")
 
     try:
-        if file and file.filename is not None and file.filename.strip() != "":
-            file_content = await file.read()
-            json_data = json.loads(file_content)
-            logger.info(f"Processed JSON file: {file.filename}")
-        elif isinstance(json_data, str):
-            json_data = json.loads(json_data)
-        elif isinstance(json_data, dict):
-            pass  # Already in desired form
-        else:
-            raise HTTPException(
-                status_code=400, detail="Either a valid file or JSON text must be provided.")
-
         if convert_from_askcos:
-            try:
-                json_data = await convert_to_aicp(ConvertToAicpRequest(source_data=json_data, convert_from="askcos"))
-            except Exception as e:
-                logger.error(f"Error converting ASKCOS data: {str(e)}")
-                raise HTTPException(
-                    status_code=500, detail=f"Error converting ASKCOS data: {str(e)}")
+            json_data = await convert_to_aicp(ConvertToAicpRequest(source_data=json_data, convert_from="askcos"))
 
         validated_data = InputFile(**json_data)
-
-        if room_id not in room_connections:
-            logger.warning(f"Room ID {room_id} not found in room_connections")
-            raise HTTPException(status_code=404, detail="Room ID not found")
-
         save_room_data(room_id, validated_data.dict())
-        logger.info(f"Saved JSON data to room {room_id}")
 
         try:
             await room_connections[room_id].send_json({
@@ -323,25 +288,54 @@ async def upload_json_to_ui(
                 "room_id": room_id,
                 "data": validated_data.dict()
             })
-            logger.info(f"Sent JSON data to WebSocket for room {room_id}")
-        except RuntimeError as e:
-            logger.warning(
-                f"Failed to send data to WebSocket for room {room_id}: {e}")
         except Exception as e:
-            logger.error(
-                f"Unexpected error while sending data to WebSocket for room {room_id}: {e}")
+            logger.warning(f"WebSocket send error: {e}")
 
         return {"data": validated_data.dict()}
 
-    except json.JSONDecodeError as e:
-        logger.error(f"Invalid JSON file: {str(e)}")
-        raise HTTPException(
-            status_code=400, detail=f"Invalid JSON file: {str(e)}")
-    except ValidationError as e:
-        logger.error(f"Validation error: {str(e)}")
-        raise HTTPException(
-            status_code=422, detail=f"Validation error: {str(e)}")
+    except (json.JSONDecodeError, ValidationError) as e:
+        raise HTTPException(status_code=400, detail=f"Invalid JSON: {str(e)}")
 
+
+@app.post("/upload_json_file/")
+async def upload_json_file(
+    room_id: str = Form(...),
+    convert_from_askcos: bool = Form(False),
+    file: UploadFile = File(...)
+):
+    """
+    Accepts a JSON file via multipart/form-data.
+    """
+    logger.info(
+        f"[File Upload] Room ID: {room_id}, convert_from_askcos: {convert_from_askcos}")
+
+    if room_id not in room_connections:
+        raise HTTPException(
+            status_code=400, detail=f"Invalid room ID: {room_id}")
+
+    try:
+        file_content = await file.read()
+        json_data = json.loads(file_content)
+
+        if convert_from_askcos:
+            json_data = await convert_to_aicp(ConvertToAicpRequest(source_data=json_data, convert_from="askcos"))
+
+        validated_data = InputFile(**json_data)
+        save_room_data(room_id, validated_data.dict())
+
+        try:
+            await room_connections[room_id].send_json({
+                "type": "new-graph",
+                "room_id": room_id,
+                "data": validated_data.dict()
+            })
+        except Exception as e:
+            logger.warning(f"WebSocket send error: {e}")
+
+        return {"data": validated_data.dict()}
+
+    except (json.JSONDecodeError, ValidationError) as e:
+        raise HTTPException(status_code=400, detail=f"Invalid JSON: {str(e)}")
 
 # WebSocket endpoint
 # Maintain a mapping of room IDs to WebSocket connections
@@ -820,7 +814,8 @@ async def convert_to_aicp(request: ConvertToAicpRequest) -> dict:
             status_code=400, detail=f"Invalid conversion source: {conversion_source}")
 
     if conversion_source == "askcos":
-        synth_graph, paths = askcos_tree2synth_paths_with_graph(TreeSearchResponse(**source_data), USE_RETRO_RXN_RENDERING=False)
+        synth_graph, paths = askcos_tree2synth_paths_with_graph(
+            TreeSearchResponse(**source_data), USE_RETRO_RXN_RENDERING=False)
 
         # Flatten node and edge data into list of objects
         nodes = [
@@ -848,11 +843,11 @@ async def convert_to_aicp(request: ConvertToAicpRequest) -> dict:
             )
 
         # Return converted graph
-        return { 
+        return {
             "predictive_synth_graph": {
                 "nodes": nodes,
                 "edges": edges
-            }, 
+            },
             "routes": final_routes
         }
     else:

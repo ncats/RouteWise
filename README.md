@@ -104,7 +104,13 @@ You can use attached JSON examples (check `json-examples` folder) to render some
 
 ![Alt](/images/Example.png "How to visualize graph using JSON files")
 
-When you open the front-end application, a room ID will be assigned to you. You can find this room ID in the URL after `/room/`. If you want to use the `upload_json_to_ui` endpoint, you need to paste this room ID into the request payload as shown in the Jupyter notebook example.
+When you open the front-end application, a room ID will be assigned to you. You can find this room ID in the URL after `?room_id=<room_id>`. To send data to the backend, you now have two options depending on the format of your input:
+
+- For raw JSON input (e.g., from a Python dictionary or JSON file), use the `/upload_json_body/` endpoint. This expects a JSON payload in the request body, with the room_id and convert_from_askcos values passed as query parameters.
+
+- For file uploads (e.g., uploading a .json file), use the `/upload_json_file/` endpoint. This expects a multipart/form-data request, with the room_id and convert_from_askcos included as form fields and the file included as an upload.
+
+Both examples are demonstrated in the Jupyter notebook, where you can choose the appropriate method based on your input format. Be sure to paste your assigned room ID in the relevant input field or parameter to ensure the data is routed correctly.
 
 In the following section we'll describe basic graph structure, so you can create and render your own datasets.
 
