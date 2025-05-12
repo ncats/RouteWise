@@ -137,28 +137,26 @@ function App() {
         const smiles = graphElement.data.canonical_smiles;
         const srole = graphElement.data.srole;
 
-        // Change width and height dependent on srole
-        var width = 100;
-        var height = 100;
-        if (srole === "tm") {
-          width = 250;
-          height = 250;
-        }
-
         // Fetch the SVG for the molecule
         const substancePromise = getMoleculeRdkitSvgBySmiles(
           appSettings.apiUrl,
           smiles,
-          width,
-          height
+          300,
+          300
         )
           .then((svg) => {
             if (svg) {
               const svgUrl = `data:image/svg+xml;base64,${svg}`;
               graphElement.data.svg = svgUrl;
-              const dimensions = getSvgDimensions(svgUrl);
-              graphElement.data.width = dimensions.width;
-              graphElement.data.height = dimensions.height;
+
+              // Change node dimensions based on srole
+              if (srole === "tm") {
+                graphElement.data.width = 250;
+                graphElement.data.height = 250;
+              } else {
+                graphElement.data.width = 100;
+                graphElement.data.height = 100;
+              }
               addNodeSvg({ [molId]: svgUrl });
 
               if (appSettings.showAllSubstanceStructure) {

@@ -270,7 +270,7 @@ const EntityInformation = () => {
               )}
               {entityInfo && entityType === "node" && (
                 <>
-                  {svgToShow && (
+                  {svgToShow && isReaction &&(
                     <img
                       src={`data:image/svg+xml;base64,${svgToShow}`}
                       alt="SVG"
@@ -279,6 +279,19 @@ const EntityInformation = () => {
                         height: "auto",
                         border: "1px solid black",
                         cursor: "pointer",
+                      }}
+                    />
+                  )}
+                  {svgToShow && isSubstance &&(
+                    <img
+                      src={`data:image/svg+xml;base64,${svgToShow}`}
+                      alt="SVG"
+                      style={{
+                        maxWidth: "100%",
+                        border: "1px solid black",
+                        cursor: "pointer",
+                        height: "300px",
+                        width: "300px",
                       }}
                     />
                   )}
@@ -291,7 +304,8 @@ const EntityInformation = () => {
                     {entityInfo.node_type && isSubstance && (
                       <>
                         <p>
-                          <Text>
+                          <Text
+                              copyable={{ text: entityInfo.inchikey }}>
                             <b>Inchikey:</b> {entityInfo.inchikey}
                           </Text>
                         </p>

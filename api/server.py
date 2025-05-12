@@ -170,6 +170,13 @@ def save_room_data(room_id, data):
     with open(room_file, "w") as file:
         json.dump(data, file)
 
+# Load example payload
+
+
+def load_example_payload():
+    with open("json_example_1.json", "r") as file:
+        return json.load(file)
+
 # Redirect root endpoint to Swagger docs
 
 
@@ -198,6 +205,8 @@ class Node(BaseModel):
     node_label: str
     node_type: str
     uuid: str
+    route_assembly_type: Optional[dict] = None
+    provenance: Optional[dict] = None
 
 
 class ReactionNode(Node):
@@ -205,7 +214,6 @@ class ReactionNode(Node):
     yield_info: Optional[dict] = None
     rxsmiles: Optional[str] = None
     rxid: Optional[str] = None
-    route_assembly_type: Optional[dict] = None
     rxclass: Optional[str] = None
     rxname: Optional[str] = None
     original_rxsmiles: Optional[str] = None
@@ -218,7 +226,6 @@ class SubstanceNode(Node):
     srole: Optional[str] = None
     inchikey: Optional[str] = None
     canonical_smiles: Optional[str] = None
-    route_assembly_type: Optional[dict] = None
 
 
 class Edge(BaseModel):
@@ -228,6 +235,7 @@ class Edge(BaseModel):
     edge_type: Optional[str] = None
     uuid: Optional[str] = None
     route_assembly_type: Optional[dict] = None
+    provenance: Optional[dict] = None
 
 
 class SynthGraph(BaseModel):
@@ -254,7 +262,8 @@ class Availability(BaseModel):
 
 
 class InputFile(BaseModel):
-    synth_graph: SynthGraph
+    synth_graph: Optional[SynthGraph] = None
+    predictive_synth_graph: Optional[SynthGraph] = None
     routes: Optional[List[Route]] = None
     availability: Optional[list[Availability]] = None
 
@@ -263,10 +272,23 @@ class InputFile(BaseModel):
 async def upload_json_body(
     room_id: str = Query(...),
     convert_from_askcos: bool = Query(False),
-    json_data: dict = Body(...)
+    json_data: dict = Body(..., example=load_example_payload())
 ):
     """
-    Accepts a raw JSON payload via application/json.
+    Upload JSON data to a specific room. The 'room_id' parameter specifies the room to which the data should be uploaded.
+    A Room ID can be found in the URL after '?room_id=<room_id>'.
+
+    **Query Parameters**:
+    - `room_id` (str, required): The unique room identifier. This should match the room ID in the frontend URL, e.g., `/room/<room_id>`.
+    - `convert_from_askcos` (bool, optional): If `true`, the uploaded data will be converted from ASKCOS format before being processed. Defaults to `false`.
+
+    **Request Body**:
+    - `json_data` (dict): The JSON payload representing a reaction or synthesis graph. The structure must match the expected schema. See example in Swagger UI or refer to `public/json_example_1.json`.
+
+    If `convert_from_askcos` is enabled, the `json_data` will be transformed to AICP format before validation and storage.
+
+    **Returns**:
+    Returns the validated data as confirmation.
     """
     logger.info(
         f"[JSON Body] Room ID: {room_id}, convert_from_askcos: {convert_from_askcos}")
@@ -299,12 +321,32 @@ async def upload_json_body(
 
 @app.post("/upload_json_file/")
 async def upload_json_file(
-    room_id: str = Form(...),
+    room_id: str = Form(...,
+                        description="Room ID to associate the uploaded file with", example=""),
     convert_from_askcos: bool = Form(False),
     file: UploadFile = File(...)
 ):
     """
-    Accepts a JSON file via multipart/form-data.
+    Upload a JSON file containing reaction or synthesis data to a specific room. The 'room_id' parameter specifies the room to which the data should be uploaded.
+    A Room ID can be found in the URL after '?room_id=<room_id>'.
+
+    **Form Fields (multipart/form-data)**:
+    - `room_id` (str, required): The room ID to associate with the uploaded data. This should match the ID found in the frontend URL (`/room/<room_id>`).
+    - `convert_from_askcos` (bool, optional): If set to `true`, the uploaded JSON will be converted from ASKCOS format before processing. Defaults to `false`.
+
+    **File Upload**:
+    - `file` (UploadFile, required): A `.json` file containing a reaction or synthesis graph. The structure must conform to the expected schema. Example files can be found in: `ui/public/`
+
+    Additionally, if you have the UI running you can download JSON examples from the following:
+    - [JSON Example 1](http://localhost:4204/public/json_example_1.json)
+    - [JSON Example 2](http://localhost:4204/public/json_example_2.json)
+    - [Hybrid Routes Example](http://localhost:4204/public/hybrid_routes_example.json)
+    - [Predicted Routes Example](http://localhost:4204/public/askcos_route_sample.json) **Note: 'convert_from_askcos' must be set to 'true' to upload this file.**
+
+    This endpoint expects a `multipart/form-data` request. Upon successful upload and optional format conversion, the data is validated and broadcast to all WebSocket connections associated with the specified room.
+
+    **Returns**:
+    A JSON object containing the validated and processed data.
     """
     logger.info(
         f"[File Upload] Room ID: {room_id}, convert_from_askcos: {convert_from_askcos}")
@@ -577,11 +619,6 @@ def apply_layout(network_suid, layout_type):
     return {"error": f"Failed to apply layout '{layout_type}'."}
 
 
-def load_example_payload():
-    with open("json_example_1.json", "r") as file:
-        return json.load(file)
-
-
 def flatten_dict(d, parent_key='', sep='_'):
     """
     Flattens a nested dictionary. For example:
@@ -672,8 +709,29 @@ def assign_srole(parsed_data):
 
 @app.post("/send_to_cytoscape/", response_model=dict)
 def send_to_cytoscape(network_json: dict = load_example_payload(), layout_type: str = "hierarchical", synth_graph_key: str = "synth_graph"):
-    """ 
-    Uploads a Cytoscape JSON network and applies the default style/
+    """
+    Upload a network JSON to Cytoscape and apply AICP-specific styling and layout.
+
+    This endpoint sends a preprocessed Cytoscape JSON network to the Cytoscape REST API, creates a view for it,
+    applies a default AICP visual style, and optionally applies a layout (e.g., "hierarchical").
+
+    **Query Parameters**:
+    - `layout_type` (str, optional): The name of the layout algorithm to apply. Defaults to `"hierarchical"`.
+    - `synth_graph_key` (str, optional): The key in the input JSON to extract the synthesis graph. Defaults to `"synth_graph"`.
+
+    **Request Body**:
+    - `network_json` (dict): The AICP-formatted graph data structure to be converted and sent to Cytoscape.
+      If no input is provided, an example payload will be used by default.
+
+    **Returns**:
+    - A dictionary with the following keys on success:
+      - `network_suid` (int): The unique Cytoscape network session ID.
+      - `view_suid` (int): The associated view ID used for styling and layout.
+    - On failure, returns a dictionary with an `"error"` key and explanation.
+
+    **Notes**:
+    - This endpoint assumes a running Cytoscape instance accessible via the configured `CYTOSCAPE_URL`.
+    - Errors in network creation, view generation, styling, or layout will be logged and returned as structured error messages.
     """
     try:
         network_json = convert_to_cytoscape_json(network_json, synth_graph_key)

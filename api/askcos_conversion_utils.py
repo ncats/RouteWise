@@ -10,6 +10,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class NoPathsFoundInAskcosResponse(Exception):
     """Raised when no paths are found in the askcos tree"""
 
@@ -34,14 +35,17 @@ def askcos_tree2synth_graph(tree: TreeSearchResponse, USE_RETRO_RXN_RENDERING: b
     Converts an ASKCOS graph to an AICP SynthGraph. This utilizes the 'graph' property of a TreeSearchResponse object.
     """
     if not tree.result:
-        raise ValueError("No result found in provided ASKCOS tree search response.")
+        raise ValueError(
+            "No result found in provided ASKCOS tree search response.")
 
     # Get original graph from ASKCOS
-    logger.debug("Processing ASKCOS Graph. Debug logging will provide entire ASKCOS response.")
+    logger.debug(
+        "Processing ASKCOS Graph. Debug logging will provide entire ASKCOS response.")
     askcos_graph = tree.result.graph
 
     if not askcos_graph:
-        raise ValueError("No graph found in provided ASKCOS tree search response.")
+        raise ValueError(
+            "No graph found in provided ASKCOS tree search response.")
 
     # Retrieve
     askcos_nodes = askcos_graph["nodes"]
@@ -49,10 +53,12 @@ def askcos_tree2synth_graph(tree: TreeSearchResponse, USE_RETRO_RXN_RENDERING: b
 
     # Check for empty nodes and edges
     if not askcos_nodes or not askcos_edges:
-        raise ValueError("Invalid graph found in provided ASKCOS tree search response.")
+        raise ValueError(
+            "Invalid graph found in provided ASKCOS tree search response.")
 
     # Process nodes and edges
-    synth_graph = process_askcos_nodes_and_edges(askcos_nodes, askcos_edges, USE_RETRO_RXN_RENDERING)
+    synth_graph = process_askcos_nodes_and_edges(
+        askcos_nodes, askcos_edges, USE_RETRO_RXN_RENDERING)
 
     # Assign synthesis roles
     synth_graph = assign_synth_roles(synth_graph)
@@ -65,14 +71,17 @@ def askcos_tree2synth_paths(tree: TreeSearchResponse, USE_RETRO_RXN_RENDERING: b
     Converts an ASKCOS graph to a list of AICP SynthRoutes. This utilizes the 'paths' property of a TreeSearchResponse object.
     """
     if not tree.result:
-        raise NoResultFoundInAskcosResponse("No result found in provided ASKCOS tree search response.")
+        raise NoResultFoundInAskcosResponse(
+            "No result found in provided ASKCOS tree search response.")
 
     # Get original paths from ASKCOS
-    logger.debug("Processing ASKCOS Paths. Debug logging will provide entire ASKCOS response.")
+    logger.debug(
+        "Processing ASKCOS Paths. Debug logging will provide entire ASKCOS response.")
     askcos_paths = tree.result.paths
 
     if not askcos_paths:
-        raise NoPathsFoundInAskcosResponse("No paths found in provided ASKCOS tree search response.")
+        raise NoPathsFoundInAskcosResponse(
+            "No paths found in provided ASKCOS tree search response.")
 
     # Process each path
     synth_routes = []
@@ -81,7 +90,8 @@ def askcos_tree2synth_paths(tree: TreeSearchResponse, USE_RETRO_RXN_RENDERING: b
         # Process nodes and edges
         askcos_nodes = path["nodes"]
         askcos_edges = path["edges"]
-        synth_graph = process_askcos_nodes_and_edges(askcos_nodes, askcos_edges, USE_RETRO_RXN_RENDERING)
+        synth_graph = process_askcos_nodes_and_edges(
+            askcos_nodes, askcos_edges, USE_RETRO_RXN_RENDERING)
 
         # Assign synthesis roles
         synth_graph = assign_synth_roles(synth_graph)
@@ -119,7 +129,8 @@ def swap_reaction_sections(rxsmiles):
         ext_type, ext_data = extension.split(":")
         if ext_type != "f":
             raise ValueError("Unsupported extension type")
-        component_groups = [list(map(int, group.split("."))) for group in ext_data.strip("|").split(",")]
+        component_groups = [list(map(int, group.split(".")))
+                            for group in ext_data.strip("|").split(",")]
         # Total components in each section
         total_reactants = len(reactant_components)
         total_reagents = len(reagent_components)
@@ -132,14 +143,18 @@ def swap_reaction_sections(rxsmiles):
         for group in component_groups:
             # Adjust indices based on the section
             if all(i < total_reactants for i in group):  # Reactants -> Products
-                new_f.append(".".join(str(i + total_reagents + total_products) for i in group))
+                new_f.append(
+                    ".".join(str(i + total_reagents + total_products) for i in group))
             elif all(total_reactants <= i < total_reactants + total_reagents for i in group):  # Reagents
                 # Reagents stay in the middle but need to shift to accommodate new boundaries
-                new_f.append(".".join(str(i - total_reactants + new_total_reactants) for i in group))
+                new_f.append(".".join(str(i - total_reactants +
+                             new_total_reactants) for i in group))
             elif all(i >= total_reactants + total_reagents for i in group):  # Products -> Reactants
-                new_f.append(".".join(str(i - total_reagents - total_reactants) for i in group))
+                new_f.append(
+                    ".".join(str(i - total_reagents - total_reactants) for i in group))
             else:
-                raise ValueError(f"Group {group} crosses section boundaries, violating rules.")
+                raise ValueError(
+                    f"Group {group} crosses section boundaries, violating rules.")
         # Rebuild the swapped RXSMILES
         swapped_rxsmiles = f"{products}>{reagents}>{reactants} |f:{','.join(new_f)}|"
 
@@ -189,7 +204,8 @@ def convert_askcos_edge_to_synth_edge(
         start_node = target
         end_node = source
     else:
-        raise ValueError(f"Invalid edge type found between nodes {source} and {target}")
+        raise ValueError(
+            f"Invalid edge type found between nodes {source} and {target}")
 
     # Directly create the edge metadata dictionary without using objects
     edge_metadata = {
@@ -201,6 +217,8 @@ def convert_askcos_edge_to_synth_edge(
         "is_predicted": True,
         "inchikey": "",
         "rxid": "",
+        "provenance": {"is_from_asckos": True},
+        "route_assembly_type": {"is_predicted": True},
     }
 
     return edge_metadata
@@ -212,7 +230,8 @@ def process_askcos_nodes_and_edges(askcos_nodes: List[Dict[Any, Any]], askcos_ed
 
     # Process all nodes
     for node in askcos_nodes:
-        node_metadata = convert_askcos_node_to_synth_node(node, USE_RETRO_RXN_RENDERING)
+        node_metadata = convert_askcos_node_to_synth_node(
+            node, USE_RETRO_RXN_RENDERING)
         node_type_map[node_metadata["node_id"]] = node_metadata["node_type"]
         graph.add_node(node_metadata["node_id"], **node_metadata)
 
@@ -228,10 +247,12 @@ def process_askcos_nodes_and_edges(askcos_nodes: List[Dict[Any, Any]], askcos_ed
             raise ValueError(f"Target node {target} not found in graph.")
 
         # Convert edge using the Edge class and edge metadata
-        edge_metadata = convert_askcos_edge_to_synth_edge(source, target, node_type_map, edge_type="reactant_of")
+        edge_metadata = convert_askcos_edge_to_synth_edge(
+            source, target, node_type_map, edge_type="reactant_of")
 
         # Add edge to graph
-        graph.add_edge(edge_metadata["start_node"], edge_metadata["end_node"], **edge_metadata)
+        graph.add_edge(edge_metadata["start_node"],
+                       edge_metadata["end_node"], **edge_metadata)
 
     # Return final generated graph
     return graph
@@ -249,7 +270,8 @@ def convert_askcos_node_to_synth_node(askcos_node: Dict[Any, Any], USE_RETRO_RXN
     node_id = askcos_node["id"]  # Added line to include node_id
 
     if node_type not in ASKCOS_NODE_TYPES:
-        raise ValueError(f"Invalid node type found from ASKCOS: {node_type}. ASKCOS Node ID: {node_id}")
+        raise ValueError(
+            f"Invalid node type found from ASKCOS: {node_type}. ASKCOS Node ID: {node_id}")
 
     # Handle reaction nodes
     if node_type == "reaction":
@@ -273,6 +295,8 @@ def convert_askcos_node_to_synth_node(askcos_node: Dict[Any, Any], USE_RETRO_RXN
             "rxid": rxid,
             "rxsmiles": rxsmiles,
             "node_type": AICP_REACTION_NODE_TYPE,
+            "provenance": {"is_from_asckos": True},
+            "route_assembly_type": {"is_predicted": True},
         }
 
         return reaction_dict
@@ -283,7 +307,8 @@ def convert_askcos_node_to_synth_node(askcos_node: Dict[Any, Any], USE_RETRO_RXN
         mol = Chem.MolFromSmiles(smiles)
         inchikey = Chem.MolToInchiKey(mol)
     except Exception:
-        raise ValueError(f"RDKit problem with parsing SMILES {smiles} and/or generating InChI-Key. ASKCOS Node ID: {node_id}")
+        raise ValueError(
+            f"RDKit problem with parsing SMILES {smiles} and/or generating InChI-Key. ASKCOS Node ID: {node_id}")
 
     # Directly build the substance dictionary
     substance_dict = {
@@ -295,6 +320,8 @@ def convert_askcos_node_to_synth_node(askcos_node: Dict[Any, Any], USE_RETRO_RXN
         "srole": askcos_node.get("srole", ""),
         "is_predicted": True,
         "node_type": AICP_SUBSTANCE_NODE_TYPE,
+        "provenance": {"is_from_asckos": True},
+        "route_assembly_type": {"is_predicted": True},
     }
 
     return substance_dict
@@ -315,7 +342,8 @@ def identify_target_molecule(graph: DiGraph) -> str:
             break
 
     if target_molecule is None:
-        raise ValueError("No target molecule found in the provided synthesis graph.")
+        raise ValueError(
+            "No target molecule found in the provided synthesis graph.")
 
     return target_molecule
 
@@ -360,13 +388,15 @@ def askcos_tree2synth_paths_with_graph(tree: TreeSearchResponse, USE_RETRO_RXN_R
     Converts an ASKCOS graph to a synth graph and a list of AICP paths.
     """
     if not tree.result:
-        raise NoResultFoundInAskcosResponse("No result found in provided ASKCOS tree search response.")
+        raise NoResultFoundInAskcosResponse(
+            "No result found in provided ASKCOS tree search response.")
 
     # Get original paths from ASKCOS
     askcos_paths = tree.result.paths
 
     if not askcos_paths:
-        raise NoPathsFoundInAskcosResponse("No paths found in provided ASKCOS tree search response.")
+        raise NoPathsFoundInAskcosResponse(
+            "No paths found in provided ASKCOS tree search response.")
 
     graph_nodes = []
     graph_edges = []
@@ -383,7 +413,8 @@ def askcos_tree2synth_paths_with_graph(tree: TreeSearchResponse, USE_RETRO_RXN_R
         for edge in path["edges"]:
             graph_edges.append(edge)
             path_edges.append(edge)
-        graph_paths.append({"nodes": path_nodes, "edges": path_edges, "path_index": path_index})
+        graph_paths.append(
+            {"nodes": path_nodes, "edges": path_edges, "path_index": path_index})
         path_index += 1
 
     # Step 1: Merge nodes with same SMILES
@@ -405,13 +436,16 @@ def askcos_tree2synth_paths_with_graph(tree: TreeSearchResponse, USE_RETRO_RXN_R
     # Step 3: Update paths to use new IDs
     for path in graph_paths:
         # Map nodes to just the IDs
-        path["nodes"] = [old_id_to_new_id[node["id"]] for node in path["nodes"]]
+        path["nodes"] = [old_id_to_new_id[node["id"]]
+                         for node in path["nodes"]]
 
         # Map edges to just the labels
-        path["edges"] = [edge["to"] + "|" + edge["from"] for edge in path["edges"]]
+        path["edges"] = [edge["to"] + "|" + edge["from"]
+                         for edge in path["edges"]]
 
     # Step 4: Synthesize graph
-    synth_graph = process_askcos_nodes_and_edges(merged_nodes, graph_edges, USE_RETRO_RXN_RENDERING)
+    synth_graph = process_askcos_nodes_and_edges(
+        merged_nodes, graph_edges, USE_RETRO_RXN_RENDERING)
 
     # Step 5: Assign synthesis roles
     synth_graph = assign_synth_roles(synth_graph)
