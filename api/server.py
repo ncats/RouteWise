@@ -119,6 +119,12 @@ new_style_json = {
                 {"key": "reactant_of", "value": "#225EA8"},
                 {"key": "reagent_of", "value": "#225EA8"}
             ]
+        },
+        {
+            "mappingType": "passthrough",
+            "mappingColumn": "node_label",
+            "mappingColumnType": "String",
+            "visualProperty": "NODE_LABEL"
         }
     ]
 }
@@ -562,15 +568,14 @@ def create_style(style_name, style_json):
     try:
         # Check if the style already exists
         existing_styles_response = requests.get(f"{CYTOSCAPE_URL}/styles")
+
+        # Check if the request was successful
         if existing_styles_response.ok:
             existing_styles = existing_styles_response.json()
             print("Existing styles:", existing_styles)  # Debug print
 
-            # Extract the style names
-            style_names = [style['title']
-                           for style in existing_styles if isinstance(style, dict)]
-
-            if style_name in style_names:
+            # Check if the style already exists
+            if style_name in existing_styles:
                 print(
                     f"Style '{style_name}' already exists. Applying existing style.")
                 return True  # Style already exists
@@ -669,6 +674,11 @@ def convert_to_cytoscape_json(aicp_graph, synth_graph_key="synth_graph", predict
         for node in synth_graph["nodes"]
         if node["node_label"] in route_node_labels
     ]
+
+    if predicted_route:
+        for node in filtered_nodes:
+            if node["data"]["node_type"].lower() == "substance":
+                node["data"]["node_label"] = node["data"]["inchikey"]
 
     # Flatten edge properties and include "source"/"target"
     filtered_edges = [
