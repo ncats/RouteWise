@@ -24,8 +24,8 @@ class NoResultFoundInAskcosResponse(Exception):
 
 
 ASKCOS_NODE_TYPES = ["reaction", "chemical"]
-AICP_REACTION_NODE_TYPE = "Reaction"
-AICP_SUBSTANCE_NODE_TYPE = "Substance"
+AICP_REACTION_NODE_TYPE = "reaction"
+AICP_SUBSTANCE_NODE_TYPE = "substance"
 AICP_PRODUCT_OF_EDGE_TYPE = "PRODUCT_OF"
 AICP_REACTANT_OF_EDGE_TYPE = "REACTANT_OF"
 

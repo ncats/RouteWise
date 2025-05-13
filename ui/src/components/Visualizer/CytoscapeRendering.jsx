@@ -97,6 +97,8 @@ const CytoscapeRendering = ({ graph, layout }) => {
       element.removeClass("highlighted"); // Remove the highlight class
     });
 
+    console.log(graph);
+
     // Cleanup function to unbind events when component unmounts
     return () => {
       if (cyRef.current) {

@@ -20,7 +20,6 @@ import {
 import { MainContext } from "../../contexts/MainContext";
 import { curveStyles, graphLayouts } from "../../helpers/commonHelpers";
 import GraphLegend from "./GraphLegend";
-import ApiStatusCheck from "./ApiStatusCheck";
 
 const SETTINGS_TITLE = "Settings";
 const LEGEND_TITLE = "Legend";
@@ -115,16 +114,6 @@ const Settings = () => {
           content={
             <Flex gap="middle" vertical>
               <Flex gap="middle">
-                <div>Show Atom Indices in Reaction Depiction</div>
-                <Switch
-                  value={showAtomIndices}
-                  onChange={(checked) => {
-                    setAtomIndices(checked);
-                    reloadGraph();
-                  }}
-                />
-              </Flex>
-              <Flex gap="middle">
                 <div>Show structures for all the substances</div>
                 <Switch
                   value={appSettings.showAllSubstanceStructure}
@@ -140,6 +129,15 @@ const Settings = () => {
                 />
               </Flex>
               <Flex gap="middle">
+                <div>Duplicate reagents and starting materials</div>
+                <Switch
+                  value={duplicateReagents}
+                  onChange={(checked) => {
+                    setDuplicateReagents(checked);
+                  }}
+                />
+              </Flex>
+              <Flex gap="middle">
                 <div>Enable Normalize Roles for Reactions</div>
                 <Switch
                   value={normalizeRolesEnabled}
@@ -150,20 +148,21 @@ const Settings = () => {
                 />
               </Flex>
               <Flex gap="middle">
-                <div>Duplicate reagents and starting materials</div>
-                <Switch
-                  value={duplicateReagents}
-                  onChange={(checked) => {
-                    setDuplicateReagents(checked);
-                  }}
-                />
-              </Flex>
-              <Flex gap="middle">
                 <div>Highlight Atom Indices in Reaction depictions</div>
                 <Switch
                   value={highlightAtoms}
                   onChange={(checked) => {
                     setHighlightAtoms(checked);
+                    reloadGraph();
+                  }}
+                />
+              </Flex>
+              <Flex gap="middle">
+                <div>Show Atom Indices in Reaction Depiction</div>
+                <Switch
+                  value={showAtomIndices}
+                  onChange={(checked) => {
+                    setAtomIndices(checked);
                     reloadGraph();
                   }}
                 />
@@ -219,8 +218,6 @@ const Settings = () => {
                   </Radio>
                 </Radio.Group>
               </Flex>
-              <Divider style={{ margin: 0 }} />
-              <ApiStatusCheck />
             </Flex>
           }
           title={SETTINGS_TITLE}
@@ -250,12 +247,16 @@ const Settings = () => {
             <em>Citation for Network Visualizer manuscript TBD.</em>
           </Paragraph>
           <Paragraph>
-            <em>
-              Citation for Network Visualizer code repository TBD.
-            </em>
+            <em>Citation for Network Visualizer code repository TBD.</em>
           </Paragraph>
           <Paragraph>
-            <b>NV API Swagger Page:</b> <a href={process.env.API_URL + "/api/v1/docs/aicp/nv_api"} target="_blank">{process.env.API_URL + "/api/v1/docs/aicp/nv_api"}</a>
+            <b>NV API Swagger Page:</b>{" "}
+            <a
+              href={process.env.API_URL + "/api/v1/docs/aicp/nv_api"}
+              target="_blank"
+            >
+              {process.env.API_URL + "/api/v1/docs/aicp/nv_api"}
+            </a>
           </Paragraph>
           <Paragraph>
             Developed by the{" "}

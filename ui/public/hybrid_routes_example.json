@@ -2717,7 +2717,7 @@
         "canonical_smiles": "I[Zn]c1ccccc1",
         "srole": "sm",
         "route_assembly_type": {
-          "is_predicted": false,
+          "is_predicted": true,
           "is_evidence": false
         },
         "provenance": {
@@ -2733,7 +2733,7 @@
         "canonical_smiles": "BrCc1ccccc1",
         "srole": "sm",
         "route_assembly_type": {
-          "is_predicted": false,
+          "is_predicted": true,
           "is_evidence": false
         },
         "provenance": {
@@ -2749,7 +2749,7 @@
         "canonical_smiles": "O=C(O)c1cc(Br)cc2cc[nH]c12",
         "srole": "sm",
         "route_assembly_type": {
-          "is_predicted": false,
+          "is_predicted": true,
           "is_evidence": false
         },
         "provenance": {
@@ -2780,7 +2780,7 @@
           "is_valid": true
         },
         "route_assembly_type": {
-          "is_predicted": false,
+          "is_predicted": true,
           "is_evidence": false
         },
         "evidence_protocol": null,
@@ -2795,7 +2795,7 @@
         "canonical_smiles": "O=C(OCc1ccccc1)c1cc(Br)cc2cc[nH]c12",
         "srole": "im",
         "route_assembly_type": {
-          "is_predicted": false,
+          "is_predicted": true,
           "is_evidence": false
         },
         "provenance": {
@@ -2826,7 +2826,7 @@
           "is_valid": true
         },
         "route_assembly_type": {
-          "is_predicted": false,
+          "is_predicted": true,
           "is_evidence": false
         },
         "evidence_protocol": null,
@@ -2841,7 +2841,7 @@
         "canonical_smiles": "O=C(OCc1ccccc1)c1cc(-c2ccccc2)cc2cc[nH]c12",
         "srole": "im",
         "route_assembly_type": {
-          "is_predicted": false,
+          "is_predicted": true,
           "is_evidence": false
         },
         "provenance": {
@@ -2872,7 +2872,7 @@
           "is_valid": true
         },
         "route_assembly_type": {
-          "is_predicted": false,
+          "is_predicted": true,
           "is_evidence": false
         },
         "evidence_protocol": null,
@@ -2887,7 +2887,7 @@
         "canonical_smiles": "O=C(O)c1cc(-c2ccccc2)cc2cc[nH]c12",
         "srole": "tm",
         "route_assembly_type": {
-          "is_predicted": false,
+          "is_predicted": true,
           "is_evidence": false
         },
         "provenance": {
@@ -2903,7 +2903,7 @@
         "canonical_smiles": "Ic1ccccc1",
         "srole": "sm",
         "route_assembly_type": {
-          "is_predicted": false,
+          "is_predicted": true,
           "is_evidence": false
         },
         "provenance": {
@@ -2919,7 +2919,7 @@
         "canonical_smiles": "ClCc1ccccc1",
         "srole": "sm",
         "route_assembly_type": {
-          "is_predicted": false,
+          "is_predicted": true,
           "is_evidence": false
         },
         "provenance": {
@@ -2950,7 +2950,7 @@
           "is_valid": true
         },
         "route_assembly_type": {
-          "is_predicted": false,
+          "is_predicted": true,
           "is_evidence": false
         },
         "evidence_protocol": null,
@@ -2980,7 +2980,7 @@
           "is_valid": true
         },
         "route_assembly_type": {
-          "is_predicted": false,
+          "is_predicted": true,
           "is_evidence": false
         },
         "evidence_protocol": null,
@@ -2995,7 +2995,7 @@
         "canonical_smiles": "C[Sn](C)(C)c1ccccc1",
         "srole": "sm",
         "route_assembly_type": {
-          "is_predicted": false,
+          "is_predicted": true,
           "is_evidence": false
         },
         "provenance": {
@@ -3026,7 +3026,7 @@
           "is_valid": true
         },
         "route_assembly_type": {
-          "is_predicted": false,
+          "is_predicted": true,
           "is_evidence": false
         },
         "evidence_protocol": null,
@@ -3041,7 +3041,7 @@
         "canonical_smiles": "OB(O)c1ccccc1",
         "srole": "sm",
         "route_assembly_type": {
-          "is_predicted": false,
+          "is_predicted": true,
           "is_evidence": false
         },
         "provenance": {
@@ -3072,7 +3072,7 @@
           "is_valid": true
         },
         "route_assembly_type": {
-          "is_predicted": false,
+          "is_predicted": true,
           "is_evidence": false
         },
         "evidence_protocol": null,

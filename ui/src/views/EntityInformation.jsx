@@ -97,7 +97,7 @@ const EntityInformation = () => {
       }
 
       if (nodeInfo) {
-        if (nodeInfo.node_type === "substance") {
+        if (nodeInfo.node_type.toLowerCase() === "substance") {
           const availabilityItem = aicpGraph.availability?.find(
             (item) => item.inchikey === nodeInfo.node_label
           );

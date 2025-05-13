@@ -165,10 +165,10 @@ function App() {
               } else {
                 // show only TM reaction depictions
                 graphElement.data.type =
-                  graphElement.data.node_type !== "substance" &&
+                  graphElement.data.node_type.toLowerCase() !== "substance" &&
                   graphElement.data.is_valid === "false"
                     ? ""
-                    : graphElement.data.node_type === "substance" &&
+                    : graphElement.data.node_type.toLowerCase() === "substance" &&
                       graphElement.data.srole !== "tm"
                     ? ""
                     : "custom";

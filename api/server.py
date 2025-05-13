@@ -2,6 +2,7 @@
 #
 # Organization: National Center for Advancing Translational Sciences (NCATS/NIH)
 
+from enum import Enum
 from typing import List, Optional, Union
 from fastapi import FastAPI, Query, WebSocket, WebSocketDisconnect, HTTPException, UploadFile, File, Form, Body
 from pydantic import ConfigDict, ValidationError, BaseModel
@@ -118,12 +119,6 @@ new_style_json = {
                 {"key": "reactant_of", "value": "#225EA8"},
                 {"key": "reagent_of", "value": "#225EA8"}
             ]
-        },
-        {
-            "mappingType": "passthrough",
-            "mappingColumn": "node_id",
-            "mappingColumnType": "String",
-            "visualProperty": "NODE_LABEL"
         }
     ]
 }
@@ -268,10 +263,16 @@ class InputFile(BaseModel):
     availability: Optional[list[Availability]] = None
 
 
+class ConvertFromOptions(str, Enum):
+    askcos = "askcos"
+    # Add more options here in the future, e.g.
+
+
 @app.post("/upload_json_body/")
 async def upload_json_body(
     room_id: str = Query(...),
-    convert_from_askcos: bool = Query(False),
+    convert_to_aicp: bool = Query(False),
+    convert_from: Optional[ConvertFromOptions] = Query(None),
     json_data: dict = Body(..., example=load_example_payload())
 ):
     """
@@ -280,26 +281,30 @@ async def upload_json_body(
 
     **Query Parameters**:
     - `room_id` (str, required): The unique room identifier. This should match the room ID in the frontend URL, e.g., `/room/<room_id>`.
-    - `convert_from_askcos` (bool, optional): If `true`, the uploaded data will be converted from ASKCOS format before being processed. Defaults to `false`.
+    - `convert_to_aicp` (bool, optional): If set to `true`, must be paired with 'convert_from' to convert the uploaded data to AICP format.
+    - `convert_from` (str, optional): If set to 'askcos', the uploaded data will be converted from ASKCOS format before being processed.
 
     **Request Body**:
     - `json_data` (dict): The JSON payload representing a reaction or synthesis graph. The structure must match the expected schema. See example in Swagger UI or refer to `public/json_example_1.json`.
 
-    If `convert_from_askcos` is enabled, the `json_data` will be transformed to AICP format before validation and storage.
+    If `convert_to_aicp` is enabled, the `json_data` will be transformed to AICP format before validation and storage.
 
     **Returns**:
     Returns the validated data as confirmation.
     """
     logger.info(
-        f"[JSON Body] Room ID: {room_id}, convert_from_askcos: {convert_from_askcos}")
+        f"[JSON Body] Room ID: {room_id}, convert_to_aicp: {convert_to_aicp}, convert_from: {convert_from}")
 
     if room_id not in room_connections:
         raise HTTPException(
             status_code=400, detail=f"Invalid room ID: {room_id}")
 
     try:
-        if convert_from_askcos:
-            json_data = await convert_to_aicp(ConvertToAicpRequest(source_data=json_data, convert_from="askcos"))
+        if convert_to_aicp and convert_from == ConvertFromOptions.askcos:
+            json_data = await _convert_to_aicp(ConvertToAicpRequest(source_data=json_data, convert_from="askcos"))
+        elif convert_to_aicp:
+            raise HTTPException(
+                status_code=400, detail=f"Invalid conversion source: {convert_from}")
 
         validated_data = InputFile(**json_data)
         save_room_data(room_id, validated_data.dict())
@@ -323,7 +328,8 @@ async def upload_json_body(
 async def upload_json_file(
     room_id: str = Form(...,
                         description="Room ID to associate the uploaded file with", example=""),
-    convert_from_askcos: bool = Form(False),
+    convert_to_aicp: bool = Query(False),
+    convert_from: Optional[ConvertFromOptions] = Query(None),
     file: UploadFile = File(...)
 ):
     """
@@ -332,7 +338,8 @@ async def upload_json_file(
 
     **Form Fields (multipart/form-data)**:
     - `room_id` (str, required): The room ID to associate with the uploaded data. This should match the ID found in the frontend URL (`/room/<room_id>`).
-    - `convert_from_askcos` (bool, optional): If set to `true`, the uploaded JSON will be converted from ASKCOS format before processing. Defaults to `false`.
+    - `convert_to_aicp` (bool, optional): If set to `true`, must be paired with 'convert_from' to convert the uploaded data to AICP format.
+    - `convert_from` (str, optional): If set to 'askcos', the uploaded data will be converted from ASKCOS format before being processed.
 
     **File Upload**:
     - `file` (UploadFile, required): A `.json` file containing a reaction or synthesis graph. The structure must conform to the expected schema. Example files can be found in: `ui/public/`
@@ -341,7 +348,7 @@ async def upload_json_file(
     - [JSON Example 1](http://localhost:4204/public/json_example_1.json)
     - [JSON Example 2](http://localhost:4204/public/json_example_2.json)
     - [Hybrid Routes Example](http://localhost:4204/public/hybrid_routes_example.json)
-    - [Predicted Routes Example](http://localhost:4204/public/askcos_route_sample.json) **Note: 'convert_from_askcos' must be set to 'true' to upload this file.**
+    - [Predicted Routes Example](http://localhost:4204/public/askcos_route_sample.json) **Note: 'convert_to_aicp' must be set to 'true' to upload this file.**
 
     This endpoint expects a `multipart/form-data` request. Upon successful upload and optional format conversion, the data is validated and broadcast to all WebSocket connections associated with the specified room.
 
@@ -349,7 +356,7 @@ async def upload_json_file(
     A JSON object containing the validated and processed data.
     """
     logger.info(
-        f"[File Upload] Room ID: {room_id}, convert_from_askcos: {convert_from_askcos}")
+        f"[File Upload] Room ID: {room_id}, convert_to_aicp: {convert_to_aicp}, convert_from: {convert_from}")
 
     if room_id not in room_connections:
         raise HTTPException(
@@ -359,8 +366,11 @@ async def upload_json_file(
         file_content = await file.read()
         json_data = json.loads(file_content)
 
-        if convert_from_askcos:
-            json_data = await convert_to_aicp(ConvertToAicpRequest(source_data=json_data, convert_from="askcos"))
+        if convert_to_aicp and convert_from == ConvertFromOptions.askcos:
+            json_data = await _convert_to_aicp(ConvertToAicpRequest(source_data=json_data, convert_from="askcos"))
+        elif convert_to_aicp:
+            raise HTTPException(
+                status_code=400, detail=f"Invalid conversion source: {convert_from}")
 
         validated_data = InputFile(**json_data)
         save_room_data(room_id, validated_data.dict())
@@ -483,9 +493,18 @@ async def rxsmiles_to_svg_endpoint(rxsmiles: str = 'CCO.CC(=O)O>>CC(=O)OCC.O', h
     - If base64_encode is True, returns a JSON response with the original reaction SMILES and the base64-encoded SVG.
     - If base64_encode is False, returns a JSON response with the original reaction SMILES and the SVG.
     """
-    svg = reaction_smiles_to_image(rxsmiles, align=False, transparent=False,
-                                   highlight=highlight, retro=False, show_atom_indices=show_atom_indices)
-    svg = svg.replace('"', "'")
+    try:
+        svg = reaction_smiles_to_image(rxsmiles, align=False, transparent=False,
+                                       highlight=highlight, retro=False, show_atom_indices=show_atom_indices)
+        svg = svg.replace('"', "'")
+    except Exception as e:
+        svg = """
+        <svg width="450" height="75" xmlns="http://www.w3.org/2000/svg">
+          <rect width="100%" height="100%" fill="white" />
+          <text x="10" y="50" font-size="32" fill="black">Unable to generate reaction SVG</text>
+        </svg>
+        """.strip()
+
     if base64_encode:
         svg = base64.b64encode(svg.encode('utf-8')).decode('utf-8')
         return JSONResponse(content={"rxsmiles": rxsmiles, "svg_base64": svg})
@@ -634,8 +653,7 @@ def flatten_dict(d, parent_key='', sep='_'):
     return dict(items)
 
 
-def convert_to_cytoscape_json(aicp_graph, synth_graph_key="synth_graph"):
-
+def convert_to_cytoscape_json(aicp_graph, synth_graph_key="synth_graph", predicted_route=False):
     synth_graph = aicp_graph[synth_graph_key]
     routes = aicp_graph.get("routes", [])
 
@@ -661,8 +679,21 @@ def convert_to_cytoscape_json(aicp_graph, synth_graph_key="synth_graph"):
         if edge["start_node"] in route_node_labels and edge["end_node"] in route_node_labels
     ]
 
+    # Determine cytoscape_name
+    try:
+        search_params = aicp_graph["search_params"]
+        cytoscape_name = f"{search_params['target_molecule_inchikey']}_SD_{search_params['reaction_steps']}-{'Predicted' if predicted_route else 'Evidence'}"
+    except KeyError:
+        for node in filtered_nodes:
+            if node["data"]["node_type"].lower() == "substance" and node["data"]["srole"] == "tm":
+                cytoscape_name = f"{node['data']['inchikey']}_SD_NA-{'Predicted' if predicted_route else 'Evidence'}"
+                break
+
     return {
-        "data": {"name": "test"},
+        "data": {
+            "name": cytoscape_name,
+            "aggregated_yield": route["aggregated_yield"] if "aggregated_yield" in route else "N/A"
+        },
         "directed": True,
         "multigraph": False,
         "elements": {"nodes": filtered_nodes, "edges": filtered_edges},
@@ -678,7 +709,7 @@ def assign_srole(parsed_data):
 
     # Initialize degrees
     for node in parsed_data["synth_graph"]["nodes"]:
-        if node["node_type"] == "substance":
+        if node["node_type"].lower() == "substance":
             in_degrees[node["node_label"]] = 0
             out_degrees[node["node_label"]] = 0
 
@@ -694,7 +725,7 @@ def assign_srole(parsed_data):
 
     # Assign roles
     for node in parsed_data["synth_graph"]["nodes"]:
-        if node["node_type"] == "substance":
+        if node["node_type"].lower() == "substance":
             in_deg = in_degrees[node["node_label"]]
             out_deg = out_degrees[node["node_label"]]
 
@@ -708,7 +739,7 @@ def assign_srole(parsed_data):
 
 
 @app.post("/send_to_cytoscape/", response_model=dict)
-def send_to_cytoscape(network_json: dict = load_example_payload(), layout_type: str = "hierarchical", synth_graph_key: str = "synth_graph"):
+def send_to_cytoscape(network_json: dict = load_example_payload(), layout_type: str = "hierarchical", synth_graph_key: str = "synth_graph", predicted_route: bool = False):
     """
     Upload a network JSON to Cytoscape and apply AICP-specific styling and layout.
 
@@ -718,6 +749,7 @@ def send_to_cytoscape(network_json: dict = load_example_payload(), layout_type: 
     **Query Parameters**:
     - `layout_type` (str, optional): The name of the layout algorithm to apply. Defaults to `"hierarchical"`.
     - `synth_graph_key` (str, optional): The key in the input JSON to extract the synthesis graph. Defaults to `"synth_graph"`.
+    - `predicted_route` (bool, optional): Flag to indicate if the network is a predicted route. Defaults to `False`.
 
     **Request Body**:
     - `network_json` (dict): The AICP-formatted graph data structure to be converted and sent to Cytoscape.
@@ -734,7 +766,8 @@ def send_to_cytoscape(network_json: dict = load_example_payload(), layout_type: 
     - Errors in network creation, view generation, styling, or layout will be logged and returned as structured error messages.
     """
     try:
-        network_json = convert_to_cytoscape_json(network_json, synth_graph_key)
+        network_json = convert_to_cytoscape_json(
+            network_json, synth_graph_key, predicted_route)
         # Send the network to Cytoscape without custom headers
         response = requests.post(
             f"{CYTOSCAPE_URL}/networks?format=cyjs", json=network_json)
@@ -868,7 +901,7 @@ async def compute_all_bi(rxsmiles: Optional[str] = "ClC(Cl)(O[C:5](=[O:11])OC(Cl
 
 
 @app.post("/convert2aicp", summary="Convert to AICP format")
-async def convert_to_aicp(request: ConvertToAicpRequest) -> dict:
+async def _convert_to_aicp(request: ConvertToAicpRequest) -> dict:
     """
     Converts a graph format to AICP. Currently only converts from askcos but could be expanded in the future.
 

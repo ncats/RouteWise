@@ -94,12 +94,12 @@ export const sendToCytoscape = async (baseUrl, aicpJson, usePredictedGraph=False
 
   try {
     const synth_graph_key = usePredictedGraph
-        ? 'predicted_synth_graph'
+        ? 'predictive_synth_graph'
         : Object.prototype.hasOwnProperty.call(aicpJson, 'synth_graph')
             ? 'synth_graph'
             : 'evidence_synth_graph';
             
-    const uploadResponse = await fetch(`${baseUrl.trim()}/send_to_cytoscape/?synth_graph_key=${synth_graph_key}`, {
+    const uploadResponse = await fetch(`${baseUrl.trim()}/send_to_cytoscape/?synth_graph_key=${synth_graph_key}&predicted_route=${usePredictedGraph}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(aicpJson),  // Directly use the passed cytoscapeJson
