@@ -205,7 +205,7 @@ const Settings = () => {
                   30: "30px",
                 }}
               />
-              <Divider style={{ margin: 0 }} />
+              {/* <Divider style={{ margin: 0 }} />
               <Flex gap="middle">
                 <div>Graph layout:</div>
                 <Radio.Group
@@ -217,7 +217,7 @@ const Settings = () => {
                     Force-directed
                   </Radio>
                 </Radio.Group>
-              </Flex>
+              </Flex> */}
             </Flex>
           }
           title={SETTINGS_TITLE}
