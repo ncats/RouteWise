@@ -180,7 +180,7 @@ Mandatory fields/attributes are marked with `*`.
 | `node_label`* | Label for the node displayed on hover |
 | `srole`* | _Works with substance nodes only:_ can be `sm` (**starting material**), `tm` (**target molecule**) or `im` (**intermediate material**) that are shaded by red, blue, and gray, respectively. |
 | `canonical_smiles` | _Works with substance nodes only:_ Canonical SMILES representation of the substance. |
-| `base64svg` | If you want to include an image for the node, you can do that using this parameter. Check [this section](#showing-graphical-content-inside-the-nodes) for details |
+| `base64svg` | If you want to include an image for the node, you can do that using this parameter. Note: Do not include the `data:image/svg+xml;base64,` prefix, only the part pertaining to the image itself. Check [this section](#showing-graphical-content-inside-the-nodes) for details |
 | `uuid` | Unique identifier for the node |
 | `rxid` | _Works with reaction nodes only:_ The reaction identifier |
 | `rxsmiles` | _Works with reaction nodes only:_ SMILES representation of the reaction |

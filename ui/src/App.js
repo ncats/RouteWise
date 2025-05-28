@@ -189,8 +189,21 @@ function App() {
             }
           });
         promises.push(substancePromise);
-      } else if (nodeType === "reaction" && graphElement.data.rxsmiles) {
+      } if (nodeType === "substance" && graphElement.data.canonical_smiles && graphElement.data.svg) {
+        const svgUrl = graphElement.data.svg;
+        const dimensions = getSvgDimensions(svgUrl);
+        graphElement.data.width = dimensions.width;
+        graphElement.data.height = dimensions.height;
+        addNodeSvg({ [molId]: svgUrl });
+      } else if (nodeType === "reaction" && graphElement.data.rxsmiles && graphElement.data.svg) { 
+        const svgUrl = graphElement.data.svg;
+        const dimensions = getSvgDimensions(svgUrl);
+        graphElement.data.width = dimensions.width;
+        graphElement.data.height = dimensions.height;
+        addNodeSvg({ [molId]: svgUrl });
+      } else if (nodeType === "reaction" && graphElement.data.rxsmiles && !graphElement.data.svg) {
         const { rxid, rxsmiles, isPredicted } = graphElement.data;
+
         let updatedRxsmiles = rxsmiles;
 
         // Check if RXSMILES has atom mapping
@@ -276,6 +289,7 @@ function App() {
           });
         }
       }
+      
     });
 
     Promise.all(promises)
