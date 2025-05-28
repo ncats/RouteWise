@@ -106,6 +106,8 @@ Optional (not required, but nice to have):
 
 - **Show Atom Indices in Reaction Depiction**: This toggle allows users to display atom indices in molecular depictions. When enabled, atom indices are shown for atoms with mapping information, providing additional clarity in visualizing molecular structures.
 
+- **Utilize Structure SVGs from JSON**: This toggle allows users to utilize structure SVGs provided in the JSON data rather than generating new SVGs from the APIs. When enabled, the highlight atom indices and show atom indices options are disabled.
+
 - **Set Edge Style**: Users can choose the style of edges in the graph, including options like "Round Taxi," "Straight," and "Segments."
 
 - **Product Edge Thickness**: Users can adjust the thickness of product edges in the graph using a slider.
