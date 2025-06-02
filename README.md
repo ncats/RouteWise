@@ -68,6 +68,12 @@ Optional (not required, but nice to have):
 
 
 
+## License
+
+This project has separate licenses for code and data:
+- **Code License**: The code is licensed under the MIT License. See the LICENSE file for details.
+- **Data License**: The data is licensed under a separate license located in the `data` folder.
+
 ## Features
 
 
