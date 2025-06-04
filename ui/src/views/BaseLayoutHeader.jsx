@@ -27,7 +27,7 @@ const BaseLayoutHeader = () => {
   const handleCancel = () => setIsModalVisible(false);
 
   useEffect(() => {
-    if (aicpGraph && !originalGraph) {
+    if (aicpGraph) {
       setOriginalGraph(structuredClone(aicpGraph));
     }
   }, [aicpGraph]);
@@ -70,6 +70,7 @@ const BaseLayoutHeader = () => {
     setShowReagents(checked);
     preserveSubgraphIndexRef.current = true;
     const filteredGraph = filterGraphForReagents(originalGraph, checked);
+    setAicpGraph(null);
     setAicpGraph(filteredGraph);
   };
 

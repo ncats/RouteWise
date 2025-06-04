@@ -201,7 +201,7 @@ function App() {
           
         promises.push(substancePromise);
       } else if (nodeType === "reaction" && graphElement.data.rxsmiles) {
-        const { rxid, rxsmiles, isPredicted } = graphElement.data;
+        const { rxid, rxsmiles, is_predicted } = graphElement.data;
         let updatedRxsmiles = rxsmiles;
 
         // Check if RXSMILES has atom mapping
@@ -251,7 +251,7 @@ function App() {
           ).then((svg) => {
             if (svg) {
               const svgUrl = `data:image/svg+xml;base64,${svg}`;
-              graphElement.data.svg = svgUrl;
+              graphElement.data.apiSvg = svgUrl;
               graphElement.data.type = "custom";
               const dimensions = getSvgDimensions(svgUrl);
               graphElement.data.apiSvg_width = dimensions.width;
@@ -321,6 +321,10 @@ function App() {
   };
 
   useEffect(() => {
+    if (!preserveSubgraphIndexRef.current) {
+      setSubgraphIndex(0);
+    }
+
     if (
       aicpGraph &&
       aicpGraph.routes &&
