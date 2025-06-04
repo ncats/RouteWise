@@ -9,11 +9,7 @@ const router = createBrowserRouter([
   {
     path: "/",
     element: <App />
-  },
-  {
-    path: "/room/:roomId",
-    element: <App />
-  },
+  }
 ]);
 
 reportWebVitals();
@@ -42,4 +38,4 @@ if (!customElements.get("child-react-element")) {
 }
 
 // Set page tab title
-document.title = "Synthesis Route Design";
+document.title = "RouteWise";
