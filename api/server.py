@@ -175,7 +175,10 @@ def save_room_data(room_id, data):
 
 
 def load_example_payload():
-    with open("json_example_1.json", "r") as file:
+    # Determine the base path for the data directory
+    DATA_DIR = os.getenv("DATA_DIR", os.path.join("..", "data"))
+
+    with open(os.path.join(DATA_DIR, "json_example_1.json"), "r") as file:
         return json.load(file)
 
 # Redirect root endpoint to Swagger docs
@@ -432,7 +435,10 @@ async def websocket_endpoint(websocket: WebSocket):
                                     logger.warning(
                                         f"Failed to send data to WebSocket for room {room_id_from_file}: {e}")
                             # Send data and delete the file after successful transmission
-                        os.remove(os.path.join(DATA_DIR, file_name))
+                        # Define a whitelist of filenames to exclude from deletion
+                        whitelist = ["json_example_1.json", "json_example_2.json", "askcos_route_sample.json", "hybrid_routes_example.json"]
+                        if file_name not in whitelist:
+                            os.remove(os.path.join(DATA_DIR, file_name))
                 # Keep the WebSocket connection alive
                 await asyncio.sleep(1)
             except asyncio.TimeoutError:

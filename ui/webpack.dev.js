@@ -7,10 +7,16 @@ module.exports = merge(common, {
   devtool: "source-map",
   devServer: {
     historyApiFallback: true,
-    static: {
-      directory: path.join(__dirname, "public"),
-      publicPath: '/public',
-    },
+static: [
+  {
+    directory: path.join(__dirname, "public"),
+    publicPath: '/public',
+  },
+  {
+    directory: path.join(__dirname, "../data"),
+    publicPath: '/data',
+  },
+],
     headers: {
       "Access-Control-Allow-Origin": "*",
     },

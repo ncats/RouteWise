@@ -49,6 +49,8 @@ const Settings = () => {
     setHighlightAtoms,
     showAtomIndices,
     setAtomIndices,
+    useJsonSVGs,
+    setUseJsonSVGs
   } = useContext(MainContext);
 
   const handleOpenSettingsChange = (newOpen) => {
@@ -155,6 +157,7 @@ const Settings = () => {
                     setHighlightAtoms(checked);
                     reloadGraph();
                   }}
+                  disabled={useJsonSVGs}
                 />
               </Flex>
               <Flex gap="middle">
@@ -163,6 +166,25 @@ const Settings = () => {
                   value={showAtomIndices}
                   onChange={(checked) => {
                     setAtomIndices(checked);
+                    reloadGraph();
+                  }}
+                  disabled={useJsonSVGs}
+                />
+              </Flex>
+              <Flex gap="middle">
+                <div>Utilize Structure SVGs from JSON</div>
+                <Switch
+                  value={useJsonSVGs}
+                  onChange={(checked) => {
+                    setUseJsonSVGs(checked);
+                    if (checked) { // Set to false if JSON SVGs are used
+                      setAtomIndices(false);
+                      setHighlightAtoms(false);
+                    } else { // Reset to default values if JSON SVGs are not used
+                      setAtomIndices(false);
+                      setHighlightAtoms(true);
+                    }
+                    // reload graph
                     reloadGraph();
                   }}
                 />

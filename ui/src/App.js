@@ -14,6 +14,7 @@ import {
   getSvgDimensions,
   graphLayouts,
   mapGraphDataToCytoscape,
+  addBase64ImageTag,
 } from "./helpers/commonHelpers";
 import {
   getReactionRdkitSvgByRxsmiles,
@@ -93,6 +94,7 @@ function App() {
   const [normalizeRolesEnabled, setNormalizeRolesEnabled] = useState(false);
   const [highlightAtoms, setHighlightAtoms] = useState(true);
   const [showAtomIndices, setAtomIndices] = useState(false);
+  const [useJsonSVGs, setUseJsonSVGs] = useState(false);
   const [usePredictedGraph, setUsePredictedGraph] = useState(false);
   const preserveSubgraphIndexRef = useRef(false);
 
@@ -133,6 +135,14 @@ function App() {
     mappedGraph.forEach((graphElement) => {
       const molId = graphElement.data.id;
       const nodeType = graphElement.data.nodeType;
+
+      graphElement.data.jsonSvg = graphElement.data.base64svg ? addBase64ImageTag(graphElement.data.base64svg) : null;
+      if (graphElement.data.jsonSvg) {
+        const jsonSvg_dimensions = getSvgDimensions(graphElement.data.jsonSvg); 
+        graphElement.data.jsonSvg_width = jsonSvg_dimensions.width;
+        graphElement.data.jsonSvg_height = jsonSvg_dimensions.height;
+      }
+
       if (nodeType === "substance" && graphElement.data.canonical_smiles) {
         const smiles = graphElement.data.canonical_smiles;
         const srole = graphElement.data.srole;
@@ -147,17 +157,16 @@ function App() {
           .then((svg) => {
             if (svg) {
               const svgUrl = `data:image/svg+xml;base64,${svg}`;
-              graphElement.data.svg = svgUrl;
+              graphElement.data.apiSvg = svgUrl;// graphElement.data.svg = svgUrl;
 
               // Change node dimensions based on srole
               if (srole === "tm") {
-                graphElement.data.width = 250;
-                graphElement.data.height = 250;
+                graphElement.data.apiSvg_width = 250;
+                graphElement.data.apiSvg_height = 250;
               } else {
-                graphElement.data.width = 100;
-                graphElement.data.height = 100;
+                graphElement.data.apiSvg_width = 100;
+                graphElement.data.apiSvg_height = 100;
               }
-              addNodeSvg({ [molId]: svgUrl });
 
               if (appSettings.showAllSubstanceStructure) {
                 // show all substances structures
@@ -179,15 +188,17 @@ function App() {
           })
           .catch((error) => {
             console.error("Error fetching substance SVG:", error);
-            if (graphElement.data.svg) {
-              console.log("Falling back to existing substance SVG from JSON");
-              const svgUrl = graphElement.data.svg;
-              const dimensions = getSvgDimensions(svgUrl);
-              graphElement.data.width = dimensions.width;
-              graphElement.data.height = dimensions.height;
-              addNodeSvg({ [molId]: svgUrl });
-            }
+          })
+          .finally(() => {
+            setNodeSvgs((prev) => ({
+              ...prev,
+              [molId]: {
+                apiSvg: graphElement.data.apiSvg,
+                jsonSvg: graphElement.data.jsonSvg,
+              }
+            }));
           });
+          
         promises.push(substancePromise);
       } else if (nodeType === "reaction" && graphElement.data.rxsmiles) {
         const { rxid, rxsmiles, isPredicted } = graphElement.data;
@@ -211,15 +222,23 @@ function App() {
             ).then((svg) => {
               if (svg) {
                 const svgUrl = `data:image/svg+xml;base64,${svg}`;
-                graphElement.data.svg = svgUrl;
+                graphElement.data.apiSvg = svgUrl;
                 graphElement.data.type = "custom";
-                addNodeSvg({ [molId]: svgUrl });
                 const dimensions = getSvgDimensions(svgUrl);
-                graphElement.data.width = dimensions.width;
-                graphElement.data.height = dimensions.height;
+                graphElement.data.apiSvg_width = dimensions.width;
+                graphElement.data.apiSvg_height = dimensions.height;
               } else {
                 console.error("Failed to fetch reaction SVG");
               }
+            })
+            .finally(() => {
+              setNodeSvgs((prev) => ({
+                ...prev,
+                [molId]: {
+                  apiSvg: graphElement.data.apiSvg,
+                  jsonSvg: graphElement.data.jsonSvg,
+                }
+              }));
             });
           });
           promises.push(combinedPromise);
@@ -234,10 +253,9 @@ function App() {
               const svgUrl = `data:image/svg+xml;base64,${svg}`;
               graphElement.data.svg = svgUrl;
               graphElement.data.type = "custom";
-              addNodeSvg({ [molId]: svgUrl });
               const dimensions = getSvgDimensions(svgUrl);
-              graphElement.data.width = dimensions.width;
-              graphElement.data.height = dimensions.height;
+              graphElement.data.apiSvg_width = dimensions.width;
+              graphElement.data.apiSvg_height = dimensions.height;
             } else {
               console.error("Failed to fetch reaction SVG");
             }
@@ -245,14 +263,15 @@ function App() {
           })
           .catch((error) => {
             console.error("Error fetching reaction SVG:", error);
-            if (graphElement.data.svg) {
-              console.log("Falling back to existing reaction SVG from JSON");
-              const svgUrl = graphElement.data.svg;
-              const dimensions = getSvgDimensions(svgUrl);
-              graphElement.data.width = dimensions.width;
-              graphElement.data.height = dimensions.height;
-              addNodeSvg({ [molId]: svgUrl });
-            }
+          })
+          .finally(() => {
+            setNodeSvgs((prev) => ({
+              ...prev,
+              [molId]: {
+                apiSvg: graphElement.data.apiSvg,
+                jsonSvg: graphElement.data.jsonSvg,
+              }
+            }));
           });
         }
 
@@ -280,6 +299,17 @@ function App() {
 
     Promise.all(promises)
       .then(() => {
+        mappedGraph.forEach((graphElement) => {
+            if (useJsonSVGs) {
+                graphElement.data.svg = graphElement.data.jsonSvg;
+                graphElement.data.width = graphElement.data.jsonSvg_width;
+                graphElement.data.height = graphElement.data.jsonSvg_height;
+            } else {
+                graphElement.data.svg = graphElement.data.apiSvg;
+                graphElement.data.width = graphElement.data.apiSvg_width;
+                graphElement.data.height = graphElement.data.apiSvg_height;
+            }
+        });
         setCytoscapeGraph(mappedGraph);
       })
       .catch((error) => {
@@ -352,6 +382,8 @@ function App() {
         usePredictedGraph,
         setUsePredictedGraph,
         preserveSubgraphIndexRef,
+        useJsonSVGs,
+        setUseJsonSVGs
       }}
     >
       <NetworkVisualizer />

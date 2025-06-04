@@ -374,14 +374,19 @@ export const cyStyles = [
     },
   },
   {
-    selector: 'node[nodeType="reaction"][width][height]',
+    selector: 'node[nodeType="reaction"]',
     style: {
       shape: "rectangle",
-      width: "data(width)",
-      height: "data(height)",
       "border-color": colors.GOLD.primary,
       "background-color": colors.GOLD.primary,
       "border-width": 2,
+    },
+  },
+  {
+    selector: 'node[nodeType="reaction"][width][height]',
+    style: {
+      width: "data(width)",
+      height: "data(height)",
     },
   },
   {
@@ -606,7 +611,10 @@ export const extractBase64FromDataURL = (dataURL) => {
 
 export const getSvgDimensions = (base64String) => {
   // Step 1: Decode the base64 string (removing the data URL part if present)
-  const svgData = atob(base64String.split(",")[1]);
+  if (base64String.startsWith("data:image/svg+xml;base64,")) {
+    base64String = base64String.slice("data:image/svg+xml;base64,".length);
+  }
+  const svgData = atob(base64String);
 
   // Step 2: Parse the decoded SVG string into an SVG DOM element
   const parser = new DOMParser();
@@ -634,6 +642,14 @@ export const getSvgDimensions = (base64String) => {
     height: height || "unknown",
   };
 };
+
+export const addBase64ImageTag = (svgString) => {
+    if (svgString.startsWith("data:image/svg+xml;base64,")) {
+      return svgString;
+    } else {
+      return `data:image/svg+xml;base64,${svgString}`;
+    }
+}
 
 /**
  * Determines if the input string is in SMILES or InChIKey format.
