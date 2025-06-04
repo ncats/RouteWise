@@ -9,6 +9,9 @@ services:
     environment:
       - API_URL=${API_URL:-http://0.0.0.0:5099}
       - CYTOSCAPE_URL=${CYTOSCAPE_URL:-http://host.docker.internal:1234/v1}
+      - DATA_DIR=/app/data
+    volumes:
+      - ./data:/app/data
   ui:
     build:
       context: ./ui
@@ -18,3 +21,5 @@ services:
     environment:
       - REACT_APP_API_URL=${REACT_APP_API_URL:-http://localhost:4204/}
       - API_URL=${API_URL:-http://0.0.0.0:5099}
+    volumes:
+      - ./data:/usr/share/nginx/html/data

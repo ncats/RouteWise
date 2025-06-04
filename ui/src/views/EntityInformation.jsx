@@ -21,6 +21,7 @@ const EntityInformation = () => {
     nodeSvgs,
     balanceData,
     usePredictedGraph,
+    useJsonSVGs,
   } = useContext(MainContext);
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState(null);
@@ -71,6 +72,8 @@ const EntityInformation = () => {
     // if entity id ends with '(#)', remove it
     entityId = entityId.replace(/\s\(\d+\)$/, "");
 
+    const svgKey = useJsonSVGs ? "jsonSvg" : "apiSvg";
+
     if (entityType === "node") {
       const synthGraph = usePredictedGraph
         ? aicpGraph.predictive_synth_graph
@@ -89,10 +92,10 @@ const EntityInformation = () => {
           nodeInfo.tbi = balanceEntity.tbi;
         }
 
-        if (nodeSvgs[entityId]) {
-          setSvgToShow(extractBase64FromDataURL(nodeSvgs[entityId]));
+        if (nodeSvgs[entityId] && nodeSvgs[entityId][svgKey]) {
+          setSvgToShow(extractBase64FromDataURL(nodeSvgs[entityId][svgKey]));
         } else {
-          setSvgToShow(nodeInfo.base64svg);
+          setSvgToShow(null);
         }
       }
 
