@@ -48,11 +48,20 @@ module.exports = {
       filename: "index.html",
     }),
     new webpack.DefinePlugin({
-      "process.env.REACT_APP_STATIC_CONTENT_PATH": JSON.stringify(process.env.REACT_APP_STATIC_CONTENT_PATH),
+      "process.env.REACT_APP_STATIC_CONTENT_PATH": JSON.stringify(
+        process.env.REACT_APP_STATIC_CONTENT_PATH
+      ),
       "process.env.API_URL": JSON.stringify(process.env.API_URL),
-      "process.env.REACT_APP_BASE_PATH": JSON.stringify(process.env.REACT_APP_BASE_PATH),
+      "process.env.REACT_APP_BASE_PATH": JSON.stringify(
+        process.env.REACT_APP_BASE_PATH
+      ),
       "process.env.NODE_DEBUG": JSON.stringify(process.env.NODE_DEBUG),
+      "process.env.API_URL": JSON.stringify(
+        process.env.API_URL || "http://localhost:5099"
+      ),
+      "process.env.REACT_APP_API_URL": JSON.stringify(process.env.REACT_APP_API_URL || "http://localhost:4204/"),
     }),
+    new webpack.DefinePlugin({}),
   ],
   resolve: {
     // Module resolution setup

@@ -109,5 +109,12 @@ if [ "$skip_env_setup" = false ]; then
     setup_conda_environment
 fi
 
+# Set API_URL and REACT_APP_API_URL environment variables
+: "${API_URL:=http://0.0.0.0:5099}"
+: "${REACT_APP_API_URL:=http://localhost:4204/}"
+
+export API_URL
+export REACT_APP_API_URL
+
 # Start the FastAPI app d
 start_fastapi $mode "$debug_flag"

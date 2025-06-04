@@ -37,10 +37,10 @@ module.exports = merge(common, {
     liveReload: false,
     watchFiles: [],
     webSocketServer : false,
-    static: {
-      directory: path.join(__dirname, "public"),
-      publicPath: `${process.env.REACT_APP_BASE_PATH}/public`,
-    },
+static: {
+  directory: [path.join(__dirname, "public"), path.join(__dirname, "../data")],
+  publicPath: [`${process.env.REACT_APP_BASE_PATH}/public`, `${process.env.REACT_APP_BASE_PATH}/data`, `${process.env.REACT_APP_BASE_PATH}/`],
+},
     headers: {
       "Access-Control-Allow-Origin": "*",
     },

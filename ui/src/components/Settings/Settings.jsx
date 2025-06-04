@@ -7,25 +7,28 @@ import {
   Radio,
   Divider,
   Slider,
+  Modal,
+  Typography,
 } from "antd";
 import {
   ClearOutlined,
   SettingOutlined,
   VerticalAlignMiddleOutlined,
   CompassOutlined,
+  InfoCircleOutlined,
 } from "@ant-design/icons";
 import { MainContext } from "../../contexts/MainContext";
-import { curveStyles, graphLayouts, mapGraphDataToCytoscape } from "../../helpers/commonHelpers";
+import { curveStyles, graphLayouts } from "../../helpers/commonHelpers";
 import GraphLegend from "./GraphLegend";
-import ApiStatusCheck from "./ApiStatusCheck";
-
 
 const SETTINGS_TITLE = "Settings";
 const LEGEND_TITLE = "Legend";
+const { Paragraph, Link, Title } = Typography;
 
 const Settings = () => {
   const [openSettings, setOpenSettings] = useState(false);
   const [openLegend, setOpenLegend] = useState(false);
+  const [isInfoModalVisible, setIsInfoModalVisible] = useState(false);
 
   const {
     setCytoscapeGraph,
@@ -33,16 +36,21 @@ const Settings = () => {
     setAppSettings,
     setZoomLevel,
     setNetworkGraph,
+    aicpGraph,
     setAicpGraph,
     setSelectedEntity,
     layout,
     setLayout,
     duplicateReagents,
     setDuplicateReagents,
+    normalizeRolesEnabled,
+    setNormalizeRolesEnabled,
     highlightAtoms,
     setHighlightAtoms,
-    aicpGraph,
-    updateCytoscapeGraph,
+    showAtomIndices,
+    setAtomIndices,
+    useJsonSVGs,
+    setUseJsonSVGs
   } = useContext(MainContext);
 
   const handleOpenSettingsChange = (newOpen) => {
@@ -55,168 +63,233 @@ const Settings = () => {
 
   const formatter = (value) => `${value}px`;
 
+  const reloadGraph = () => {
+    setAicpGraph((prev) => (prev ? { ...prev } : null)); // Creates a shallow copy
+  };
+
   return (
-    <FloatButton.Group
-      shape="circle"
-      style={{
-        right: 24,
-      }}
-    >
-      <FloatButton
-        icon={<VerticalAlignMiddleOutlined />}
-        type="primary"
-        tooltip="Fit to screen"
-        onClick={() => setZoomLevel(Math.random())} // reset zoom level which will trigger the fit to screen in rendering component
-      />
-      <FloatButton
-        icon={<ClearOutlined />}
-        type="primary"
-        tooltip="Clear"
-        onClick={() => {
-          setNetworkGraph(null);
-          setAicpGraph(null);
-          setCytoscapeGraph([]);
-          setSelectedEntity(null);
+    <>
+      <FloatButton.Group
+        shape="circle"
+        style={{
+          right: 24,
         }}
-      />
-      <Popover
-        content={<GraphLegend />}
-        title={LEGEND_TITLE}
-        trigger="click"
-        open={openLegend}
-        placement="leftBottom"
-        onOpenChange={handleOpenLegendChange}
       >
         <FloatButton
-          icon={<CompassOutlined />}
+          icon={<InfoCircleOutlined />}
           type="primary"
-          tooltip={<div>Legend</div>}
+          tooltip="Info"
+          onClick={() => setIsInfoModalVisible(true)}
         />
-      </Popover>
-      <Popover
-        content={
-          <Flex gap="middle" vertical>
-            <Flex gap="middle">
-              <div>Show structures for the substances</div>
-              <Switch
-                value={appSettings.showStructures}
-                onChange={(checked) => {
-                  // update context setting
-                  setAppSettings({ ...appSettings, showStructures: checked });
-
-                  // re-map graph to show/hide any non-TM depictions
-                  setCytoscapeGraph((prev) =>
-                    prev.map((node) => {
-                      // show all depictions
-                      if (checked) {
-                        if (node.data.svg !== "") {
-                          node.data.type = "custom";
-                        }
-                      } else {
-                        // show only TM reaction depictions
-                        node.data.type = node.data.node_type !== "substance" && node.data.is_valid === "false"
-                          ? ""
-                          : node.data.node_type === "substance" && node.data.srole !== "tm"
-                          ? ""
-                          : "custom";
-                      }
-                      return node;
+        <FloatButton
+          icon={<VerticalAlignMiddleOutlined />}
+          type="primary"
+          tooltip="Fit to screen"
+          onClick={() => setZoomLevel(Math.random())} // reset zoom level which will trigger the fit to screen in rendering component
+        />
+        <FloatButton
+          icon={<ClearOutlined />}
+          type="primary"
+          tooltip="Clear"
+          onClick={() => {
+            setNetworkGraph(null);
+            setAicpGraph(null);
+            setCytoscapeGraph([]);
+            setSelectedEntity(null);
+          }}
+        />
+        <Popover
+          content={<GraphLegend />}
+          title={LEGEND_TITLE}
+          trigger="click"
+          open={openLegend}
+          placement="leftBottom"
+          onOpenChange={handleOpenLegendChange}
+        >
+          <FloatButton
+            icon={<CompassOutlined />}
+            type="primary"
+            tooltip={<div>Legend</div>}
+          />
+        </Popover>
+        <Popover
+          content={
+            <Flex gap="middle" vertical>
+              <Flex gap="middle">
+                <div>Show structures for all the substances</div>
+                <Switch
+                  value={appSettings.showAllSubstanceStructure}
+                  onChange={(checked) => {
+                    // update context setting
+                    setAppSettings({
+                      ...appSettings,
+                      showAllSubstanceStructure: checked,
+                    });
+                    // reload graph
+                    reloadGraph();
+                  }}
+                />
+              </Flex>
+              <Flex gap="middle">
+                <div>Duplicate reagents and starting materials</div>
+                <Switch
+                  value={duplicateReagents}
+                  onChange={(checked) => {
+                    setDuplicateReagents(checked);
+                  }}
+                />
+              </Flex>
+              <Flex gap="middle">
+                <div>Enable Normalize Roles for Reactions</div>
+                <Switch
+                  value={normalizeRolesEnabled}
+                  onChange={(checked) => {
+                    setNormalizeRolesEnabled(checked);
+                    reloadGraph();
+                  }}
+                />
+              </Flex>
+              <Flex gap="middle">
+                <div>Highlight Atom Indices in Reaction depictions</div>
+                <Switch
+                  value={highlightAtoms}
+                  onChange={(checked) => {
+                    setHighlightAtoms(checked);
+                    reloadGraph();
+                  }}
+                  disabled={useJsonSVGs}
+                />
+              </Flex>
+              <Flex gap="middle">
+                <div>Show Atom Indices in Reaction Depiction</div>
+                <Switch
+                  value={showAtomIndices}
+                  onChange={(checked) => {
+                    setAtomIndices(checked);
+                    reloadGraph();
+                  }}
+                  disabled={useJsonSVGs}
+                />
+              </Flex>
+              <Flex gap="middle">
+                <div>Utilize Structure SVGs from JSON</div>
+                <Switch
+                  value={useJsonSVGs}
+                  onChange={(checked) => {
+                    setUseJsonSVGs(checked);
+                    if (checked) { // Set to false if JSON SVGs are used
+                      setAtomIndices(false);
+                      setHighlightAtoms(false);
+                    } else { // Reset to default values if JSON SVGs are not used
+                      setAtomIndices(false);
+                      setHighlightAtoms(true);
+                    }
+                    // reload graph
+                    reloadGraph();
+                  }}
+                />
+              </Flex>
+              <Divider style={{ margin: 0 }} />
+              <Flex gap="middle">
+                <div>Set edge style:</div>
+                <Radio.Group
+                  onChange={(e) =>
+                    setAppSettings({
+                      ...appSettings,
+                      edgeCurveStyle: e.target.value,
                     })
-                  );
+                  }
+                  value={appSettings.edgeCurveStyle}
+                >
+                  <Radio value={curveStyles.ROUND_TAXI}>Round Taxi</Radio>
+                  <Radio value={curveStyles.STRAIGHT}>Straight</Radio>
+                  {/* <Radio value={curveStyles.BEZIER}>Bezier</Radio> */}
+                  <Radio value={curveStyles.SEGMENTS}>Segments</Radio>
+                </Radio.Group>
+              </Flex>
+              <Divider style={{ margin: 0 }} />
+              <div>Product edge thickness (in pixels):</div>
+              <Slider
+                max={30}
+                defaultValue={appSettings.productEdgeThickness}
+                tooltip={{
+                  formatter,
                 }}
-              />
-            </Flex>
-            <Divider style={{ margin: 0 }} />
-            <Flex gap="middle">
-              <div>Duplicate reagents and starting materials</div>
-              <Switch
-                value={duplicateReagents}
-                onChange={(checked) => {
-                  setDuplicateReagents(checked);
-                }}
-              />
-            </Flex>
-            <Divider style={{ margin: 0 }} />
-            <Flex gap="middle">
-              <div>Highlight Atom Indices in depictions</div>
-              <Switch
-                value={highlightAtoms}
-                onChange={(checked) => {
-                  setHighlightAtoms(checked);
-                  setAicpGraph(aicpGraph);
-
-                  const mappedData = mapGraphDataToCytoscape(aicpGraph);
-
-                  // Update Cytoscape Graph (this will trigger re-fetching SVGs with or without highlighting)
-                  updateCytoscapeGraph(mappedData);
-                }}
-              />
-            </Flex>
-            <Divider style={{ margin: 0 }} />
-            <Flex gap="middle">
-              <div>Set edge style:</div>
-              <Radio.Group
-                onChange={(e) =>
+                onChange={(value) => {
                   setAppSettings({
                     ...appSettings,
-                    edgeCurveStyle: e.target.value,
-                  })
-                }
-                value={appSettings.edgeCurveStyle}
-              >
-                <Radio value={curveStyles.ROUND_TAXI}>Round Taxi</Radio>
-                <Radio value={curveStyles.STRAIGHT}>Straight</Radio>
-                {/* <Radio value={curveStyles.BEZIER}>Bezier</Radio> */}
-                <Radio value={curveStyles.SEGMENTS}>Segments</Radio>
-              </Radio.Group>
+                    productEdgeThickness: value,
+                  });
+                }}
+                marks={{
+                  0: "0px",
+                  15: "15px",
+                  30: "30px",
+                }}
+              />
+              {/* <Divider style={{ margin: 0 }} />
+              <Flex gap="middle">
+                <div>Graph layout:</div>
+                <Radio.Group
+                  onChange={(e) => setLayout(e.target.value)}
+                  value={layout}
+                >
+                  <Radio value={graphLayouts.HIERARCHICAL}>Hierarhical</Radio>
+                  <Radio value={graphLayouts.FORCE_DIRECTED}>
+                    Force-directed
+                  </Radio>
+                </Radio.Group>
+              </Flex> */}
             </Flex>
-            <Divider style={{ margin: 0 }} />
-            <div>Product edge thickness (in pixels):</div>
-            <Slider
-              max={30}
-              defaultValue={appSettings.productEdgeThickness}
-              tooltip={{
-                formatter,
-              }}
-              onChange={(value) => {
-                setAppSettings({ ...appSettings, productEdgeThickness: value });
-              }}
-              marks={{
-                0: "0px",
-                15: "15px",
-                30: "30px",
-              }}
-            />
-            <Divider style={{ margin: 0 }} />
-            <Flex gap="middle">
-              <div>Graph layout:</div>
-              <Radio.Group
-                onChange={(e) => setLayout(e.target.value)}
-                value={layout}
-              >
-                <Radio value={graphLayouts.HIERARCHICAL}>Hierarhical</Radio>
-                <Radio value={graphLayouts.FORCE_DIRECTED}>
-                  Force-directed
-                </Radio>
-              </Radio.Group>
-            </Flex>
-            <Divider style={{ margin: 0 }} />
-            <ApiStatusCheck />
-          </Flex>
-        }
-        title={SETTINGS_TITLE}
-        trigger="click"
-        open={openSettings}
-        placement="leftBottom"
-        onOpenChange={handleOpenSettingsChange}
+          }
+          title={SETTINGS_TITLE}
+          trigger="click"
+          open={openSettings}
+          placement="leftBottom"
+          onOpenChange={handleOpenSettingsChange}
+        >
+          <FloatButton
+            icon={<SettingOutlined />}
+            type="primary"
+            tooltip={<div>Settings</div>}
+          />
+        </Popover>
+      </FloatButton.Group>
+
+      {/* Info Modal */}
+      <Modal
+        title="Information"
+        open={isInfoModalVisible}
+        onCancel={() => setIsInfoModalVisible(false)}
+        footer={null}
+        width={600}
       >
-        <FloatButton
-          icon={<SettingOutlined />}
-          type="primary"
-          tooltip={<div>Settings</div>}
-        />
-      </Popover>
-    </FloatButton.Group>
+        <Typography>
+          <Paragraph>
+            <em>Citation for Route Wise manuscript TBD.</em>
+          </Paragraph>
+          <Paragraph>
+            <em>Citation for Route Wise code repository TBD.</em>
+          </Paragraph>
+          <Paragraph>
+            <b>RW API Swagger Page:</b>{" "}
+            <a
+              href={process.env.API_URL + "/api/v1/docs/aicp/rw_api"}
+              target="_blank"
+            >
+              {process.env.API_URL + "/api/v1/docs/aicp/rw_api"}
+            </a>
+          </Paragraph>
+          <Paragraph>
+            Developed by the{" "}
+            <Link href="https://ncats.nih.gov/" target="_blank">
+              National Center for Advancing Translational Sciences (NCATS)
+            </Link>
+            .
+          </Paragraph>
+        </Typography>
+      </Modal>
+    </>
   );
 };
 

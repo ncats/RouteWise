@@ -8,17 +8,12 @@ from pydantic import BaseModel, Field
 ##########################
 
 class ConvertToAicpRequest(BaseModel):
-    graph_data: dict = Field(
+    convert_from: Literal["askcos"] = Field(default="askcos", description="The format to convert from", examples=["askcos"])
+    source_data: dict = Field(
         ...,
         title="Graph Data",
         description="The graph data to be converted",
         examples=[{"nodes": [], "edges": []}],
-    )
-    convert_askcos: bool = Field(
-        ...,
-        title="Convert ASKCOS",
-        description="Boolean flag to indicate ASKCOS conversion",
-        examples=[True, False],
     )
 
 

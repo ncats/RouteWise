@@ -40,7 +40,7 @@ const BaseSider = () => {
             }, 300);
           }}
         >
-          {collapsed ? "Synthesis Route Design" : "Hide"}
+          {collapsed ? "RouteWise" : "Hide"}
         </Button>
       </FloatButton.Group>
     </Sider>

@@ -1,6 +1,9 @@
 name: upload_json_env
 channels:
   - defaults
+  - conda-forge
 dependencies:
   - python=3.9
   - requests
+  - notebook
+  - ipywidgets
