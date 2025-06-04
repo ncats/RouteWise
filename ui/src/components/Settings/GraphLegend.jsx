@@ -6,7 +6,7 @@ const GraphLegend = () => {
   const legendData = [
     {
       nodeLabel: "Reaction",
-      nodeColor: colors.PINK.primary,
+      nodeColor: colors.GOLD.primary,
       edgeLabel: "Product Of",
       edgeColor: colors.ORANGE.primary,
     },
@@ -18,7 +18,7 @@ const GraphLegend = () => {
     },
     {
       nodeLabel: "Starting Material",
-      nodeColor: colors.GOLD.primary,
+      nodeColor: colors.PINK.primary,
       edgeLabel: "Reagent Of",
       edgeColor: colors.GRAY.primary,
     },

@@ -1,0 +1,538 @@
+{
+  "search_params": {
+    "target_molecule_inchikey": "VWLQRINORISZIU-UHFFFAOYSA-N",
+    "reaction_steps": 3,
+    "query_type": "shortest_path",
+    "leaves_as_sm": true,
+    "include_availability_info": true,
+    "annotate_reactions": true,
+    "graph_backend": "memgraph",
+    "top_n_routes": 3,
+    "include_route_candidates": false,
+    "include_combination_graphs": false
+  },
+  "synth_graph": {
+    "time_info": {
+      "synth_graph_time": 0.3561239242553711
+    },
+    "summary": {
+      "num_edges": 10,
+      "num_nodes": 11
+    },
+    "nodes": [
+      {
+        "node_label": "ASPIRE-1031938939769803553",
+        "node_type": "reaction",
+        "uuid": "reaction_3e376cacda891b67cf6f8671c039e45e866c662c584430566aadbe5b9a4ab7ad",
+        "rxid": "ASPIRE-1031938939769803553",
+        "rxsmiles": "O=[CH:21][c:20]1[cH:19][c:18]([NH:17][c:16]2[n:15][cH:14][c:13]([O:12][CH2:11][c:10]3[c:8]([F:9])[c:5]([O:6][CH3:7])[cH:4][c:3]([O:2][CH3:1])[c:32]3[F:33])[cH:31][n:30]2)[nH:29][n:28]1.[NH:22]1[CH2:23][CH2:24][O:25][CH2:26][CH2:27]1>[Na+].CC(=O)O[BH-](OC(C)=O)OC(C)=O.[Na+].O=C([O-])O.CN(C)C=O>[CH3:1][O:2][c:3]1[cH:4][c:5]([O:6][CH3:7])[c:8]([F:9])[c:10]([CH2:11][O:12][c:13]2[cH:14][n:15][c:16]([NH:17][c:18]3[cH:19][c:20]([CH2:21][N:22]4[CH2:23][CH2:24][O:25][CH2:26][CH2:27]4)[n:28][nH:29]3)[n:30][cH:31]2)[c:32]1[F:33] |f:2.3,4.5|",
+        "rxclass": "Reductive amination",
+        "rxname": "Aldehyde reductive amination",
+        "original_rxsmiles": "[F:1][C:2]1[C:23]([O:24][CH3:25])=[CH:22][C:21]([O:26][CH3:27])=[C:20]([F:28])[C:3]=1[CH2:4][O:5][C:6]1[CH:7]=[N:8][C:9]([NH:12][C:13]2[NH:17][N:16]=[C:15]([CH:18]=O)[CH:14]=2)=[N:10][CH:11]=1.[NH:29]1[CH2:34][CH2:33][O:32][CH2:31][CH2:30]1.C(O[BH-](OC(=O)C)OC(=O)C)(=O)C.[Na+].C(=O)([O-])O.[Na+]>CN(C)C=O>[F:28][C:20]1[C:21]([O:26][CH3:27])=[CH:22][C:23]([O:24][CH3:25])=[C:2]([F:1])[C:3]=1[CH2:4][O:5][C:6]1[CH:11]=[N:10][C:9]([NH:12][C:13]2[NH:17][N:16]=[C:15]([CH2:18][N:29]3[CH2:34][CH2:33][O:32][CH2:31][CH2:30]3)[CH:14]=2)=[N:8][CH:7]=1 |f:2.3,4.5|",
+        "yield_info": {
+          "yield_predicted": 49.13,
+          "yield_score": 5
+        },
+        "provenance": {
+          "is_in_uspto_full": true,
+
+          "patents": ["US20140142084A1"],
+          "patent_paragraph_nums": [370]
+        },
+        "validation": {
+          "is_balanced": false,
+          "is_rxname_recognized": true,
+          "is_valid": true
+        },
+        "route_assembly_type": {
+          "is_predicted": false,
+          "is_evidence": true
+        },
+        "evidence_protocol": null,
+        "evidence_conditions_info": null,
+        "predicted_conditions_info": null
+      },
+      {
+        "node_label": "HHYFEYBWNZJVFQ-UHFFFAOYSA-N",
+        "node_type": "substance",
+        "uuid": "substance_bc2e957333dab9e3ed55052cc3587dc0eafd77fb712f4207ca55a13eb437ff73",
+        "inchikey": "HHYFEYBWNZJVFQ-UHFFFAOYSA-N",
+        "canonical_smiles": "CC(=O)O[BH-](OC(C)=O)OC(C)=O.[Na+]",
+        "srole": "sm",
+        "route_assembly_type": {
+          "is_predicted": false,
+          "is_evidence": true
+        },
+        "provenance": {
+          "is_in_aicp": true,
+          "is_in_uspto_full": true
+        }
+      },
+      {
+        "node_label": "UIIMBOGNXHQVGW-UHFFFAOYSA-M",
+        "node_type": "substance",
+        "uuid": "substance_4f7ebac9d2b7e294ce4267e61f305cea26a4f32424e404f641def263bb8fffe2",
+        "inchikey": "UIIMBOGNXHQVGW-UHFFFAOYSA-M",
+        "canonical_smiles": "O=C([O-])O.[Na+]",
+        "srole": "sm",
+        "route_assembly_type": {
+          "is_predicted": false,
+          "is_evidence": true
+        },
+        "provenance": {
+          "is_in_uspto_full": true
+        }
+      },
+      {
+        "node_label": "ZMXDDKWLCZADIW-UHFFFAOYSA-N",
+        "node_type": "substance",
+        "uuid": "substance_532c9d92158202bdea072b030260e04ff94cc078bcdb4d502a0c44f285105db7",
+        "inchikey": "ZMXDDKWLCZADIW-UHFFFAOYSA-N",
+        "canonical_smiles": "CN(C)C=O",
+        "srole": "sm",
+        "route_assembly_type": {
+          "is_predicted": false,
+          "is_evidence": true
+        },
+        "provenance": {
+          "is_in_aicp": true,
+          "is_in_uspto_full": true
+        }
+      },
+      {
+        "node_label": "PKBJQBLRHFDLLI-UHFFFAOYSA-N",
+        "node_type": "substance",
+        "uuid": "substance_b2dfa3986066b98789d36b866e337b2e7d18757ce4c40dfef29348f50c1c4abe",
+        "inchikey": "PKBJQBLRHFDLLI-UHFFFAOYSA-N",
+        "canonical_smiles": "COc1cc(OC)c(F)c(COc2cnc(Nc3cc(C=O)n[nH]3)nc2)c1F",
+        "srole": "im",
+        "route_assembly_type": {
+          "is_predicted": false,
+          "is_evidence": true
+        },
+        "provenance": {
+          "is_in_uspto_full": true
+        }
+      },
+      {
+        "node_label": "YNAVUWVOSKDBBP-UHFFFAOYSA-N",
+        "node_type": "substance",
+        "uuid": "substance_cb0935d6327ea0701e55d10799a3870a4659ad3011726594d0e301917ab0c871",
+        "inchikey": "YNAVUWVOSKDBBP-UHFFFAOYSA-N",
+        "canonical_smiles": "C1COCCN1",
+        "srole": "sm",
+        "route_assembly_type": {
+          "is_predicted": false,
+          "is_evidence": true
+        },
+        "provenance": {
+          "is_in_aicp": true,
+          "is_in_uspto_full": true,
+          "is_in_savi_130k": true
+        }
+      },
+      {
+        "node_label": "VWLQRINORISZIU-UHFFFAOYSA-N",
+        "node_type": "substance",
+        "uuid": "substance_148a5f52ecc64ffa312bd40434c88f4c498806877e69ac6590919357cabcf2ee",
+        "inchikey": "VWLQRINORISZIU-UHFFFAOYSA-N",
+        "canonical_smiles": "COc1cc(OC)c(F)c(COc2cnc(Nc3cc(CN4CCOCC4)n[nH]3)nc2)c1F",
+        "srole": "tm",
+        "route_assembly_type": {
+          "is_predicted": false,
+          "is_evidence": true
+        },
+        "provenance": {
+          "is_in_uspto_full": true
+        }
+      },
+      {
+        "node_label": "ASPIRE-4334160758657817050",
+        "node_type": "reaction",
+        "uuid": "reaction_40cb39995e691cd5708045086dd94f2eddb1718c97f466daa3ece6fd425c5632",
+        "rxid": "ASPIRE-4334160758657817050",
+        "rxsmiles": "[CH3:1][O:2][c:3]1[cH:4][c:5]([O:6][CH3:7])[c:8]([F:9])[c:10]([CH2:11][O:12][c:13]2[cH:14][n:15][c:16]([NH:17][c:18]3[cH:19][c:20]([CH2:21][OH:22])[n:23][nH:24]3)[n:25][cH:26]2)[c:27]1[F:28]>ClCCCl.[Mn+4].[O-2].[O-2]>[CH3:1][O:2][c:3]1[cH:4][c:5]([O:6][CH3:7])[c:8]([F:9])[c:10]([CH2:11][O:12][c:13]2[cH:14][n:15][c:16]([NH:17][c:18]3[cH:19][c:20]([CH:21]=[O:22])[n:23][nH:24]3)[n:25][cH:26]2)[c:27]1[F:28] |f:2.3.4|",
+        "rxclass": "Alcohols to aldehydes",
+        "rxname": "Alcohol to aldehyde oxidation",
+        "original_rxsmiles": "[F:1][C:2]1[C:23]([O:24][CH3:25])=[CH:22][C:21]([O:26][CH3:27])=[C:20]([F:28])[C:3]=1[CH2:4][O:5][C:6]1[CH:7]=[N:8][C:9]([NH:12][C:13]2[NH:17][N:16]=[C:15]([CH2:18][OH:19])[CH:14]=2)=[N:10][CH:11]=1>[O-2].[O-2].[Mn+4].ClCCCl>[F:1][C:2]1[C:23]([O:24][CH3:25])=[CH:22][C:21]([O:26][CH3:27])=[C:20]([F:28])[C:3]=1[CH2:4][O:5][C:6]1[CH:11]=[N:10][C:9]([NH:12][C:13]2[NH:17][N:16]=[C:15]([CH:18]=[O:19])[CH:14]=2)=[N:8][CH:7]=1 |f:1.2.3|",
+        "yield_info": {
+          "yield_predicted": 51.88,
+          "yield_score": 4
+        },
+        "provenance": {
+          "is_in_uspto_full": true,
+
+          "patents": ["US20140142084A1"],
+          "patent_paragraph_nums": [322]
+        },
+        "validation": {
+          "is_balanced": true,
+          "is_rxname_recognized": true,
+          "is_valid": true
+        },
+        "route_assembly_type": {
+          "is_predicted": false,
+          "is_evidence": true
+        },
+        "evidence_protocol": null,
+        "evidence_conditions_info": null,
+        "predicted_conditions_info": null
+      },
+      {
+        "node_label": "GOPYZMJAIPBUGX-UHFFFAOYSA-N",
+        "node_type": "substance",
+        "uuid": "substance_429b766a14abad4e10eb47807c3ba7bc9d2c32b5ee8880cfe85610b1506b579a",
+        "inchikey": "GOPYZMJAIPBUGX-UHFFFAOYSA-N",
+        "canonical_smiles": "[Mn+4].[O-2].[O-2]",
+        "srole": "sm",
+        "route_assembly_type": {
+          "is_predicted": false,
+          "is_evidence": true
+        },
+        "provenance": {
+          "is_in_uspto_full": true
+        }
+      },
+      {
+        "node_label": "WSLDOOZREJYCGB-UHFFFAOYSA-N",
+        "node_type": "substance",
+        "uuid": "substance_f1fcd30139646bccc2985066c9cf553c33a98820e86306c0ec9fd8bb21d9d862",
+        "inchikey": "WSLDOOZREJYCGB-UHFFFAOYSA-N",
+        "canonical_smiles": "ClCCCl",
+        "srole": "sm",
+        "route_assembly_type": {
+          "is_predicted": false,
+          "is_evidence": true
+        },
+        "provenance": {
+          "is_in_uspto_full": true
+        }
+      },
+      {
+        "node_label": "MIYKMXBFKWSDPI-UHFFFAOYSA-N",
+        "node_type": "substance",
+        "uuid": "substance_a20925eef27a27bd2be135fe059a5bd8638a2ebf0c0f859a272dbdc11ecc8725",
+        "inchikey": "MIYKMXBFKWSDPI-UHFFFAOYSA-N",
+        "canonical_smiles": "COc1cc(OC)c(F)c(COc2cnc(Nc3cc(CO)n[nH]3)nc2)c1F",
+        "srole": "sm",
+        "route_assembly_type": {
+          "is_predicted": false,
+          "is_evidence": true
+        },
+        "provenance": {
+          "is_in_uspto_full": true
+        }
+      }
+    ],
+    "edges": [
+      {
+        "start_node": "ASPIRE-1031938939769803553",
+        "end_node": "VWLQRINORISZIU-UHFFFAOYSA-N",
+        "edge_label": "ASPIRE-1031938939769803553|VWLQRINORISZIU-UHFFFAOYSA-N",
+        "edge_type": "product_of",
+        "provenance": {
+          "is_in_uspto_full": true
+        },
+        "uuid": "product_of_6e966a4e81c9982eeef3e248e8b90208e3d930fdee7c6592b062598ecba40014",
+        "inchikey": "VWLQRINORISZIU-UHFFFAOYSA-N",
+        "rxid": "ASPIRE-1031938939769803553",
+        "route_assembly_type": {
+          "is_predicted": false,
+          "is_evidence": true
+        }
+      },
+      {
+        "start_node": "HHYFEYBWNZJVFQ-UHFFFAOYSA-N",
+        "end_node": "ASPIRE-1031938939769803553",
+        "edge_label": "HHYFEYBWNZJVFQ-UHFFFAOYSA-N|ASPIRE-1031938939769803553",
+        "edge_type": "reagent_of",
+        "provenance": {
+          "is_in_uspto_full": true
+        },
+        "uuid": "reagent_of_df5e9e90d8e45cf731b7044711f36ed1bafe246ad0f5d06684f67f2311d1968a",
+        "inchikey": "HHYFEYBWNZJVFQ-UHFFFAOYSA-N",
+        "rxid": "ASPIRE-1031938939769803553",
+        "route_assembly_type": {
+          "is_predicted": false,
+          "is_evidence": true
+        }
+      },
+      {
+        "start_node": "UIIMBOGNXHQVGW-UHFFFAOYSA-M",
+        "end_node": "ASPIRE-1031938939769803553",
+        "edge_label": "UIIMBOGNXHQVGW-UHFFFAOYSA-M|ASPIRE-1031938939769803553",
+        "edge_type": "reagent_of",
+        "provenance": {
+          "is_in_uspto_full": true
+        },
+        "uuid": "reagent_of_0d22840205a79f116ab56d91fa2371060ec669e4df0611f420ccf68db3f2da53",
+        "inchikey": "UIIMBOGNXHQVGW-UHFFFAOYSA-M",
+        "rxid": "ASPIRE-1031938939769803553",
+        "route_assembly_type": {
+          "is_predicted": false,
+          "is_evidence": true
+        }
+      },
+      {
+        "start_node": "ZMXDDKWLCZADIW-UHFFFAOYSA-N",
+        "end_node": "ASPIRE-1031938939769803553",
+        "edge_label": "ZMXDDKWLCZADIW-UHFFFAOYSA-N|ASPIRE-1031938939769803553",
+        "edge_type": "reagent_of",
+        "provenance": {
+          "is_in_uspto_full": true
+        },
+        "uuid": "reagent_of_d8a7ec3e28d965e93cf7750705564b8665ee052b6827c5ed2a65c1db40428cbf",
+        "inchikey": "ZMXDDKWLCZADIW-UHFFFAOYSA-N",
+        "rxid": "ASPIRE-1031938939769803553",
+        "route_assembly_type": {
+          "is_predicted": false,
+          "is_evidence": true
+        }
+      },
+      {
+        "start_node": "PKBJQBLRHFDLLI-UHFFFAOYSA-N",
+        "end_node": "ASPIRE-1031938939769803553",
+        "edge_label": "PKBJQBLRHFDLLI-UHFFFAOYSA-N|ASPIRE-1031938939769803553",
+        "edge_type": "reactant_of",
+        "provenance": {
+          "is_in_uspto_full": true
+        },
+        "uuid": "reactant_of_c4a335e346604abef8fa0a67bb9ffc326c2c3562515293f72703765fab798ac8",
+        "inchikey": "PKBJQBLRHFDLLI-UHFFFAOYSA-N",
+        "rxid": "ASPIRE-1031938939769803553",
+        "route_assembly_type": {
+          "is_predicted": false,
+          "is_evidence": true
+        }
+      },
+      {
+        "start_node": "YNAVUWVOSKDBBP-UHFFFAOYSA-N",
+        "end_node": "ASPIRE-1031938939769803553",
+        "edge_label": "YNAVUWVOSKDBBP-UHFFFAOYSA-N|ASPIRE-1031938939769803553",
+        "edge_type": "reactant_of",
+        "provenance": {
+          "is_in_uspto_full": true
+        },
+        "uuid": "reactant_of_42ba64eeeefcbe0acf73fa14a7c186cde638868f09146ab24975c92450ff09af",
+        "inchikey": "YNAVUWVOSKDBBP-UHFFFAOYSA-N",
+        "rxid": "ASPIRE-1031938939769803553",
+        "route_assembly_type": {
+          "is_predicted": false,
+          "is_evidence": true
+        }
+      },
+      {
+        "start_node": "ASPIRE-4334160758657817050",
+        "end_node": "PKBJQBLRHFDLLI-UHFFFAOYSA-N",
+        "edge_label": "ASPIRE-4334160758657817050|PKBJQBLRHFDLLI-UHFFFAOYSA-N",
+        "edge_type": "product_of",
+        "provenance": {
+          "is_in_uspto_full": true
+        },
+        "uuid": "product_of_0a1ac434849d43e515843de85b09ff40ec3cff5da8517fd924d00db001509338",
+        "inchikey": "PKBJQBLRHFDLLI-UHFFFAOYSA-N",
+        "rxid": "ASPIRE-4334160758657817050",
+        "route_assembly_type": {
+          "is_predicted": false,
+          "is_evidence": true
+        }
+      },
+      {
+        "start_node": "GOPYZMJAIPBUGX-UHFFFAOYSA-N",
+        "end_node": "ASPIRE-4334160758657817050",
+        "edge_label": "GOPYZMJAIPBUGX-UHFFFAOYSA-N|ASPIRE-4334160758657817050",
+        "edge_type": "reagent_of",
+        "provenance": {
+          "is_in_uspto_full": true
+        },
+        "uuid": "reagent_of_73d8bcb7b1a7b3c48e92ab779b67679c5a48a305e94c05abafc1a4c4b3177952",
+        "inchikey": "GOPYZMJAIPBUGX-UHFFFAOYSA-N",
+        "rxid": "ASPIRE-4334160758657817050",
+        "route_assembly_type": {
+          "is_predicted": false,
+          "is_evidence": true
+        }
+      },
+      {
+        "start_node": "WSLDOOZREJYCGB-UHFFFAOYSA-N",
+        "end_node": "ASPIRE-4334160758657817050",
+        "edge_label": "WSLDOOZREJYCGB-UHFFFAOYSA-N|ASPIRE-4334160758657817050",
+        "edge_type": "reagent_of",
+        "provenance": {
+          "is_in_uspto_full": true
+        },
+        "uuid": "reagent_of_2a10c1a5459575413646a04a88b5dddd57970b8f3f6a546178f07be4f58f89a0",
+        "inchikey": "WSLDOOZREJYCGB-UHFFFAOYSA-N",
+        "rxid": "ASPIRE-4334160758657817050",
+        "route_assembly_type": {
+          "is_predicted": false,
+          "is_evidence": true
+        }
+      },
+      {
+        "start_node": "MIYKMXBFKWSDPI-UHFFFAOYSA-N",
+        "end_node": "ASPIRE-4334160758657817050",
+        "edge_label": "MIYKMXBFKWSDPI-UHFFFAOYSA-N|ASPIRE-4334160758657817050",
+        "edge_type": "reactant_of",
+        "provenance": {
+          "is_in_uspto_full": true
+        },
+        "uuid": "reactant_of_5fafe85929b9f0731e8e3261e932cf97b9804e75a1aa26ed8501bd7a56b0e90a",
+        "inchikey": "MIYKMXBFKWSDPI-UHFFFAOYSA-N",
+        "rxid": "ASPIRE-4334160758657817050",
+        "route_assembly_type": {
+          "is_predicted": false,
+          "is_evidence": true
+        }
+      }
+    ]
+  },
+  "artifact_free_graph": {
+    "route_node_labels": [
+      "ASPIRE-1031938939769803553",
+      "HHYFEYBWNZJVFQ-UHFFFAOYSA-N",
+      "UIIMBOGNXHQVGW-UHFFFAOYSA-M",
+      "ZMXDDKWLCZADIW-UHFFFAOYSA-N",
+      "PKBJQBLRHFDLLI-UHFFFAOYSA-N",
+      "YNAVUWVOSKDBBP-UHFFFAOYSA-N",
+      "VWLQRINORISZIU-UHFFFAOYSA-N",
+      "ASPIRE-4334160758657817050",
+      "GOPYZMJAIPBUGX-UHFFFAOYSA-N",
+      "WSLDOOZREJYCGB-UHFFFAOYSA-N",
+      "MIYKMXBFKWSDPI-UHFFFAOYSA-N"
+    ]
+  },
+  "routes": [
+    {
+      "aggregated_yield": 25.488644,
+      "route_index": 1,
+      "route_status": "Viable Synthesis Route",
+      "method": "AICP",
+      "route_node_labels": [
+        "ASPIRE-1031938939769803553",
+        "HHYFEYBWNZJVFQ-UHFFFAOYSA-N",
+        "UIIMBOGNXHQVGW-UHFFFAOYSA-M",
+        "ZMXDDKWLCZADIW-UHFFFAOYSA-N",
+        "PKBJQBLRHFDLLI-UHFFFAOYSA-N",
+        "YNAVUWVOSKDBBP-UHFFFAOYSA-N",
+        "VWLQRINORISZIU-UHFFFAOYSA-N",
+        "ASPIRE-4334160758657817050",
+        "GOPYZMJAIPBUGX-UHFFFAOYSA-N",
+        "WSLDOOZREJYCGB-UHFFFAOYSA-N",
+        "MIYKMXBFKWSDPI-UHFFFAOYSA-N"
+      ]
+    }
+  ],
+  "time_info": {
+    "synth_graph_time": 0.3561239242553711,
+    "enumerate_routes_time": 0.0015001296997070312,
+    "aggregated_yield_time": 0.22696805000305176,
+    "rank_routes_time": 0.000003814697265625
+  },
+  "summary": {
+    "num_routes": 1,
+    "num_combination_graphs": 0,
+    "num_route_candidates": 0
+  },
+  "availability": [
+    {
+      "inchikey": "HHYFEYBWNZJVFQ-UHFFFAOYSA-N",
+      "inventory": {
+        "available": true,
+        "locations": []
+      },
+      "commercial_availability": {
+        "available": false,
+        "vendors": []
+      }
+    },
+    {
+      "inchikey": "UIIMBOGNXHQVGW-UHFFFAOYSA-M",
+      "inventory": {
+        "available": true,
+        "locations": []
+      },
+      "commercial_availability": {
+        "available": false,
+        "vendors": []
+      }
+    },
+    {
+      "inchikey": "ZMXDDKWLCZADIW-UHFFFAOYSA-N",
+      "inventory": {
+        "available": true,
+        "locations": []
+      },
+      "commercial_availability": {
+        "available": false,
+        "vendors": []
+      }
+    },
+    {
+      "inchikey": "PKBJQBLRHFDLLI-UHFFFAOYSA-N",
+      "inventory": {
+        "available": false,
+        "locations": []
+      },
+      "commercial_availability": {
+        "available": false,
+        "vendors": []
+      }
+    },
+    {
+      "inchikey": "YNAVUWVOSKDBBP-UHFFFAOYSA-N",
+      "inventory": {
+        "available": true,
+        "locations": []
+      },
+      "commercial_availability": {
+        "available": false,
+        "vendors": []
+      }
+    },
+    {
+      "inchikey": "VWLQRINORISZIU-UHFFFAOYSA-N",
+      "inventory": {
+        "available": false,
+        "locations": []
+      },
+      "commercial_availability": {
+        "available": false,
+        "vendors": []
+      }
+    },
+    {
+      "inchikey": "GOPYZMJAIPBUGX-UHFFFAOYSA-N",
+      "inventory": {
+        "available": true,
+        "locations": []
+      },
+      "commercial_availability": {
+        "available": false,
+        "vendors": []
+      }
+    },
+    {
+      "inchikey": "WSLDOOZREJYCGB-UHFFFAOYSA-N",
+      "inventory": {
+        "available": true,
+        "locations": []
+      },
+      "commercial_availability": {
+        "available": false,
+        "vendors": []
+      }
+    },
+    {
+      "inchikey": "MIYKMXBFKWSDPI-UHFFFAOYSA-N",
+      "inventory": {
+        "available": true,
+        "locations": []
+      },
+      "commercial_availability": {
+        "available": false,
+        "vendors": []
+      }
+    }
+  ]
+}

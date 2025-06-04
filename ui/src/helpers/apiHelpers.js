@@ -10,12 +10,12 @@ export const hasAtomMapping = (rxsmiles) => {
   return atomMappingRegex.test(rxsmiles);
 };
 
-export const getReactionRdkitSvgByRxsmiles = async (baseUrl, rxsmiles, highlight) => {
+export const getReactionRdkitSvgByRxsmiles = async (baseUrl, rxsmiles, highlight, showAtomIndices = false) => {
   // Encode the rxsmiles string to ensure it's safely passed in the URL
   const encodedRxsmiles = encodeURIComponent(rxsmiles);
 
   // Construct the URL with query parameters
-  const url = `${baseUrl.trim()}/${rxnSmiles2RdkitSvgPath}?rxsmiles=${encodedRxsmiles}&highlight=${highlight}&img_width=1800&img_height=600&base64_encode=true`;
+  const url = `${baseUrl.trim()}/${rxnSmiles2RdkitSvgPath}?rxsmiles=${encodedRxsmiles}&highlight=${highlight}&show_atom_indices=${showAtomIndices}&img_width=1800&img_height=600&base64_encode=true`;
 
 
   try {
@@ -37,10 +37,10 @@ export const getReactionRdkitSvgByRxsmiles = async (baseUrl, rxsmiles, highlight
 };
 
 // Fetch molecule full RDKIT SVG from inchikey
-export const getMoleculeRdkitSvgBySmiles = async (baseUrl, smiles) => {
+export const getMoleculeRdkitSvgBySmiles = async (baseUrl, smiles, width=100, height=100) => {
   // Construct the URL with query parameters
   const encodedSmiles = encodeURIComponent(smiles);
-  const url = `${baseUrl.trim()}/${molSmiles2RdkitSvgPath}?mol_smiles=${encodedSmiles}&img_width=300&img_height=300&base64_encode=true`;
+  const url = `${baseUrl.trim()}/${molSmiles2RdkitSvgPath}?mol_smiles=${encodedSmiles}&img_width=${width}&img_height=${height}&base64_encode=true`;
 
   try {
     // Perform the GET request without a body or custom headers
@@ -90,18 +90,19 @@ export const getInchikeysFromGraph = (graph = []) => {
 }
 
 
-export const sendToCytoscape = async (baseUrl, cytoscapeJson) => {  // Receiving baseUrl as an argument
-  if (!cytoscapeJson) {
-    console.error("No graph data available.");
-    return;
-  }
+export const sendToCytoscape = async (baseUrl, aicpJson, usePredictedGraph=False) => {  // Receiving baseUrl as an argument
 
   try {
-
-    const uploadResponse = await fetch(`${baseUrl.trim()}/send_to_cytoscape/`, {
+    const synth_graph_key = usePredictedGraph
+        ? 'predictive_synth_graph'
+        : Object.prototype.hasOwnProperty.call(aicpJson, 'synth_graph')
+            ? 'synth_graph'
+            : 'evidence_synth_graph';
+            
+    const uploadResponse = await fetch(`${baseUrl.trim()}/send_to_cytoscape/?synth_graph_key=${synth_graph_key}&predicted_route=${usePredictedGraph}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(cytoscapeJson),  // Directly use the passed cytoscapeJson
+      body: JSON.stringify(aicpJson),  // Directly use the passed cytoscapeJson
     });
 
     if (!uploadResponse.ok) {
@@ -117,9 +118,13 @@ export const sendToCytoscape = async (baseUrl, cytoscapeJson) => {  // Receiving
   }
 };
 
-export const normalizeRoles = async (baseUrl, rxsmiles) => {
+export const normalizeRoles = async (baseUrl, rxsmiles, normalizeRolesEnabled) => {
   const url = `${baseUrl.trim()}/normalize_roles`;
   const body = JSON.stringify({ rxsmiles });
+
+  if (!normalizeRolesEnabled) {
+    return rxsmiles; // Skip normalization if disabled
+  }
 
   try {
     const response = await fetch(url, {
@@ -185,7 +190,7 @@ export const convert2aicp = async (ascosData, askcosRoute) => {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ graph_data: ascosData, convert_askcos: askcosRoute }),
+      body: JSON.stringify({ source_data: ascosData, convert_from: "askcos" }),
     });
 
     if (!response.ok) {
