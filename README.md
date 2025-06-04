@@ -68,6 +68,12 @@ Optional (not required, but nice to have):
 
 
 
+## License
+
+This project has separate licenses for code and data:
+- **Code License**: The code is licensed under the MIT License. See the LICENSE file for details.
+- **Data License**: The data is licensed under a separate license located in the `data` folder.
+
 ## Features
 
 
@@ -105,6 +111,8 @@ Optional (not required, but nice to have):
 - **Highlight Atom Indices in Reaction Depictions**: This toggle enables or disables the highlighting of atom indices in graphical depictions.
 
 - **Show Atom Indices in Reaction Depiction**: This toggle allows users to display atom indices in molecular depictions. When enabled, atom indices are shown for atoms with mapping information, providing additional clarity in visualizing molecular structures.
+
+- **Utilize Structure SVGs from JSON**: This toggle allows users to utilize structure SVGs provided in the JSON data rather than generating new SVGs from the APIs. When enabled, the highlight atom indices and show atom indices options are disabled.
 
 - **Set Edge Style**: Users can choose the style of edges in the graph, including options like "Round Taxi," "Straight," and "Segments."
 
