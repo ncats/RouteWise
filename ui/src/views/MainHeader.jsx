@@ -13,7 +13,7 @@ const MainHeader = () => {
           alt="Molecule"
           className="Main-header-logo"
         />
-        <h3 className="Main-header-title">Synthesis Route Design</h3>
+        <h3 className="Main-header-title">RouteWise</h3>
         <NetworkSearchMenu />
       </div>
     </div>

@@ -52,8 +52,8 @@ const UploadJson = ({ convertToNormalFormat = false }) => {
 
       // Update the graph with the final data
       setAicpGraph(finalData);
-      const mappedData = mapGraphDataToCytoscape(finalData);
-      updateCytoscapeGraph(mappedData);
+    //   const mappedData = mapGraphDataToCytoscape(finalData);
+    //   updateCytoscapeGraph(mappedData);
 
 
       setJsonFile(null); // Clear the file after successful upload

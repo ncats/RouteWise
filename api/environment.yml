@@ -6,6 +6,7 @@ dependencies:
   - svgutils
   - python=3.12
   - rdkit=2024.3.5
+  - networkx
   - pip
   - pip:
       - fastapi

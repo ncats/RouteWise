@@ -1,26 +1,41 @@
-# Start from Node 22 Alpine image
-FROM node:22-alpine
+# Stage 1: Build the React app
+FROM node:22-alpine AS builder
 
-# Set environment variables for user and group
-ARG USER=node
-ARG GROUP=node
-
-# Install curl, bash, and pnpm, and create the app directory in one RUN command
-RUN apk add --no-cache curl bash
-# Set the working directory
 WORKDIR /app
 
-# Copy the app files into the container and set ownership
-COPY --chown=${USER}:${GROUP} ./ ./
+# Copy only package files first for better caching
+COPY package*.json ./
 
-# Install dependencies and build the app in one RUN command
-RUN npm ci && npm run build
+# Install dependencies
+RUN npm ci
 
-# Change to the node user
-USER ${USER}
+# Copy rest of the app
+COPY . .
 
-# Expose the port
-EXPOSE 4204
+# Build the React app
+RUN npm run build
 
-# Start the app
-CMD ["npm", "run", "start-prod", "--", "--port=4204"]
+# Stage 2: Serve the app with NGINX
+FROM nginx:1.25-alpine
+
+# Set environment variables
+ARG PORT=4204
+ENV PORT=${PORT}
+
+# Copy the built app from the builder stage
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+# Copy public static content
+COPY --from=builder /app/public /usr/share/nginx/html/public
+
+# Remove default nginx config and replace it
+RUN rm /etc/nginx/conf.d/default.conf
+
+# Add custom NGINX config
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+# Expose the desired port
+EXPOSE ${PORT}
+
+# Start NGINX
+CMD ["nginx", "-g", "daemon off;"]

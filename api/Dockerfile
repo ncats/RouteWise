@@ -10,9 +10,6 @@ RUN apk add --no-cache bash tini
 # Set work directory
 WORKDIR /app
 
-# Create a directory for the data
-RUN mkdir data
-RUN chown root:root data
 
 # Install dependencies using micromamba
 COPY ./ ./
