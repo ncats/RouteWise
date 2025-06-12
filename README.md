@@ -70,9 +70,17 @@ Optional (not required, but nice to have):
 
 ## License
 
-This project has separate licenses for code and data:
-- **Code License**: The code is licensed under the MIT License. See the LICENSE file for details.
-- **Data License**: The data is licensed under a separate license located in the `data` folder.
+This repository contains source code, Jupyter notebooks, data, and results files which are organized into various subdirectories.
+
+### Source Code License
+The applicable license to source code can be found under the filename: LICENSE (MIT License). This license is recursively valid for all subdirectories, with the exception of the data subdirectories.
+
+### Data License
+The applicable license to data and results can be found under: data/LICENSE (Creative Commons Attribution 4.0 International Public License CC-BY 4.0 International). This license is applicable to all files recursively in the data and results subdirectory.
+
+### Links to Licenses
+- MIT License: [https://opensource.org/licenses/MIT](https://opensource.org/licenses/MIT)
+- Creative Commons Attribution 4.0 International Public License: [https://creativecommons.org/licenses/by/4.0/legalcode.txt](https://creativecommons.org/licenses/by/4.0/legalcode.txt)
 
 ## Features
 
@@ -80,6 +88,8 @@ This project has separate licenses for code and data:
 
 
 - **Route Selection Dropdown**: Includes the "SynthGraph" option to view the synthesis graph itself. Evidence routes are labeled as "Evidence 0", "Evidence 1", etc., and predicted routes are labeled as "Predicted 0", "Predicted 1", etc. For massive graphs with cycles (e.g., ASKCOS examples), use the force-directed layout for rendering.
+
+![RouteWise Example](data/images/Example.png)
 - **AICP/Cytoscape JSON Toggle**: Enables users to view JSON data in different formats, including AICP and Cytoscape formats.
 - **Upload JSON Functionality**: Provides options to upload JSON files, Cytoscape JSON files, or pass JSON data directly in the request body using the `json_data` parameter. Users can also refer to the Jupyter notebook example for uploading JSON or use the Swagger documentation available at [http://0.0.0.0:5099/api/v1/docs/aicp/rw_api](http://0.0.0.0:5099/api/v1/docs/aicp/rw_api).
 - **Example Graphs**: Includes two evidence-based route examples, an ASKCOS Route Sample and one hybrid example which includes both evidence and predicted routes. The ASKCOS Route Sample is parsed and converted internally into the graph format before rendering.
