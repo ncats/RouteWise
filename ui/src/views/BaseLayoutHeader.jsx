@@ -145,6 +145,7 @@ const BaseLayoutHeader = () => {
             gap: "10px",
             marginBottom: "10px",
           }}
+          id="graph-info"
         >
           <pre style={{ margin: 0 }}>
             <b>Nodes:</b>{" "}

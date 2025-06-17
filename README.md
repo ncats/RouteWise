@@ -346,3 +346,21 @@ This endpoint converts input data, e.g.: predicted synthesis routes into the AIC
    [http://0.0.0.0:5099/api/v1/docs/aicp/rw_api](http://0.0.0.0:5099/api/v1/docs/aicp/rw_api)
 
 ---
+
+### Testing
+
+There are E2E tests within the `tests` directory. To run the tests, navigate to the `tests` directory and run the following command to install dependencies:
+
+```bash
+./setup_e2e_playwright.sh
+```
+
+You can then execute the tests with:
+
+```bash
+./run_e2e_tests.sh
+```
+
+These tests will verify the most of the base functionality of both the UI and the API.
+
+---

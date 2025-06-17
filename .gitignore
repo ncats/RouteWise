@@ -23,3 +23,7 @@ __pycache__/
 
 # Ignore api/data directory
 api/data/
+
+# Test files
+tests/.env
+.pytest_cache

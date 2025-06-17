@@ -18,7 +18,7 @@ const NetworkSearchMenu = () => {
     preserveSubgraphIndexRef,
   } = useContext(MainContext);
   const [selectedRetrievalOption, setSelectedRetrievalOption] = useState(
-    "synthesis-route-search"
+    "json"
   );
   const [evidenceSynthGraph, setEvidenceSynthGraph] = useState(null);
   const [predictedSynthGraph, setPredictedSynthGraph] = useState(null);
@@ -99,10 +99,11 @@ const NetworkSearchMenu = () => {
         style={{ display: "flex", gap: "10px" }}
       >
         <Select
-          defaultValue="Upload-JSON"
+          defaultValue="json"
           onChange={handleRetrievalOptionChange}
+          data-testid="GraphRetrievalDropdown"
         >
-          <Select.Option value="json">Upload JSON</Select.Option>
+          <Select.Option value="json" >Upload JSON</Select.Option>
           <Select.Option value="cytoscape-json">
             Upload Cytoscape JSON
           </Select.Option>
@@ -113,6 +114,7 @@ const NetworkSearchMenu = () => {
           disabled={dropdownDisabled}
           value={selectedOption}
           onChange={(value) => onRouteChange(value)}
+          data-testid="SynthesisRouteDropdown"
         >
           {aicpGraph && evidenceSynthGraph && (
             <Select.Option value="SynthGraph">
@@ -137,7 +139,7 @@ const NetworkSearchMenu = () => {
           )}
         </Select>
       </div>
-      <div className="Graph-form-container">
+      <div id="GraphFormContainer" className="Graph-form-container">
         {selectedRetrievalOption === "json" && (
           <UploadJson convertToNormalFormat={false} />
         )}
