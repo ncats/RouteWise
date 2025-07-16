@@ -77,13 +77,16 @@ const NetworkSearchMenu = () => {
     setSelectedOption(value);
     if (value == "SynthGraph") {
       setSubgraphIndex(-1);
+      preserveSubgraphIndexRef.current = true;
       setUsePredictedGraph(false);
     } else if (value == "PredictiveGraph") {
       setSubgraphIndex(-2);
+      preserveSubgraphIndexRef.current = true;
       setUsePredictedGraph(true);
     } else {
       const index = parseInt(value.split(" ")[1]);
       setSubgraphIndex(index);
+      preserveSubgraphIndexRef.current = true;
       if (aicpGraph.routes[index].predicted) {
         setUsePredictedGraph(true);
       } else {
