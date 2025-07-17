@@ -471,7 +471,22 @@ export const cyStyles = [
     },
   },
   {
+    selector: "edge[edge_type = 'PRODUCT_OF']",
+    style: {
+      "line-color": colors.ORANGE.primary,
+      "target-arrow-color": colors.ORANGE.primary,
+      width: 7,
+    },
+  },
+  {
     selector: "edge[edge_type = 'reactant_of']",
+    style: {
+      "line-color": colors.BLUE.dark,
+      "target-arrow-color": colors.BLUE.dark,
+    },
+  },
+  {
+    selector: "edge[edge_type = 'REACTANT_OF']",
     style: {
       "line-color": colors.BLUE.dark,
       "target-arrow-color": colors.BLUE.dark,

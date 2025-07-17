@@ -16,6 +16,8 @@ const NetworkSearchMenu = () => {
     updateCytoscapeGraph,
     setUsePredictedGraph,
     preserveSubgraphIndexRef,
+    subgraphIndex,
+    setSubgraphIndex
   } = useContext(MainContext);
   const [selectedRetrievalOption, setSelectedRetrievalOption] = useState(
     "synthesis-route-search"
@@ -25,7 +27,6 @@ const NetworkSearchMenu = () => {
   const [routeOptions, setRouteOptions] = useState(null);
   const [dropdownDisabled, setDropdownDisabled] = useState(true);
   const [selectedOption, setSelectedOption] = useState(null);
-  const { subgraphIndex, setSubgraphIndex } = useContext(MainContext);
 
   const handleRetrievalOptionChange = (option) => {
     setSelectedRetrievalOption(option);
