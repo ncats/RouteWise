@@ -65,23 +65,6 @@ Optional (not required, but nice to have):
 
 
 
-
-
-
-## License
-
-This repository contains source code, Jupyter notebooks, data, and results files which are organized into various subdirectories.
-
-### Source Code License
-The applicable license to source code can be found under the filename: LICENSE (MIT License). This license is recursively valid for all subdirectories, with the exception of the data subdirectories.
-
-### Data License
-The applicable license to data and results can be found under: data/LICENSE (Creative Commons Attribution 4.0 International Public License CC-BY 4.0 International). This license is applicable to all files recursively in the data and results subdirectory.
-
-### Links to Licenses
-- MIT License: [https://opensource.org/licenses/MIT](https://opensource.org/licenses/MIT)
-- Creative Commons Attribution 4.0 International Public License: [https://creativecommons.org/licenses/by/4.0/legalcode.txt](https://creativecommons.org/licenses/by/4.0/legalcode.txt)
-
 ## Features
 
 
@@ -194,37 +177,42 @@ Mandatory fields/attributes are marked with `*`.
 
 | Attribute | Description |
 | --- | --- |
-| `node_type`* | Type of the node, can be: `reaction` (represented by red circle) or `substance` (square box, shading depending on the `srole`, see below) |
-| `node_label`* | Label for the node displayed on hover |
-| `srole`* | _Works with substance nodes only:_ can be `sm` (**starting material**), `tm` (**target molecule**) or `im` (**intermediate material**) that are shaded by red, blue, and gray, respectively. |
-| `canonical_smiles` | _Works with substance nodes only:_ Canonical SMILES representation of the substance. |
-| `base64svg` | If you want to include an image for the node, you can do that using this parameter. Check [this section](#showing-graphical-content-inside-the-nodes) for details |
-| `uuid` | Unique identifier for the node |
-| `rxid` | _Works with reaction nodes only:_ The reaction identifier |
-| `rxsmiles` | _Works with reaction nodes only:_ SMILES representation of the reaction |
-| `original_rxsmiles` | _Works with reaction nodes only:_ The original SMILES representation of the reaction before any modifications. |
-| `yield_info` | _Works with reaction nodes only:_ Contains information on predicted yield and yield score. Options: <br> - `yield_predicted`: Predicted yield value <br> - `yield_score`: Yield score (e.g., a numerical score) |
-| `provenance` | Indicates if the reaction is in the USPTO and SAVI. Options: <br> - `is_in_uspto`: Boolean indicating if the reaction is in USPTO <br> - `is_in_savi`: Boolean indicating if the reaction is in SAVI <br> - `Patents`: Optional list of patent names associated with the reaction <br> - `patent_paragraph_nums`: Maps paragraph numbers to the associated patents. |
-| `rxname` | _Works with reaction nodes only:_ Name of the reaction. |
-| `is_rxname_recognized` | _Works with reaction nodes only:_ Indicates whether the reaction name is recognized. |
-| `rxclass` | _Works with reaction nodes only:_ Class of the reaction. |
-| `evidence_conditions_info` | _Works with reaction nodes only:_ Optional field containing keys associated with parent identifiers (e.g., patent IDs). Each key maps to a dictionary with key-value pairs describing the reaction conditions, such as `solvent`, `temperature_range`, `pressure`, `reaction_time`, `quenching_agent`, and `extraction_solvent`. |
-| `evidence_protocol` | _Works with reaction nodes only:_ Optional field containing keys associated with parent identifiers (e.g., patent IDs). Each key maps to a dictionary with a `protocol_text` describing the reaction protocol, including details such as solvent, temperature range, pressure, and reaction steps. |
-| `predicted_conditions_info` | _Works with reaction nodes only:_ Optional field containing predicted reaction conditions. The structure includes a `method` key, which maps to a dictionary of methods (e.g., `ASKCOS`). Each method contains multiple predictions (e.g., `Pred 1`, `Pred 2`), and each prediction is a dictionary with key-value pairs describing the predicted conditions, such as `solvent`, `temperature_range`, `pressure`, `reaction_time`, `quenching_agent`, and `extraction_solvent`. |
-| `route_assembly_type` | _Works with both node types:_ Indicates whether the route is predicted or based on evidence. Options: <br> - `is_predicted`: Boolean indicating if the route is predicted <br> - `is_evidence`: Boolean indicating if the route is based on evidence |
-
+| `node_type`* | Type of the node, either **reaction** or **substance**, represented by circle and square shaped nodes, respectively. |
+| `rxid`* | (Reaction nodes only) Primary unique identifier for reaction nodes. |
+| `inchikey`* | (Substance nodes only) Primary unique identifier for substance nodes, which is their InChI-Key. |
+| `node_label`* | Label for the node. The primary role of this field is to have a universal attribute for nodes that encode their primary unique identifier regardless of node type. |
+| `srole`* | Defined for substance nodes only: can be **sm** (starting material), **tm** (target molecule) or **im** (intermediate). Substance nodes colored accordingly. |
+| `rxsmiles` | (Reaction nodes only) Primary structural information for reactions in RXSMILES format. |
+| `canonical_smiles` | (Substance nodes only) Canonical SMILES string representing the chemical structure. |
+| `original_rxsmiles` | (Reaction nodes only) This allows for any post-processing of this attribute and store the results in the `rxsmiles` attribute while preserving the original (unmodified) RXSMILES string. |
+| `base64svg` | (Both node types) Base64-encoded SVG image for graphical depiction. Can be used to bypass built-in depiction mechanism from SMILES and RXSMILES. |
+| `uuid` | Unique identifier for nodes (across both types), it is the systematically generated UUID which we prefixed with node types to further reduce the possible chance of UUID collision. The use of UUID is somewhat redundant with the node label attribute, but the latter provides a more "human readable" way to trace information flow. |
+| `yield_info` | (Reaction nodes only) Contains predicted yield information: `yield_predicted` and `yield_score`. |
+| `provenance` | (Reaction nodes only) Indicates source database presence: `is_in_uspto`, `is_in_savi`, optional `Patents` list and `patent_paragraph_nums` mapping. |
+| `rxname` | (Reaction nodes only) Human-readable name of the reaction. |
+| `rxclass` | (Reaction nodes only) Classification or category of the reaction. |
+| `validation` | (Reaction nodes only) Contains `is_balanced`, a boolean for stoichiometric balance, `is_valid` whether the RXSMILES is parseable by RDKit, `is_rxname_recognized` a boolean indicating if the reaction name is annotated with a valid reaction name based on RXNO, and three balance indices: `RBI`, `PBI` and `TBI` (see: Section "Balance Indices"). |
+| `evidence_conditions_info` | (Reaction nodes only) Optional map from parent IDs to reaction conditions such as `solvent`, `catalyst`, `base`, `temperature_range`, etc. |
+| `evidence_protocol` | (Reaction nodes only) Optional map from parent IDs to text protocols describing full reaction steps. |
+| `predicted_conditions_info` | (Reaction nodes only) Optional map of prediction methods (e.g.: `ASKCOS`) to predicted conditions. |
+| `route_assembly_type` | (Both node types) Specifies route origin: `is_predicted` and/or `is_evidence`. |
 
 <hr>
 
 ### Edges
 
-In the following table below you'll find all supported parameters for the **edges**:
+Mandatory fields/attributes are marked with `*`.
 
 | Attribute | Description |
 | --- | --- |
-| `edge_type` | Type of the edge, its color depends on the type: `product_of` (orange line), `reactant_of` (blue line) or `reagent_of` (gray line) |
-| `start_node` | Node label for the node at the beginning of the edge |
-| `end_node` | Node label for the node at the end of the edge |
+| `edge_type`* | Type of the edge: **product_of** (orange), **reactant_of** (blue), or **reagent_of** (gray). |
+| `start_node`* | Node label of the source node (edge starting point). |
+| `end_node`* | Node label of the target node (edge ending point). |
+| `uuid` | Unique identifier for the edge. Useful for traceability. |
+| `route_membership` | Optional: specifies which synthetic route(s) this edge belongs to. |
+| `reaction_role` | Optional: provides detailed substance role in a reaction (e.g.: catalyst, solvent). |
+| `metadata` | Optional: arbitrary key-value pairs for extra edge info (e.g.: confidence score, annotations). Ignored by visualizer but retained for downstream use. |
+| `route_assembly_type` | (All edge types) Specifies route origin: `is_predicted` and/or `is_evidence`. |
 
 ---
 
@@ -374,3 +362,17 @@ You can then execute the tests with:
 These tests will verify the most of the base functionality of both the UI and the API.
 
 ---
+
+## License
+
+This repository contains source code, Jupyter notebooks, data, and results files which are organized into various subdirectories.
+
+### Source Code License
+The applicable license to source code can be found under the filename: LICENSE (MIT License). This license is recursively valid for all subdirectories, with the exception of the data subdirectories.
+
+### Data License
+The applicable license to data and results can be found under: data/LICENSE (Creative Commons Attribution 4.0 International Public License CC-BY 4.0 International). This license is applicable to all files recursively in the data and results subdirectory.
+
+### Links to Licenses
+- MIT License: [https://opensource.org/licenses/MIT](https://opensource.org/licenses/MIT)
+- Creative Commons Attribution 4.0 International Public License: [https://creativecommons.org/licenses/by/4.0/legalcode.txt](https://creativecommons.org/licenses/by/4.0/legalcode.txt)
