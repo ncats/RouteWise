@@ -1,5 +1,10 @@
 # RouteWise
 
+## Cite Us
+1. Vorontcov I, Miller N, Walker B, Yang B, Soundararajan J, King J, *et al.* (2025). **RouteWise – An Integration Friendly Platform for Interactive Synthesis Routes**. *ChemRxiv*. [https://doi.org/10.26434/chemrxiv-2025-9n358](https://doi.org/10.26434/chemrxiv-2025-9n358)  
+*This content is a preprint and has not been peer-reviewed.*
+
+## Table of Contents
 1.  [Prerequisite](#prerequisite)
 2.  [Installation](#installation)
 3.  [Features](#features)
