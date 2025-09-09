@@ -3,20 +3,23 @@ const molSmiles2RdkitSvgPath = "molsmiles2svg";
 const apiStatusPath = "status";
 const computeAllBiPath = "compute_all_bi";
 
-
 export const hasAtomMapping = (rxsmiles) => {
   // Check if the RXSMILES contains atom mapping by looking for atom map numbers in the format [n]
   const atomMappingRegex = /:\d+\]/;
   return atomMappingRegex.test(rxsmiles);
 };
 
-export const getReactionRdkitSvgByRxsmiles = async (baseUrl, rxsmiles, highlight, showAtomIndices = false) => {
+export const getReactionRdkitSvgByRxsmiles = async (
+  baseUrl,
+  rxsmiles,
+  highlight,
+  showAtomIndices = false
+) => {
   // Encode the rxsmiles string to ensure it's safely passed in the URL
   const encodedRxsmiles = encodeURIComponent(rxsmiles);
 
   // Construct the URL with query parameters
   const url = `${baseUrl.trim()}/${rxnSmiles2RdkitSvgPath}?rxsmiles=${encodedRxsmiles}&highlight=${highlight}&show_atom_indices=${showAtomIndices}&img_width=1800&img_height=600&base64_encode=true`;
-
 
   try {
     // Perform the GET request without a body and without headers
@@ -37,7 +40,12 @@ export const getReactionRdkitSvgByRxsmiles = async (baseUrl, rxsmiles, highlight
 };
 
 // Fetch molecule full RDKIT SVG from inchikey
-export const getMoleculeRdkitSvgBySmiles = async (baseUrl, smiles, width=100, height=100) => {
+export const getMoleculeRdkitSvgBySmiles = async (
+  baseUrl,
+  smiles,
+  width = 100,
+  height = 100
+) => {
   // Construct the URL with query parameters
   const encodedSmiles = encodeURIComponent(smiles);
   const url = `${baseUrl.trim()}/${molSmiles2RdkitSvgPath}?mol_smiles=${encodedSmiles}&img_width=${width}&img_height=${height}&base64_encode=true`;
@@ -83,27 +91,34 @@ export const checkApiStatus = async (baseUrl) => {
   }
 };
 
-
-
 export const getInchikeysFromGraph = (graph = []) => {
-  return graph.filter(item => item.data.inchikey !== undefined).map(item => item.data.inchikey);
-}
+  return graph
+    .filter((item) => item.data.inchikey !== undefined)
+    .map((item) => item.data.inchikey);
+};
 
-
-export const sendToCytoscape = async (baseUrl, aicpJson, usePredictedGraph=False) => {  // Receiving baseUrl as an argument
-
+export const sendToCytoscape = async (
+  baseUrl,
+  aicpJson,
+  usePredictedGraph = False,
+  subgraphIndex = 0
+) => {
+  const convertRoute = subgraphIndex >= 0;
   try {
     const synth_graph_key = usePredictedGraph
-        ? 'predictive_synth_graph'
-        : Object.prototype.hasOwnProperty.call(aicpJson, 'synth_graph')
-            ? 'synth_graph'
-            : 'evidence_synth_graph';
-            
-    const uploadResponse = await fetch(`${baseUrl.trim()}/send_to_cytoscape/?synth_graph_key=${synth_graph_key}&predicted_route=${usePredictedGraph}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(aicpJson),  // Directly use the passed cytoscapeJson
-    });
+      ? "predictive_synth_graph"
+      : Object.prototype.hasOwnProperty.call(aicpJson, "synth_graph")
+      ? "synth_graph"
+      : "evidence_synth_graph";
+
+    const uploadResponse = await fetch(
+      `${baseUrl.trim()}/send_to_cytoscape/?synth_graph_key=${synth_graph_key}&predicted_route=${usePredictedGraph}&convert_route=${convertRoute}&route_index=${subgraphIndex}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(aicpJson), // Directly use the passed cytoscapeJson
+      }
+    );
 
     if (!uploadResponse.ok) {
       throw new Error("Failed to upload network.");
@@ -111,14 +126,16 @@ export const sendToCytoscape = async (baseUrl, aicpJson, usePredictedGraph=False
 
     const uploadData = await uploadResponse.json();
     const networkId = uploadData.network_id;
-
-
   } catch (error) {
     console.error("Error sending to Cytoscape:", error.message);
   }
 };
 
-export const normalizeRoles = async (baseUrl, rxsmiles, normalizeRolesEnabled) => {
+export const normalizeRoles = async (
+  baseUrl,
+  rxsmiles,
+  normalizeRolesEnabled
+) => {
   const url = `${baseUrl.trim()}/normalize_roles`;
   const body = JSON.stringify({ rxsmiles });
 
@@ -155,7 +172,9 @@ export const compute_balance = async (baseUrl, rxsmiles) => {
   }
 
   // Construct the API endpoint URL with the rxsmiles parameter
-  const url = `${baseUrl.trim()}/${computeAllBiPath}?rxsmiles=${encodeURIComponent(rxsmiles)}`;
+  const url = `${baseUrl.trim()}/${computeAllBiPath}?rxsmiles=${encodeURIComponent(
+    rxsmiles
+  )}`;
 
   try {
     // Perform the GET request
@@ -165,7 +184,6 @@ export const compute_balance = async (baseUrl, rxsmiles) => {
         Accept: "application/json",
       },
     });
-
 
     // Check if the response is successful
     if (!response.ok) {

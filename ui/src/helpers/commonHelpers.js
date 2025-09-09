@@ -398,6 +398,20 @@ export const cyStyles = [
     },
   },
   {
+    selector: 'node[nodeType="reaction"][type="custom"][svg]',
+    style: {
+      "background-image": "data(svg)",
+      "background-fit": "contain",
+    },
+  },
+  {
+    selector: 'node[type="custom"][svg]',
+    style: {
+      "background-image": "data(svg)",
+      "background-fit": "contain",
+    },
+  },
+  {
     selector: 'node[srole="sm"]',
     style: {
       "border-color": colors.PINK.primary,
@@ -437,13 +451,6 @@ export const cyStyles = [
       width: "data(width)",
       height: "data(height)",
       "border-width": 2,
-    },
-  },
-  {
-    selector: 'node[type="custom"][svg]',
-    style: {
-      "background-image": "data(svg)",
-      "background-fit": "contain",
     },
   },
   {

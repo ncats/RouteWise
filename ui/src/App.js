@@ -49,6 +49,7 @@ function App() {
       if (messageType === "new-room") {
         // Navigate to the new URL with the room ID
         const newUrl = `?room_id=${data.room_id}`;
+        setRoomId(data.room_id);
         navigate(newUrl);
       } else if (messageType === "new-graph") {
         // Update the graph object with the received data
@@ -96,7 +97,9 @@ function App() {
   const [showAtomIndices, setAtomIndices] = useState(false);
   const [useJsonSVGs, setUseJsonSVGs] = useState(false);
   const [usePredictedGraph, setUsePredictedGraph] = useState(false);
+  const [roomId, setRoomId] = useState(false);
   const preserveSubgraphIndexRef = useRef(false);
+  const resetReagentOriginalGraph = useRef(false);
 
 
   useEffect(() => {
@@ -259,7 +262,6 @@ function App() {
             } else {
               console.error("Failed to fetch reaction SVG");
             }
-            promises.push(combinedPromise);
           })
           .catch((error) => {
             console.error("Error fetching reaction SVG:", error);
@@ -273,6 +275,7 @@ function App() {
               }
             }));
           });
+          promises.push(combinedPromise);
         }
 
         let balanceDataPromise;
@@ -334,6 +337,7 @@ function App() {
       let data = aicpGraph;
       const mappedData = mapGraphDataToCytoscape(data, subgraphIndex);
       updateCytoscapeGraph(mappedData);
+      resetReagentOriginalGraph.current = true;
     }
   }, [subgraphIndex, aicpGraph]);
 
@@ -387,7 +391,9 @@ function App() {
         setUsePredictedGraph,
         preserveSubgraphIndexRef,
         useJsonSVGs,
-        setUseJsonSVGs
+        setUseJsonSVGs,
+        resetReagentOriginalGraph,
+        roomId
       }}
     >
       <NetworkVisualizer />

@@ -125,7 +125,8 @@ To do so, select `Upload JSON`from the drop-down list, then select the file in a
 
 You can also visualize synthesis routes by using the API as follows.
 
-When you open the front-end application, a room ID will be assigned to you. You can find this room ID in the URL after `?room_id=<room_id>`. To send data to the backend, you now have two options depending on the format of your input:
+When you open the front-end application, a room ID will be assigned to you. You can find this room ID in the "Room ID" field displayed in the top-left header of the application or in the URL after `?room_id=<room_id>`. To send data to the backend, you now have two options depending on the format of your input:
+
 
 - For raw JSON input (e.g., from a Python dictionary or JSON file), use the `/upload_json_body/` endpoint. This expects a JSON payload in the request body, with the room_id and convert_from_askcos values passed as query parameters.
 

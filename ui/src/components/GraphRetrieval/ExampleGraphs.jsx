@@ -16,7 +16,7 @@ const exampleJsonFiles = [
 ];
 
 const ExampleGraphs = () => {
-  const { setAicpGraph, appSettings, setSubgraphIndex, preserveSubgraphIndexRef } = useContext(MainContext);
+  const { setAicpGraph, appSettings, setSubgraphIndex, preserveSubgraphIndexRef, resetReagentOriginalGraph } = useContext(MainContext);
 
   const handleLoadExample = async (examplePath, askcosRoute) => {
     try {
@@ -30,6 +30,7 @@ const ExampleGraphs = () => {
       // Update the graph with the new data
       setAicpGraph(null);
       preserveSubgraphIndexRef.current = false;
+      resetReagentOriginalGraph.current = true;
       setSubgraphIndex(0);
       setAicpGraph(data);
     } catch (error) {

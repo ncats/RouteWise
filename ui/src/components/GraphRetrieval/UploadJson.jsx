@@ -8,7 +8,7 @@ const UploadJson = ({ convertToNormalFormat = false }) => {
   const [jsonFile, setJsonFile] = useState(null);
   const [open, setOpen] = useState(false);
 
-  const { setAicpGraph, updateCytoscapeGraph } = useContext(MainContext);
+  const { setAicpGraph, updateCytoscapeGraph, resetReagentOriginalGraph } = useContext(MainContext);
 
   const handleJsonChange = async (info) => {
     const fileList = [...info.fileList]; // Copy the file list to avoid mutation
@@ -50,6 +50,7 @@ const UploadJson = ({ convertToNormalFormat = false }) => {
         ? convertCytoscapeToNormalFormat(data)
         : data;
 
+      resetReagentOriginalGraph.current = true;
       // Update the graph with the final data
       setAicpGraph(finalData);
     //   const mappedData = mapGraphDataToCytoscape(finalData);

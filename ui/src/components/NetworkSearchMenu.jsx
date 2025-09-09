@@ -17,7 +17,8 @@ const NetworkSearchMenu = () => {
     setUsePredictedGraph,
     preserveSubgraphIndexRef,
     subgraphIndex,
-    setSubgraphIndex
+    setSubgraphIndex,
+    resetReagentOriginalGraph
   } = useContext(MainContext);
   const [selectedRetrievalOption, setSelectedRetrievalOption] = useState(
     "json"
@@ -79,15 +80,18 @@ const NetworkSearchMenu = () => {
     if (value == "SynthGraph") {
       setSubgraphIndex(-1);
       preserveSubgraphIndexRef.current = true;
+      resetReagentOriginalGraph.current = true;
       setUsePredictedGraph(false);
     } else if (value == "PredictiveGraph") {
       setSubgraphIndex(-2);
       preserveSubgraphIndexRef.current = true;
+      resetReagentOriginalGraph.current = true;
       setUsePredictedGraph(true);
     } else {
       const index = parseInt(value.split(" ")[1]);
       setSubgraphIndex(index);
       preserveSubgraphIndexRef.current = true;
+      resetReagentOriginalGraph.current = true;
       if (aicpGraph.routes[index].predicted) {
         setUsePredictedGraph(true);
       } else {

@@ -1,8 +1,9 @@
 import React, { useContext, useState, useEffect } from "react";
-import { Button, Flex, Modal, Typography, Switch } from "antd";
+import { Button, Flex, Modal, Typography, Switch, Input } from "antd";
 import { MainContext } from "../contexts/MainContext";
 import { sendToCytoscape } from "../helpers/apiHelpers";
 import { defaultAppSettings } from "../helpers/commonHelpers";
+import { CopyOutlined } from "@ant-design/icons";
 
 const { Text } = Typography;
 
@@ -18,16 +19,32 @@ const BaseLayoutHeader = () => {
     cytoscapeGraph,
     usePredictedGraph,
     subgraphIndex,
-    preserveSubgraphIndexRef
+    preserveSubgraphIndexRef,
+    resetReagentOriginalGraph,
+    roomId,
   } = useContext(MainContext);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isCytoscape, setIsCytoscape] = useState(false);
+  const [inputWidth, setInputWidth] = useState(140);
 
   const showModal = () => setIsModalVisible(true);
   const handleCancel = () => setIsModalVisible(false);
 
   useEffect(() => {
-    if (aicpGraph) {
+    const calcWidth = (value) => {
+      const text = value && value.length ? value : "Room ID";
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      ctx.font = "12px monospace";
+      const measured = ctx.measureText(text).width;
+      // Add padding + icon spacing
+      return Math.min(Math.max(measured + 15, 120), 420); // clamp between 120 and 420
+    };
+    setInputWidth(calcWidth(roomId));
+  }, [roomId]);
+
+  useEffect(() => {
+    if (aicpGraph && (!originalGraph || resetReagentOriginalGraph.current)) {
       setOriginalGraph(structuredClone(aicpGraph));
     }
   }, [aicpGraph]);
@@ -69,6 +86,7 @@ const BaseLayoutHeader = () => {
   const handleToggleReagents = (checked) => {
     setShowReagents(checked);
     preserveSubgraphIndexRef.current = true;
+    resetReagentOriginalGraph.current = false;
     const filteredGraph = filterGraphForReagents(originalGraph, checked);
     setAicpGraph(null);
     setAicpGraph(filteredGraph);
@@ -125,7 +143,7 @@ const BaseLayoutHeader = () => {
       align="center"
       style={{ padding: "10px", paddingRight: "20px", maxHeight: 70 }}
     >
-      <Flex gap="middle" wrap="wrap">
+      <Flex gap="middle" wrap="wrap" align="center">
         {/* Toggle Show Reagents */}
         <Switch
           checkedChildren="Show Reagents"
@@ -135,6 +153,31 @@ const BaseLayoutHeader = () => {
             handleToggleReagents(checked);
           }}
         />
+        {/* Room ID (label + copyable) */}
+        <Flex gap="4px" align="center">
+          <Text style={{ fontSize: 12, fontWeight: "bold" }}>Room ID:</Text>
+          <Input
+            id="room-id-input"
+            size="small"
+            value={roomId || ""}
+            readOnly
+            style={{
+              width: inputWidth,
+              fontSize: 12,
+              fontFamily: "monospace",
+              transition: "width 120ms ease"
+            }}
+            onFocus={(e) => e.target.select()}
+            placeholder="Room ID"
+            aria-label="Room ID"
+          />
+          <Button
+            size="small"
+            icon={<CopyOutlined />}
+            aria-label="Copy Room ID"
+            onClick={() => roomId && navigator.clipboard.writeText(roomId)}
+          />
+        </Flex>
       </Flex>
 
       <div>
@@ -191,7 +234,12 @@ const BaseLayoutHeader = () => {
             type="primary"
             disabled={!aicpGraph}
             onClick={() =>
-              sendToCytoscape(appSettings.apiUrl, aicpGraph, usePredictedGraph)
+              sendToCytoscape(
+                appSettings.apiUrl,
+                aicpGraph,
+                usePredictedGraph,
+                subgraphIndex
+              )
             }
             style={{ marginTop: "10px" }}
           >

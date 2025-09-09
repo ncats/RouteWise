@@ -664,51 +664,71 @@ def flatten_dict(d, parent_key='', sep='_'):
     return dict(items)
 
 
-def convert_to_cytoscape_json(aicp_graph, synth_graph_key="synth_graph", predicted_route=False):
+def convert_to_cytoscape_json(aicp_graph, synth_graph_key="synth_graph", convert_route=False, predicted_route=False, route_index=0):
     synth_graph = aicp_graph[synth_graph_key]
-    routes = aicp_graph.get("routes", [])
 
-    if not routes:
-        raise ValueError("No routes found in the 'routes' object.")
+    if convert_route:
+        routes = aicp_graph.get("routes", [])
+        if not routes:
+            raise ValueError("No routes found in the 'routes' object.")
+        route = routes[route_index]
+        route_node_labels = set(route["route_node_labels"])
 
-    route = routes[0]
-    route_node_labels = set(route["route_node_labels"])
+        # Nodes limited to route
+        filtered_nodes = [
+            {"data": {**flatten_dict(node), "id": node["node_label"]}}
+            for node in synth_graph["nodes"]
+            if node["node_label"] in route_node_labels
+        ]
 
-    # Flatten node properties and include "id"
-    filtered_nodes = [
-        {"data": {**flatten_dict(node), "id": node["node_label"]}}
-        for node in synth_graph["nodes"]
-        if node["node_label"] in route_node_labels
-    ]
+        # Edges limited to route
+        filtered_edges = [
+            {"data": {
+                **flatten_dict(edge), "source": edge["start_node"], "target": edge["end_node"]
+            }}
+            for edge in synth_graph["edges"]
+            if edge["start_node"] in route_node_labels and edge["end_node"] in route_node_labels
+        ]
+
+        aggregated_yield = route.get("aggregated_yield", "N/A")
+    else:
+        # Full graph conversion (no route filtering)
+        filtered_nodes = [
+            {"data": {**flatten_dict(node), "id": node["node_label"]}}
+            for node in synth_graph.get("nodes", [])
+        ]
+        filtered_edges = [
+            {"data": {
+                **flatten_dict(edge), "source": edge["start_node"], "target": edge["end_node"]
+            }}
+            for edge in synth_graph.get("edges", [])
+        ]
+        aggregated_yield = "N/A"
 
     if predicted_route:
         for node in filtered_nodes:
-            if node["data"]["node_type"].lower() == "substance":
-                node["data"]["node_label"] = node["data"]["inchikey"]
-
-    # Flatten edge properties and include "source"/"target"
-    filtered_edges = [
-        {"data": {
-            **flatten_dict(edge), "source": edge["start_node"], "target": edge["end_node"]
-        }}
-        for edge in synth_graph["edges"]
-        if edge["start_node"] in route_node_labels and edge["end_node"] in route_node_labels
-    ]
+            node_type = node["data"].get("node_type", "")
+            if isinstance(node_type, str) and node_type.lower() == "substance":
+                # Preserve original node_label if needed elsewhere; overwrite for Cytoscape label
+                if "inchikey" in node["data"]:
+                    node["data"]["node_label"] = node["data"]["inchikey"]
 
     # Determine cytoscape_name
+    cytoscape_name = "Graph_SD_NA-Predicted" if predicted_route else "Graph_SD_NA-Evidence"
     try:
         search_params = aicp_graph["search_params"]
-        cytoscape_name = f"{search_params['target_molecule_inchikey']}_SD_{search_params['reaction_steps']}-{'Predicted' if predicted_route else 'Evidence'}"
+        cytoscape_name = f"{search_params.get('target_molecule_inchikey', 'Unknown')}_SD_{search_params.get('reaction_steps', 'NA')}-{'Predicted' if predicted_route else 'Evidence'}"
     except KeyError:
         for node in filtered_nodes:
-            if node["data"]["node_type"].lower() == "substance" and node["data"]["srole"] == "tm":
-                cytoscape_name = f"{node['data']['inchikey']}_SD_NA-{'Predicted' if predicted_route else 'Evidence'}"
+            data = node["data"]
+            if data.get("node_type", "").lower() == "substance" and data.get("srole") == "tm":
+                cytoscape_name = f"{data.get('inchikey', 'Unknown')}_SD_NA-{'Predicted' if predicted_route else 'Evidence'}"
                 break
 
     return {
         "data": {
             "name": cytoscape_name,
-            "aggregated_yield": route["aggregated_yield"] if "aggregated_yield" in route else "N/A"
+            "aggregated_yield": aggregated_yield
         },
         "directed": True,
         "multigraph": False,
@@ -755,35 +775,54 @@ def assign_srole(parsed_data):
 
 
 @app.post("/send_to_cytoscape/", response_model=dict)
-def send_to_cytoscape(network_json: dict = load_example_payload(), layout_type: str = "hierarchical", synth_graph_key: str = "synth_graph", predicted_route: bool = False):
+def send_to_cytoscape(
+    network_json: dict = load_example_payload(),
+    layout_type: str = "hierarchical",
+    synth_graph_key: str = "synth_graph",
+    predicted_route: bool = False,
+    convert_route: bool = False,
+    route_index: int = 0,
+):   
     """
     Upload a network JSON to Cytoscape and apply AICP-specific styling and layout.
 
     This endpoint sends a preprocessed Cytoscape JSON network to the Cytoscape REST API, creates a view for it,
     applies a default AICP visual style, and optionally applies a layout (e.g., "hierarchical").
 
+    When convert_route is False (default), the entire synthesis graph under synth_graph_key is converted.
+    When convert_route is True, only the nodes/edges belonging to the specified route_index in the 'routes' list
+    are included.
+
     **Query Parameters**:
-    - `layout_type` (str, optional): The name of the layout algorithm to apply. Defaults to `"hierarchical"`.
-    - `synth_graph_key` (str, optional): The key in the input JSON to extract the synthesis graph. Defaults to `"synth_graph"`.
-    - `predicted_route` (bool, optional): Flag to indicate if the network is a predicted route. Defaults to `False`.
+    - layout_type (str, optional): Layout algorithm name (e.g., "hierarchical"). Defaults to "hierarchical".
+    - synth_graph_key (str, optional): Key in the input JSON containing the synthesis graph. Defaults to "synth_graph".
+    - predicted_route (bool, optional): If True, relabels substance nodes (e.g., by InChIKey) and marks network as predicted. Defaults to False.
+    - convert_route (bool, optional): If True, filters the graph to a single route specified by route_index. Defaults to False.
+    - route_index (int, optional): Index into the 'routes' array to select a route when convert_route is True. Defaults to 0.
 
     **Request Body**:
-    - `network_json` (dict): The AICP-formatted graph data structure to be converted and sent to Cytoscape.
-      If no input is provided, an example payload will be used by default.
+    - network_json (dict): The AICP-formatted graph data structure to be converted and sent to Cytoscape.
+      If omitted, an example payload is used.
 
     **Returns**:
-    - A dictionary with the following keys on success:
-      - `network_suid` (int): The unique Cytoscape network session ID.
-      - `view_suid` (int): The associated view ID used for styling and layout.
-    - On failure, returns a dictionary with an `"error"` key and explanation.
+    - On success:
+      - network_suid (int): Cytoscape network SUID.
+      - view_suid (int): Cytoscape view SUID.
+    - On failure:
+      - error (str): Explanation of the failure.
 
     **Notes**:
-    - This endpoint assumes a running Cytoscape instance accessible via the configured `CYTOSCAPE_URL`.
-    - Errors in network creation, view generation, styling, or layout will be logged and returned as structured error messages.
+    - Requires a running Cytoscape instance accessible via CYTOSCAPE_URL.
+    - Errors in network creation, view generation, styling, or layout are caught and returned.
     """
     try:
         network_json = convert_to_cytoscape_json(
-            network_json, synth_graph_key, predicted_route)
+            network_json,
+            synth_graph_key,
+            convert_route,
+            predicted_route,
+            route_index
+        )
         # Send the network to Cytoscape without custom headers
         response = requests.post(
             f"{CYTOSCAPE_URL}/networks?format=cyjs", json=network_json)
