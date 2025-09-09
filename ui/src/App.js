@@ -97,7 +97,7 @@ function App() {
   const [showAtomIndices, setAtomIndices] = useState(false);
   const [useJsonSVGs, setUseJsonSVGs] = useState(false);
   const [usePredictedGraph, setUsePredictedGraph] = useState(false);
-  const [roomId, setRoomId] = useState(false);
+  const [roomId, setRoomId] = useState("");
   const preserveSubgraphIndexRef = useRef(false);
   const resetReagentOriginalGraph = useRef(false);
 
