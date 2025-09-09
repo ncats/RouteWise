@@ -671,6 +671,8 @@ def convert_to_cytoscape_json(aicp_graph, synth_graph_key="synth_graph", convert
         routes = aicp_graph.get("routes", [])
         if not routes:
             raise ValueError("No routes found in the 'routes' object.")
+        if not (0 <= route_index < len(routes)):
+            raise ValueError(f"route_index {route_index} is out of bounds for routes of length {len(routes)}.")
         route = routes[route_index]
         route_node_labels = set(route["route_node_labels"])
 
