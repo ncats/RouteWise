@@ -11,6 +11,7 @@ import {
   removeAllReagents,
   cyStyles,
   duplicateGraphSubstances,
+  sortGraphElements
 } from "../../helpers/commonHelpers";
 import { MainContext } from "../../contexts/MainContext";
 
@@ -130,6 +131,10 @@ const CytoscapeRendering = ({ graph, layout }) => {
         if (duplicateReagents) {
           transformedGraph = duplicateGraphSubstances(transformedGraph);
         }
+        
+        // Sort graph elements to ensure reactants appear before reagents
+        transformedGraph = sortGraphElements(transformedGraph);
+
         cyRef.current.add(transformedGraph);
 
         const notDAGError =
