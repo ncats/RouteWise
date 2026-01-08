@@ -414,15 +414,15 @@ export const cyStyles = [
   {
     selector: 'node[srole="sm"]',
     style: {
-      "border-color": colors.BLUE.primary,
-      "background-color": colors.BLUE.primary,
+      "border-color": colors.PINK.primary,
+      "background-color": colors.PINK.primary,
     },
   },
   {
     selector: 'node[srole="sm"][type="custom"]',
     style: {
-      "border-color": colors.BLUE.primary,
-      "background-color": colors.BLUE.primary,
+      "border-color": colors.PINK.primary,
+      "background-color": colors.PINK.primary,
       width: "data(width)",
       height: "data(height)",
     },
@@ -446,8 +446,8 @@ export const cyStyles = [
   {
     selector: 'node[srole="tm"]',
     style: {
-      "border-color": colors.PINK.primary,
-      "background-color": colors.PINK.primary,
+      "border-color": colors.BLUE.primary,
+      "background-color": colors.BLUE.primary,
       width: "data(width)",
       height: "data(height)",
       "border-width": 3,

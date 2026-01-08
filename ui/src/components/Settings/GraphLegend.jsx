@@ -13,14 +13,14 @@ const GraphLegend = () => {
     },
     {
       nodeLabel: "Target Molecule",
-      nodeColor: colors.PINK.primary,
+      nodeColor: colors.BLUE.primary,
       nodeType: "molecule",
       edgeLabel: "Reactant Of",
       edgeColor: colors.BLUE.dark,
     },
     {
       nodeLabel: "Starting Material",
-      nodeColor: colors.BLUE.primary,
+      nodeColor: colors.PINK.primary,
       nodeType: "molecule",
       edgeLabel: "Reagent Of",
       edgeColor: colors.GRAY.primary,
