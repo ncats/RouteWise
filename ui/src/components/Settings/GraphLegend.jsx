@@ -7,33 +7,38 @@ const GraphLegend = () => {
     {
       nodeLabel: "Reaction",
       nodeColor: colors.GOLD.primary,
+      nodeType: "reaction",
       edgeLabel: "Product Of",
       edgeColor: colors.ORANGE.primary,
     },
     {
       nodeLabel: "Target Molecule",
-      nodeColor: colors.BLUE.primary,
+      nodeColor: colors.PINK.primary,
+      nodeType: "molecule",
       edgeLabel: "Reactant Of",
       edgeColor: colors.BLUE.dark,
     },
     {
       nodeLabel: "Starting Material",
-      nodeColor: colors.PINK.primary,
+      nodeColor: colors.BLUE.primary,
+      nodeType: "molecule",
       edgeLabel: "Reagent Of",
       edgeColor: colors.GRAY.primary,
     },
     {
       nodeLabel: "Intermediate Material",
       nodeColor: colors.GRAY.primary,
+      nodeType: "molecule",
       edgeLabel: null,
       edgeColor: null,
     },
     {
       nodeLabel: "Predicted",
       nodeColor: colors.WHITE.primary,
-      edgeLabel: null,
+      nodeType: "molecule",
+      edgeLabel: "Predicted Edge",
       edgeColor: colors.GRAY.primary,
-      dashed: true,
+      edgeDashed: true,
     },
   ];
 
@@ -54,10 +59,16 @@ const GraphLegend = () => {
           {/* Nodes Column */}
           <div className={"legendNodeColumn"}>
             <div
-              className={"legendNodeColor"}
+              className={
+                item.nodeType === "reaction"
+                  ? "legendNodeRectangle"
+                  : "legendNodeSquare"
+              }
               style={{
                 backgroundColor: item.nodeColor,
-                borderStyle: item.dashed ? "dashed" : "none",
+                borderStyle: item.nodeType === "molecule" && item.nodeColor === colors.WHITE.primary ? "dashed" : "solid",
+                borderColor: item.nodeType === "molecule" && item.nodeColor === colors.WHITE.primary ? colors.GRAY.primary : item.nodeColor,
+                borderWidth: "2px",
               }}
             ></div>
             <span className={"legendLabelText"}>{item.nodeLabel}</span>
@@ -69,7 +80,13 @@ const GraphLegend = () => {
               <>
                 <div
                   className={"legendEdgeColor"}
-                  style={{ backgroundColor: item.edgeColor }}
+                  style={{
+                    backgroundColor: item.edgeColor,
+                    borderTop: item.edgeDashed
+                      ? `2px dashed ${item.edgeColor}`
+                      : "none",
+                    backgroundColor: item.edgeDashed ? "transparent" : item.edgeColor,
+                  }}
                 ></div>
                 <span className={"legendLabelText"}>{item.edgeLabel}</span>
               </>
@@ -77,6 +94,18 @@ const GraphLegend = () => {
           </div>
         </div>
       ))}
+      
+      {/* Info Note */}
+      <div style={{ 
+        marginTop: '12px', 
+        paddingTop: '12px', 
+        borderTop: '1px solid #d9d9d9',
+        fontSize: '12px',
+        color: '#8c8c8c',
+        fontStyle: 'italic'
+      }}>
+        Note: Node colors may only be reflected in node borders when structure SVGs are present
+      </div>
     </Flex>
   );
 };
