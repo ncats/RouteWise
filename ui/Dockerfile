@@ -16,7 +16,7 @@ COPY . .
 RUN npm run build
 
 # Stage 2: Serve the app with NGINX
-FROM nginx:1.29.0-alpine
+FROM nginx:1.29.3-alpine
 
 # Set environment variables
 ARG PORT=4204
