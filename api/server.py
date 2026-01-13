@@ -267,6 +267,7 @@ class Availability(BaseModel):
 
 class InputFile(BaseModel):
     synth_graph: Optional[SynthGraph] = None
+    evidence_synth_graph: Optional[SynthGraph] = None
     predictive_synth_graph: Optional[SynthGraph] = None
     routes: Optional[List[Route]] = None
     availability: Optional[list[Availability]] = None
@@ -316,18 +317,20 @@ async def upload_json_body(
                 status_code=400, detail=f"Invalid conversion source: {convert_from}")
 
         validated_data = InputFile(**json_data)
-        save_room_data(room_id, validated_data.dict())
+        # Use model_dump() with exclude_none=False to preserve all fields
+        data_dict = validated_data.model_dump(exclude_none=False) if hasattr(validated_data, 'model_dump') else validated_data.dict(exclude_none=False)
+        save_room_data(room_id, data_dict)
 
         try:
             await room_connections[room_id].send_json({
                 "type": "new-graph",
                 "room_id": room_id,
-                "data": validated_data.dict()
+                "data": data_dict
             })
         except Exception as e:
             logger.warning(f"WebSocket send error: {e}")
 
-        return {"data": validated_data.dict()}
+        return {"data": data_dict}
 
     except (json.JSONDecodeError, ValidationError) as e:
         raise HTTPException(status_code=400, detail=f"Invalid JSON: {str(e)}")
@@ -382,18 +385,20 @@ async def upload_json_file(
                 status_code=400, detail=f"Invalid conversion source: {convert_from}")
 
         validated_data = InputFile(**json_data)
-        save_room_data(room_id, validated_data.dict())
+        # Use model_dump() with exclude_none=False to preserve all fields
+        data_dict = validated_data.model_dump(exclude_none=False) if hasattr(validated_data, 'model_dump') else validated_data.dict(exclude_none=False)
+        save_room_data(room_id, data_dict)
 
         try:
             await room_connections[room_id].send_json({
                 "type": "new-graph",
                 "room_id": room_id,
-                "data": validated_data.dict()
+                "data": data_dict
             })
         except Exception as e:
             logger.warning(f"WebSocket send error: {e}")
 
-        return {"data": validated_data.dict()}
+        return {"data": data_dict}
 
     except (json.JSONDecodeError, ValidationError) as e:
         raise HTTPException(status_code=400, detail=f"Invalid JSON: {str(e)}")
