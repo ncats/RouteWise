@@ -341,7 +341,27 @@ export const cyOptions = {
   convergenceThreshold: 0.01, // when the alpha value (system energy) falls below this value, the layout stops
   nodeSpacing: 10, // extra spacing around nodes
   flow: undefined, // use DAG/tree flow layout if specified, e.g. { axis: 'y', minSeparation: 30 }
-  alignment: undefined, // relative alignment constraints on nodes, e.g. {vertical: [[{node: node1, offset: 0}, {node: node2, offset: 5}]], horizontal: [[{node: node3}, {node: node4}], [{node: node5}, {node: node6}]]}
+  alignment: function(node) {
+    // Get edges connected to this node
+    const edges = node.connectedEdges();
+    
+    // Check if this node is a reactant (connects TO a reaction via reactant_of edge)
+    const isReactant = edges.some(e => {
+      const edgeType = e.data('edge_type');
+      return edgeType === 'reactant_of' && e.source().id() === node.id();
+    });
+    
+    // Check if this node is a reagent (connects TO a reaction via reagent_of edge)
+    const isReagent = edges.some(e => {
+      const edgeType = e.data('edge_type');
+      return edgeType === 'reagent_of' && e.source().id() === node.id();
+    });
+    
+    // Assign horizontal alignment groups to keep reactants left of reagents
+    if (isReactant) return 'reactants';
+    if (isReagent) return 'reagents';
+    return undefined;
+  }, // relative alignment constraints on nodes, e.g. {vertical: [[{node: node1, offset: 0}, {node: node2, offset: 5}]], horizontal: [[{node: node3}, {node: node4}], [{node: node5}, {node: node6}]]}
   gapInequalities: undefined, // list of inequality constraints for the gap between the nodes, e.g. [{"axis":"y", "left":node1, "right":node2, "gap":25}]
   centerGraph: true, // adjusts the node positions initially to center the graph (pass false if you want to start the layout from the current position)
 
@@ -820,4 +840,76 @@ export const convertCytoscapeToNormalFormat = (cytoData) => {
   }
 
   return convertedData;
+};
+
+/**
+ * Sort graph elements to ensure consistent ordering with reactants before reagents
+ * This helps the cola layout algorithm position nodes more predictably
+ */
+export const sortGraphElements = (graph) => {
+  // Separate nodes and edges
+  const nodes = [];
+  const edges = [];
+  
+  graph.forEach(element => {
+    if (element.data.source !== undefined && element.data.target !== undefined) {
+      edges.push(element);
+    } else {
+      nodes.push(element);
+    }
+  });
+  
+  // Create a map of node IDs to their edge types
+  const nodeEdgeTypes = new Map();
+  
+  edges.forEach(edge => {
+    const edgeType = edge.data.edge_type?.toLowerCase();
+    const sourceId = edge.data.source;
+    
+    if (edgeType === 'reactant_of') {
+      nodeEdgeTypes.set(sourceId, 'reactant');
+    } else if (edgeType === 'reagent_of' && !nodeEdgeTypes.has(sourceId)) {
+      // Only set as reagent if not already marked as reactant
+      nodeEdgeTypes.set(sourceId, 'reagent');
+    }
+  });
+  
+  // Sort nodes: reactions first, then reactants, then reagents, then others
+  const sortedNodes = nodes.sort((a, b) => {
+    const aType = a.data.node_type?.toLowerCase();
+    const bType = b.data.node_type?.toLowerCase();
+    const aEdgeType = nodeEdgeTypes.get(a.data.id);
+    const bEdgeType = nodeEdgeTypes.get(b.data.id);
+    
+    // Reactions come first
+    if (aType === 'reaction' && bType !== 'reaction') return -1;
+    if (aType !== 'reaction' && bType === 'reaction') return 1;
+    
+    // Among substances, prioritize reactants over reagents
+    if (aEdgeType === 'reactant' && bEdgeType === 'reagent') return -1;
+    if (aEdgeType === 'reagent' && bEdgeType === 'reactant') return 1;
+    
+    // Keep original order for everything else
+    return 0;
+  });
+  
+  // Sort edges: reactant_of edges first, then product_of, then reagent_of
+  const sortedEdges = edges.sort((a, b) => {
+    const aEdgeType = a.data.edge_type?.toLowerCase();
+    const bEdgeType = b.data.edge_type?.toLowerCase();
+    
+    const edgePriority = {
+      'reactant_of': 1,
+      'product_of': 2,
+      'reagent_of': 3,
+    };
+    
+    const aPriority = edgePriority[aEdgeType] || 99;
+    const bPriority = edgePriority[bEdgeType] || 99;
+    
+    return aPriority - bPriority;
+  });
+  
+  // Return sorted graph with nodes first, then edges
+  return [...sortedNodes, ...sortedEdges];
 };
