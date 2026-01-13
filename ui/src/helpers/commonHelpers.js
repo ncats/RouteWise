@@ -386,7 +386,7 @@ export const cyStyles = [
     selector: "node",
     style: {
       shape: "rectangle",
-      "border-width": 1,
+      "border-width": 3,
       "border-color": colors.GRAY.dark,
       "background-color": colors.WHITE.primary,
       "font-size": "2px",
@@ -399,7 +399,7 @@ export const cyStyles = [
       shape: "rectangle",
       "border-color": colors.GOLD.primary,
       "background-color": colors.GOLD.primary,
-      "border-width": 2,
+      "border-width": 3,
     },
   },
   {
@@ -470,7 +470,7 @@ export const cyStyles = [
       "background-color": colors.BLUE.primary,
       width: "data(width)",
       height: "data(height)",
-      "border-width": 2,
+      "border-width": 3,
     },
   },
   {

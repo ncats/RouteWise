@@ -157,6 +157,18 @@ code {
   flex: 1;
 }
 
+.legendNodeSquare {
+  width: 20px;
+  height: 20px;
+  display: inline-block;
+}
+
+.legendNodeRectangle {
+  width: 28px;
+  height: 16px;
+  display: inline-block;
+}
+
 .legendNodeColor {
   width: 20px;
   height: 20px;
