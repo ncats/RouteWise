@@ -111,8 +111,9 @@ export const sendToCytoscape = async (
       ? "synth_graph"
       : "evidence_synth_graph";
 
+    // Set send_all_routes=false to maintain single-route behavior for UI button
     const uploadResponse = await fetch(
-      `${baseUrl.trim()}/send_to_cytoscape/?synth_graph_key=${synth_graph_key}&predicted_route=${usePredictedGraph}&convert_route=${convertRoute}&route_index=${subgraphIndex}`,
+      `${baseUrl.trim()}/send_to_cytoscape/?send_all_routes=false&synth_graph_key=${synth_graph_key}&predicted_route=${usePredictedGraph}&convert_route=${convertRoute}&route_index=${subgraphIndex}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
