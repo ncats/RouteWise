@@ -1051,7 +1051,7 @@ def _send_single_network_to_cytoscape(converted_json: dict, layout_type: str) ->
         return {"error": "Failed to upload network."}
     except ValueError as e:
         logger.error(f"Error: {e}")
-        return {"error": str(e)}
+        return {"error": "Failed to upload network."}
 
 
 @app.post("/normalize_roles", summary="Normalize reaction roles from a RXN Smiles")
