@@ -921,7 +921,8 @@ def send_to_cytoscape(
                 results.append({
                     "graph_type": graph_key,
                     "graph_name": graph_name,
-                    "type": "full_graph",
+                    # Do not expose internal error details to the client
+                    "error": "An error occurred while processing this full graph."
                     "error": str(e)
                 })
         
@@ -981,7 +982,8 @@ def send_to_cytoscape(
         return {"networks": results}
         
     except Exception as e:
-        logger.error(f"Error in multiple routes mode: {e}")
+        # Return a generic error message to avoid exposing internal details
+        return {"error": "An internal error occurred while processing routes."}
         return {"error": str(e)}
 
 
@@ -1051,7 +1053,8 @@ def _send_single_network_to_cytoscape(converted_json: dict, layout_type: str) ->
             logger.error(f"Response content: {e.response.text}")
         return {"error": "Failed to upload network."}
     except ValueError as e:
-        logger.error(f"Error: {e}")
+        # Return a generic error message instead of the raw exception text
+        return {"error": "Invalid response received while uploading network."}
         return {"error": "Failed to upload network."}
 
 
