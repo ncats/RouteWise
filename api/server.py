@@ -868,8 +868,9 @@ def send_to_cytoscape(
             )
             return _send_single_network_to_cytoscape(converted_json, layout_type)
         except Exception as e:
-            logger.error(f"Error in single network mode: {e}")
-            return {"error": str(e)}
+            # Log full exception with stack trace on the server, but return a generic message to the client
+            logger.exception("Error in single network mode")
+            return {"error": "Failed to send network to Cytoscape."}
     
     # Multiple routes mode (new default behavior)
     try:
