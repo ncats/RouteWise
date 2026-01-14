@@ -869,7 +869,7 @@ def send_to_cytoscape(
             return _send_single_network_to_cytoscape(converted_json, layout_type)
         except Exception as e:
             # Log full exception with stack trace on the server, but return a generic message to the client
-            logger.exception("Error in single network mode")
+            return {"error": "Failed to process network."}
             return {"error": "Failed to send network to Cytoscape."}
     
     # Multiple routes mode (new default behavior)
@@ -974,14 +974,14 @@ def send_to_cytoscape(
                 logger.error(f"Error processing route {idx}: {e}")
                 results.append({
                     "route_index": idx,
-                    "route_name": f"Route {idx}",
+                    "error": "Failed to process route."
                     "type": "route",
                     "error": str(e)
                 })
         
         return {"networks": results}
         
-    except Exception as e:
+        return {"error": "Failed to process networks."}
         # Return a generic error message to avoid exposing internal details
         return {"error": "An internal error occurred while processing routes."}
         return {"error": str(e)}
