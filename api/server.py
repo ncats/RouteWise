@@ -868,9 +868,8 @@ def send_to_cytoscape(
             )
             return _send_single_network_to_cytoscape(converted_json, layout_type)
         except Exception as e:
-            # Log full exception with stack trace on the server, but return a generic message to the client
-            return {"error": "Failed to process network."}
-            return {"error": "Failed to send network to Cytoscape."}
+            logger.error(f"Error in single network mode: {e}")
+            return {"error": str(e)}
     
     # Multiple routes mode (new default behavior)
     try:
@@ -921,8 +920,7 @@ def send_to_cytoscape(
                 results.append({
                     "graph_type": graph_key,
                     "graph_name": graph_name,
-                    # Do not expose internal error details to the client
-                    "error": "An error occurred while processing this full graph."
+                    "type": "full_graph",
                     "error": str(e)
                 })
         
@@ -974,16 +972,15 @@ def send_to_cytoscape(
                 logger.error(f"Error processing route {idx}: {e}")
                 results.append({
                     "route_index": idx,
-                    "error": "Failed to process route."
+                    "route_name": f"Route {idx}",
                     "type": "route",
                     "error": str(e)
                 })
         
         return {"networks": results}
         
-        return {"error": "Failed to process networks."}
-        # Return a generic error message to avoid exposing internal details
-        return {"error": "An internal error occurred while processing routes."}
+    except Exception as e:
+        logger.error(f"Error in multiple routes mode: {e}")
         return {"error": str(e)}
 
 
@@ -1053,9 +1050,8 @@ def _send_single_network_to_cytoscape(converted_json: dict, layout_type: str) ->
             logger.error(f"Response content: {e.response.text}")
         return {"error": "Failed to upload network."}
     except ValueError as e:
-        # Return a generic error message instead of the raw exception text
-        return {"error": "Invalid response received while uploading network."}
-        return {"error": "Failed to upload network."}
+        logger.error(f"Error: {e}")
+        return {"error": str(e)}
 
 
 @app.post("/normalize_roles", summary="Normalize reaction roles from a RXN Smiles")
