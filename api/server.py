@@ -670,7 +670,19 @@ def flatten_dict(d, parent_key='', sep='_'):
 
 
 def convert_to_cytoscape_json(aicp_graph, synth_graph_key="synth_graph", convert_route=False, predicted_route=False, route_index=0):
-    synth_graph = aicp_graph[synth_graph_key]
+    # Try to get the specified graph, with fallback logic similar to frontend
+    synth_graph = None
+    
+    if synth_graph_key in aicp_graph and aicp_graph[synth_graph_key] is not None:
+        synth_graph = aicp_graph[synth_graph_key]
+    elif "synth_graph" in aicp_graph and aicp_graph["synth_graph"] is not None:
+        synth_graph = aicp_graph["synth_graph"]
+    elif "evidence_synth_graph" in aicp_graph and aicp_graph["evidence_synth_graph"] is not None:
+        synth_graph = aicp_graph["evidence_synth_graph"]
+    elif "predictive_synth_graph" in aicp_graph and aicp_graph["predictive_synth_graph"] is not None:
+        synth_graph = aicp_graph["predictive_synth_graph"]
+    else:
+        raise ValueError(f"No synthesis graph found. Looked for: {synth_graph_key}, synth_graph, evidence_synth_graph, predictive_synth_graph")
 
     if convert_route:
         routes = aicp_graph.get("routes", [])
@@ -720,17 +732,38 @@ def convert_to_cytoscape_json(aicp_graph, synth_graph_key="synth_graph", convert
                 if "inchikey" in node["data"]:
                     node["data"]["node_label"] = node["data"]["inchikey"]
 
-    # Determine cytoscape_name
-    cytoscape_name = "Graph_SD_NA-Predicted" if predicted_route else "Graph_SD_NA-Evidence"
-    try:
+    # Determine cytoscape_name - extract target molecule (tm) InChIKey
+    target_inchikey = "Unknown"
+    reaction_steps = "NA"
+    
+    # First try to get from search_params
+    if "search_params" in aicp_graph and aicp_graph["search_params"] is not None:
         search_params = aicp_graph["search_params"]
-        cytoscape_name = f"{search_params.get('target_molecule_inchikey', 'Unknown')}_SD_{search_params.get('reaction_steps', 'NA')}-{'Predicted' if predicted_route else 'Evidence'}"
-    except KeyError:
-        for node in filtered_nodes:
-            data = node["data"]
-            if data.get("node_type", "").lower() == "substance" and data.get("srole") == "tm":
-                cytoscape_name = f"{data.get('inchikey', 'Unknown')}_SD_NA-{'Predicted' if predicted_route else 'Evidence'}"
+        target_inchikey = search_params.get('target_molecule_inchikey', target_inchikey)
+        reaction_steps = search_params.get('reaction_steps', reaction_steps)
+    else:
+        # If search_params doesn't exist, try to get directly from main object
+        target_inchikey = aicp_graph.get('target_molecule_inchikey', target_inchikey)
+        reaction_steps = aicp_graph.get('reaction_steps', reaction_steps)
+
+    logger.info(f"Target InChIKey: {target_inchikey}, Reaction steps: {reaction_steps}")
+    
+    # If not found, look for target molecule (tm) in the full graph nodes (not filtered)
+    if target_inchikey == "Unknown":
+        for node in synth_graph.get("nodes", []):
+            if node.get("node_type", "").lower() == "substance" and node.get("srole") == "tm":
+                target_inchikey = node.get("inchikey", "Unknown")
                 break
+    
+    # Generate name based on whether this is a route or full graph
+    if convert_route:
+        # Route name: Include reaction steps, index, and type
+        route_type = "Predicted" if predicted_route else "Evidence"
+        cytoscape_name = f"{target_inchikey}_SD_{reaction_steps} - Route {route_index} - {route_type}"
+    else:
+        # Full graph name: Simple format
+        graph_type = "Predicted Graph" if predicted_route else "Evidence Graph"
+        cytoscape_name = f"{target_inchikey} - {graph_type}"
 
     return {
         "data": {
@@ -785,34 +818,34 @@ def assign_srole(parsed_data):
 def send_to_cytoscape(
     network_json: dict = load_example_payload(),
     layout_type: str = "hierarchical",
+    send_all_routes: bool = True,
     synth_graph_key: str = "synth_graph",
     predicted_route: bool = False,
     convert_route: bool = False,
     route_index: int = 0,
 ):   
     """
-    Upload a network JSON to Cytoscape and apply AICP-specific styling and layout.
+    Upload network JSON to Cytoscape and apply AICP-specific styling and layout.
 
-    This endpoint sends a preprocessed Cytoscape JSON network to the Cytoscape REST API, creates a view for it,
-    applies a default AICP visual style, and optionally applies a layout (e.g., "hierarchical").
-
-    When convert_route is False (default), the entire synthesis graph under synth_graph_key is converted.
-    When convert_route is True, only the nodes/edges belonging to the specified route_index in the 'routes' list
-    are included.
+    By default, this endpoint sends ALL routes from the network JSON to Cytoscape as separate networks.
+    You can override this behavior to send a single route or the full graph.
 
     **Query Parameters**:
     - layout_type (str, optional): Layout algorithm name (e.g., "hierarchical"). Defaults to "hierarchical".
-    - synth_graph_key (str, optional): Key in the input JSON containing the synthesis graph. Defaults to "synth_graph".
-    - predicted_route (bool, optional): If True, relabels substance nodes (e.g., by InChIKey) and marks network as predicted. Defaults to False.
-    - convert_route (bool, optional): If True, filters the graph to a single route specified by route_index. Defaults to False.
-    - route_index (int, optional): Index into the 'routes' array to select a route when convert_route is True. Defaults to 0.
+    - send_all_routes (bool, optional): If True, sends all routes as separate networks. If False, uses single route/graph mode. Defaults to True.
+    - synth_graph_key (str, optional): Key in the input JSON containing the synthesis graph. Defaults to "synth_graph". Auto-detects if not present.
+    - predicted_route (bool, optional): If True, relabels substance nodes (e.g., by InChIKey) and marks network as predicted. Only used when send_all_routes=False.
+    - convert_route (bool, optional): If True, filters the graph to a single route. Only used when send_all_routes=False. Defaults to False.
+    - route_index (int, optional): Index into the 'routes' array to select a route. Only used when send_all_routes=False and convert_route=True. Defaults to 0.
 
     **Request Body**:
     - network_json (dict): The AICP-formatted graph data structure to be converted and sent to Cytoscape.
       If omitted, an example payload is used.
 
     **Returns**:
-    - On success:
+    - On success with send_all_routes=True:
+      - networks (list): List of created networks with their route_index, route_name, network_suid, and view_suid
+    - On success with send_all_routes=False:
       - network_suid (int): Cytoscape network SUID.
       - view_suid (int): Cytoscape view SUID.
     - On failure:
@@ -822,23 +855,157 @@ def send_to_cytoscape(
     - Requires a running Cytoscape instance accessible via CYTOSCAPE_URL.
     - Errors in network creation, view generation, styling, or layout are caught and returned.
     """
+    
+    # Single route/graph mode (original behavior)
+    if not send_all_routes:
+        try:
+            converted_json = convert_to_cytoscape_json(
+                network_json,
+                synth_graph_key,
+                convert_route,
+                predicted_route,
+                route_index
+            )
+            return _send_single_network_to_cytoscape(converted_json, layout_type)
+        except Exception as e:
+            # Log full exception with stack trace on the server, but return a generic message to the client
+            return {"error": "Failed to process network."}
+            return {"error": "Failed to send network to Cytoscape."}
+    
+    # Multiple routes mode (new default behavior)
     try:
-        network_json = convert_to_cytoscape_json(
-            network_json,
-            synth_graph_key,
-            convert_route,
-            predicted_route,
-            route_index
-        )
-        # Send the network to Cytoscape without custom headers
+        routes = network_json.get("routes", [])
+        results = []
+        
+        # First, send all available full graphs (synth_graph, evidence_synth_graph, predictive_synth_graph)
+        graph_types = []
+        if "synth_graph" in network_json and network_json["synth_graph"] is not None:
+            graph_types.append(("synth_graph", False, "Evidence Synthesis Graph"))
+        if "evidence_synth_graph" in network_json and network_json["evidence_synth_graph"] is not None:
+            graph_types.append(("evidence_synth_graph", False, "Evidence Synthesis Graph"))
+        if "predictive_synth_graph" in network_json and network_json["predictive_synth_graph"] is not None:
+            graph_types.append(("predictive_synth_graph", True, "Predictive Synthesis Graph"))
+        
+        # Send each full graph
+        for graph_key, is_predicted, graph_name in graph_types:
+            try:
+                logger.info(f"Processing full graph: {graph_name} ({graph_key})")
+                
+                converted_json = convert_to_cytoscape_json(
+                    network_json,
+                    graph_key,
+                    convert_route=False,
+                    predicted_route=is_predicted,
+                    route_index=0
+                )
+                
+                result = _send_single_network_to_cytoscape(converted_json, layout_type)
+                
+                if "error" not in result:
+                    results.append({
+                        "graph_type": graph_key,
+                        "graph_name": graph_name,
+                        "predicted": is_predicted,
+                        "type": "full_graph",
+                        **result
+                    })
+                else:
+                    results.append({
+                        "graph_type": graph_key,
+                        "graph_name": graph_name,
+                        "type": "full_graph",
+                        "error": result["error"]
+                    })
+            except Exception as e:
+                logger.error(f"Error processing full graph {graph_key}: {e}")
+                results.append({
+                    "graph_type": graph_key,
+                    "graph_name": graph_name,
+                    # Do not expose internal error details to the client
+                    "error": "An error occurred while processing this full graph."
+                    "error": str(e)
+                })
+        
+        # If no routes found, return results with just the full graphs
+        if not routes:
+            logger.info("No routes found, sent full graphs only")
+            return {"networks": results}
+        
+        # Send all routes as separate networks
+        for idx, route in enumerate(routes):
+            try:
+                is_predicted = route.get("predicted", False)
+                route_status = route.get('route_status', 'Unknown')
+                route_method = route.get('method', '')
+                route_name = f"Route {idx}: {route_status}" + (f" ({route_method})" if route_method else "")
+                
+                logger.info(f"Processing route {idx}: {route_name}")
+                
+                # Use the correct graph key based on route type
+                route_graph_key = "predictive_synth_graph" if is_predicted else synth_graph_key
+                
+                converted_json = convert_to_cytoscape_json(
+                    network_json,
+                    route_graph_key,
+                    convert_route=True,
+                    predicted_route=is_predicted,
+                    route_index=idx
+                )
+                
+                result = _send_single_network_to_cytoscape(converted_json, layout_type)
+                
+                if "error" not in result:
+                    results.append({
+                        "route_index": idx,
+                        "route_name": route_name,
+                        "predicted": is_predicted,
+                        "type": "route",
+                        **result
+                    })
+                else:
+                    results.append({
+                        "route_index": idx,
+                        "route_name": route_name,
+                        "type": "route",
+                        "error": result["error"]
+                    })
+                    
+            except Exception as e:
+                logger.error(f"Error processing route {idx}: {e}")
+                results.append({
+                    "route_index": idx,
+                    "error": "Failed to process route."
+                    "type": "route",
+                    "error": str(e)
+                })
+        
+        return {"networks": results}
+        
+        return {"error": "Failed to process networks."}
+        # Return a generic error message to avoid exposing internal details
+        return {"error": "An internal error occurred while processing routes."}
+        return {"error": str(e)}
+
+
+def _send_single_network_to_cytoscape(converted_json: dict, layout_type: str) -> dict:
+    """
+    Helper function to send a single network to Cytoscape.
+    
+    Args:
+        converted_json: The converted Cytoscape JSON
+        layout_type: Layout algorithm to apply
+        
+    Returns:
+        dict with network_suid and view_suid on success, or error on failure
+    """
+    try:
+        # Send the network to Cytoscape
         response = requests.post(
-            f"{CYTOSCAPE_URL}/networks?format=cyjs", json=network_json)
+            f"{CYTOSCAPE_URL}/networks?format=cyjs", json=converted_json)
 
         if response.ok:
-            # Log the full response to debug
             logger.info(f"Response from Cytoscape: {response.json()}")
 
-            # Get the network SUID from the response
             network_suid = response.json().get('networkSUID')
             if not network_suid:
                 raise ValueError("Network SUID not found in response.")
@@ -851,7 +1018,6 @@ def send_to_cytoscape(
             if view_response.ok:
                 logger.info("Network view created.")
 
-                # Get the SUID of the view from the response
                 view_suid = int(view_response.json()['data']['SUID'])
                 logger.info(f"View SUID: {view_suid}")
 
@@ -871,31 +1037,25 @@ def send_to_cytoscape(
                     logger.error(
                         f"Failed to apply layout '{layout_type}' to network {network_suid}.")
 
-                # Return network and view SUIDs
                 return {"network_suid": network_suid, "view_suid": view_suid}
             else:
                 logger.error(
                     f"Failed to create network view. Response: {view_response.text}")
                 return {"error": "Failed to create network view."}
-
         else:
             logger.error(
                 f"Failed to upload network. Response: {response.text}")
             return {"error": "Failed to upload network."}
 
     except requests.exceptions.RequestException as e:
-        # Log the request failure and return a failure response
         logger.error(f"Request failed: {e}")
-
         if hasattr(e, 'response') and e.response:
             logger.error(f"Response content: {e.response.text}")
-
         return {"error": "Failed to upload network."}
-
     except ValueError as e:
-        # Log the value error
-        logger.error(f"Error: {e}")
-        return {"error": "Failed to upload network to cytoscape."}
+        # Return a generic error message instead of the raw exception text
+        return {"error": "Invalid response received while uploading network."}
+        return {"error": "Failed to upload network."}
 
 
 @app.post("/normalize_roles", summary="Normalize reaction roles from a RXN Smiles")
