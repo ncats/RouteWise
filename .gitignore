@@ -27,3 +27,6 @@ api/data/
 # Test files
 tests/.env
 .pytest_cache
+
+# Temp
+temp/

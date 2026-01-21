@@ -252,7 +252,7 @@ def mol_to_image(
         [a.SetAtomMapNum(0) for a in mol.GetAtoms()]
     if show_atom_indices:
         mol.UpdatePropertyCache(False)
-    if abbreviate and not highlight_atoms and not highlight_bonds and clear_map:
+    if abbreviate and not highlight_atoms and not highlight_bonds and clear_map and not show_atom_indices:
         mol.UpdatePropertyCache(False)
         mol = rdAbbreviations.CondenseMolAbbreviations(mol, ABBREVIATIONS)
     if update:
@@ -494,7 +494,7 @@ def molecule_smiles_to_image(
     """
     if not highlight and split:
         mols = [Chem.MolFromSmarts(smi) if show_atom_indices else Chem.MolFromSmiles(smi) for smi in smiles.split(".")]
-        images = [mol_to_image(mol, svg=svg, transparent=transparent, abbreviate=abbreviate, reference=reference, **kwargs) for mol in mols]
+        images = [mol_to_image(mol, svg=svg, transparent=transparent, abbreviate=abbreviate, reference=reference, show_atom_indices=show_atom_indices, **kwargs) for mol in mols]
         return combine_images_horizontally(images, transparent=transparent, return_png=return_png)
 
     mol = Chem.MolFromSmarts(smiles) if show_atom_indices else Chem.MolFromSmiles(smiles)
@@ -539,51 +539,63 @@ def molecule_smiles_to_image(
             print("Unable to determine atom highlights using specified reacting atoms. Drawing without highlights.")
             tb.print_exc()
 
-    return mol_to_image(mol, svg=svg, transparent=transparent, return_png=return_png, abbreviate=abbreviate, reference=reference, **kwargs)
+    return mol_to_image(mol, svg=svg, transparent=transparent, return_png=return_png, abbreviate=abbreviate, reference=reference, show_atom_indices=show_atom_indices, **kwargs)
 
 
 def determine_highlight_colors(mol, frag_map, frag_idx=None):
     """
     Determine highlight colors for reactants and products based on atom map.
 
-    Adapted from RDKit MolDraw2D.DrawReaction
-    https://github.com/rdkit/rdkit/blob/Release_2020_09_5/Code/GraphMol/MolDraw2D/MolDraw2D.cpp#L547
-
-    If ``frag_idx`` is specified:
-        * The molecule is considered a reactant fragment
-        * All atoms in the molecule will be highlighted using the same color
-        * ``frag_map`` will be updated in place
-
-    Otherwise:
-        * The molecule is considered a product fragment
-        * Atoms will be colored based the contents of ``frag_map``
-        * ``frag_map`` will not be altered
+    More robust behavior:
+      - When frag_idx is provided (building phase): assign every mapped atom's mapno
+        to frag_idx in frag_map (overwriting if already present).
+      - When frag_idx is None (drawing phase): only highlight atoms whose mapno exists
+        in frag_map (skip unknown map numbers instead of raising KeyError).
 
     Args:
         mol (Chem.Mol): molecule object to analyze
-        frag_map (dict): mapping from atom map number to fragment index
-        frag_idx (int, optional): current fragment index
+        frag_map (dict[int, int]): mapping from atom map number -> fragment index
+        frag_idx (int, optional): current fragment index when building frag_map
 
     Returns:
-        dict: containing highlight kwargs for ``mol_to_image``
+        dict: highlight kwargs for mol_to_image
     """
     highlight_atoms = []
     highlight_bonds = []
     highlight_atom_colors = {}
     highlight_bond_colors = {}
+
     for atom in mol.GetAtoms():
         mapno = atom.GetAtomMapNum()
-        if mapno:
-            idx = atom.GetIdx()
-            if frag_idx is not None:
-                frag_map[mapno] = frag_idx
-            highlight_atoms.append(idx)
-            highlight_atom_colors[idx] = HIGHLIGHT_COLORS[frag_map[mapno] % len(HIGHLIGHT_COLORS)]
-            for atom2 in atom.GetNeighbors():
-                if atom2.GetIdx() < idx and highlight_atom_colors.get(atom2.GetIdx()) == highlight_atom_colors[idx]:
-                    bond_idx = mol.GetBondBetweenAtoms(idx, atom2.GetIdx()).GetIdx()
-                    highlight_bonds.append(bond_idx)
-                    highlight_bond_colors[bond_idx] = highlight_atom_colors[idx]
+        if not mapno:
+            continue  # RDKit uses 0 for "no mapping"
+
+        # Build-phase: record map number -> fragment index
+        if frag_idx is not None:
+            frag_map[mapno] = frag_idx
+
+        # Draw-phase: if we don't know this map number, skip it (don't crash)
+        frag = frag_map.get(mapno)
+        if frag is None:
+            continue
+
+        idx = atom.GetIdx()
+        color = HIGHLIGHT_COLORS[frag % len(HIGHLIGHT_COLORS)]
+
+        highlight_atoms.append(idx)
+        highlight_atom_colors[idx] = color
+
+        # Highlight bonds between same-colored neighboring atoms
+        for atom2 in atom.GetNeighbors():
+            j = atom2.GetIdx()
+            if j < idx and highlight_atom_colors.get(j) == color:
+                bond = mol.GetBondBetweenAtoms(idx, j)
+                if bond is None:
+                    continue
+                bond_idx = bond.GetIdx()
+                highlight_bonds.append(bond_idx)
+                highlight_bond_colors[bond_idx] = color
+
     return {
         "highlight_atoms": highlight_atoms,
         "highlight_bonds": highlight_bonds,
@@ -591,8 +603,7 @@ def determine_highlight_colors(mol, frag_map, frag_idx=None):
         "highlight_bond_colors": highlight_bond_colors,
     }
 
-
-
+    
 def reaction_smiles_to_image(smiles, svg=True, transparent=True, return_png=True, retro=False, highlight=False, align=False, plus=True, update=True, show_atom_indices=False,**kwargs):
     """
     Create image of the provided reaction SMILES string. Omits agents.
@@ -637,10 +648,12 @@ def reaction_smiles_to_image(smiles, svg=True, transparent=True, return_png=True
         if plus and i > 0:
             images.append(draw_plus(svg=svg, transparent=transparent))
         smiles = Chem.MolToSmarts(mol) if show_atom_indices else Chem.MolToSmiles(mol)
-        if smiles.count(".") > 1:
+        # Only split when NOT highlighting; splitting breaks highlight atom indices
+        if (not highlight) and smiles.count(".") > 1:
             images.append(molecule_smiles_to_image(smiles, svg=svg, transparent=transparent, **kwargs))
         else:
-            images.append(mol_to_image(mol, svg=svg, transparent=transparent, update=update, show_atom_indices=show_atom_indices, **kwargs))
+            images.append(mol_to_image(mol, svg=svg, transparent=transparent, update=update,
+                                    show_atom_indices=show_atom_indices, **kwargs))
 
     images.append(draw_arrow(retro=retro, svg=svg, transparent=transparent))
 

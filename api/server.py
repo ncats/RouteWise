@@ -268,7 +268,8 @@ class Availability(BaseModel):
 class InputFile(BaseModel):
     synth_graph: Optional[SynthGraph] = None
     evidence_synth_graph: Optional[SynthGraph] = None
-    predictive_synth_graph: Optional[SynthGraph] = None
+    predicted_synth_graph: Optional[SynthGraph] = None
+    predictive_synth_graph: Optional[SynthGraph] = None  # Deprecated: Use predicted_synth_graph
     routes: Optional[List[Route]] = None
     availability: Optional[list[Availability]] = None
 
@@ -521,6 +522,7 @@ async def rxsmiles_to_svg_endpoint(rxsmiles: str = 'CCO.CC(=O)O>>CC(=O)OCC.O', h
           <text x="10" y="50" font-size="32" fill="black">Unable to generate reaction SVG</text>
         </svg>
         """.strip()
+        logger.error(f"Error generating SVG for rxsmiles {rxsmiles}: {e}")
 
     if base64_encode:
         svg = base64.b64encode(svg.encode('utf-8')).decode('utf-8')
@@ -669,7 +671,7 @@ def flatten_dict(d, parent_key='', sep='_'):
     return dict(items)
 
 
-def convert_to_cytoscape_json(aicp_graph, synth_graph_key="synth_graph", convert_route=False, predicted_route=False, route_index=0):
+def convert_to_cytoscape_json(aicp_graph, synth_graph_key="synth_graph", convert_route=False, is_predicted=False, route_index=0):
     # Try to get the specified graph, with fallback logic similar to frontend
     synth_graph = None
     
@@ -679,10 +681,12 @@ def convert_to_cytoscape_json(aicp_graph, synth_graph_key="synth_graph", convert
         synth_graph = aicp_graph["synth_graph"]
     elif "evidence_synth_graph" in aicp_graph and aicp_graph["evidence_synth_graph"] is not None:
         synth_graph = aicp_graph["evidence_synth_graph"]
+    elif "predicted_synth_graph" in aicp_graph and aicp_graph["predicted_synth_graph"] is not None:
+        synth_graph = aicp_graph["predicted_synth_graph"]
     elif "predictive_synth_graph" in aicp_graph and aicp_graph["predictive_synth_graph"] is not None:
-        synth_graph = aicp_graph["predictive_synth_graph"]
+        synth_graph = aicp_graph["predictive_synth_graph"]  # Backward compatibility
     else:
-        raise ValueError(f"No synthesis graph found. Looked for: {synth_graph_key}, synth_graph, evidence_synth_graph, predictive_synth_graph")
+        raise ValueError(f"No synthesis graph found. Looked for: {synth_graph_key}, synth_graph, evidence_synth_graph, predicted_synth_graph, predictive_synth_graph")
 
     if convert_route:
         routes = aicp_graph.get("routes", [])
@@ -724,7 +728,7 @@ def convert_to_cytoscape_json(aicp_graph, synth_graph_key="synth_graph", convert
         ]
         aggregated_yield = "N/A"
 
-    if predicted_route:
+    if is_predicted:
         for node in filtered_nodes:
             node_type = node["data"].get("node_type", "")
             if isinstance(node_type, str) and node_type.lower() == "substance":
@@ -758,11 +762,11 @@ def convert_to_cytoscape_json(aicp_graph, synth_graph_key="synth_graph", convert
     # Generate name based on whether this is a route or full graph
     if convert_route:
         # Route name: Include reaction steps, index, and type
-        route_type = "Predicted" if predicted_route else "Evidence"
+        route_type = "Predicted" if is_predicted else "Evidence"
         cytoscape_name = f"{target_inchikey}_SD_{reaction_steps} - Route {route_index} - {route_type}"
     else:
         # Full graph name: Simple format
-        graph_type = "Predicted Graph" if predicted_route else "Evidence Graph"
+        graph_type = "Predicted Graph" if is_predicted else "Evidence Graph"
         cytoscape_name = f"{target_inchikey} - {graph_type}"
 
     return {
@@ -820,7 +824,7 @@ def send_to_cytoscape(
     layout_type: str = "hierarchical",
     send_all_routes: bool = True,
     synth_graph_key: str = "synth_graph",
-    predicted_route: bool = False,
+    is_predicted: bool = False,
     convert_route: bool = False,
     route_index: int = 0,
 ):   
@@ -834,7 +838,7 @@ def send_to_cytoscape(
     - layout_type (str, optional): Layout algorithm name (e.g., "hierarchical"). Defaults to "hierarchical".
     - send_all_routes (bool, optional): If True, sends all routes as separate networks. If False, uses single route/graph mode. Defaults to True.
     - synth_graph_key (str, optional): Key in the input JSON containing the synthesis graph. Defaults to "synth_graph". Auto-detects if not present.
-    - predicted_route (bool, optional): If True, relabels substance nodes (e.g., by InChIKey) and marks network as predicted. Only used when send_all_routes=False.
+    - is_predicted (bool, optional): If True, relabels substance nodes (e.g., by InChIKey) and marks network as predicted. Only used when send_all_routes=False.
     - convert_route (bool, optional): If True, filters the graph to a single route. Only used when send_all_routes=False. Defaults to False.
     - route_index (int, optional): Index into the 'routes' array to select a route. Only used when send_all_routes=False and convert_route=True. Defaults to 0.
 
@@ -863,7 +867,7 @@ def send_to_cytoscape(
                 network_json,
                 synth_graph_key,
                 convert_route,
-                predicted_route,
+                is_predicted,
                 route_index
             )
             return _send_single_network_to_cytoscape(converted_json, layout_type)
@@ -876,14 +880,16 @@ def send_to_cytoscape(
         routes = network_json.get("routes", [])
         results = []
         
-        # First, send all available full graphs (synth_graph, evidence_synth_graph, predictive_synth_graph)
+        # First, send all available full graphs (synth_graph, evidence_synth_graph, predicted_synth_graph)
         graph_types = []
         if "synth_graph" in network_json and network_json["synth_graph"] is not None:
             graph_types.append(("synth_graph", False, "Evidence Synthesis Graph"))
         if "evidence_synth_graph" in network_json and network_json["evidence_synth_graph"] is not None:
             graph_types.append(("evidence_synth_graph", False, "Evidence Synthesis Graph"))
-        if "predictive_synth_graph" in network_json and network_json["predictive_synth_graph"] is not None:
-            graph_types.append(("predictive_synth_graph", True, "Predictive Synthesis Graph"))
+        if "predicted_synth_graph" in network_json and network_json["predicted_synth_graph"] is not None:
+            graph_types.append(("predicted_synth_graph", True, "Predicted Synthesis Graph"))
+        elif "predictive_synth_graph" in network_json and network_json["predictive_synth_graph"] is not None:
+            graph_types.append(("predictive_synth_graph", True, "Predicted Synthesis Graph"))  # Backward compatibility
         
         # Send each full graph
         for graph_key, is_predicted, graph_name in graph_types:
@@ -894,7 +900,7 @@ def send_to_cytoscape(
                     network_json,
                     graph_key,
                     convert_route=False,
-                    predicted_route=is_predicted,
+                    is_predicted=is_predicted,
                     route_index=0
                 )
                 
@@ -940,13 +946,20 @@ def send_to_cytoscape(
                 logger.info(f"Processing route {idx}: {route_name}")
                 
                 # Use the correct graph key based on route type
-                route_graph_key = "predictive_synth_graph" if is_predicted else synth_graph_key
+                # Check predicted_synth_graph first, fallback to predictive_synth_graph for backward compatibility
+                if is_predicted:
+                    if "predicted_synth_graph" in network_json and network_json["predicted_synth_graph"] is not None:
+                        route_graph_key = "predicted_synth_graph"
+                    else:
+                        route_graph_key = "predictive_synth_graph"  # Backward compatibility
+                else:
+                    route_graph_key = synth_graph_key
                 
                 converted_json = convert_to_cytoscape_json(
                     network_json,
                     route_graph_key,
                     convert_route=True,
-                    predicted_route=is_predicted,
+                    is_predicted=is_predicted,
                     route_index=idx
                 )
                 
@@ -1168,7 +1181,7 @@ async def _convert_to_aicp(request: ConvertToAicpRequest) -> dict:
 
         # Return converted graph
         return {
-            "predictive_synth_graph": {
+            "predicted_synth_graph": {
                 "nodes": nodes,
                 "edges": edges
             },

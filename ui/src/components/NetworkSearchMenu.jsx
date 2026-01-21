@@ -45,7 +45,7 @@ const NetworkSearchMenu = () => {
       setEvidenceSynthGraph(
         aicpGraph.synth_graph || aicpGraph.evidence_synth_graph || null
       );
-      setPredictedSynthGraph(aicpGraph.predictive_synth_graph || null);
+      setPredictedSynthGraph(aicpGraph.predicted_synth_graph || aicpGraph.predictive_synth_graph || null);  // Check predicted first, fallback to predictive
       setRouteOptions(aicpGraph.routes || null);
     }
   }, [aicpGraph]);
@@ -69,7 +69,7 @@ const NetworkSearchMenu = () => {
       } else if (evidenceSynthGraph) {
         onRouteChange("SynthGraph");
       } else if (predictedSynthGraph) {
-        onRouteChange("PredictiveGraph");
+        onRouteChange("PredictedGraph");  // Updated from PredictiveGraph
       }
     }
   }, [evidenceSynthGraph, predictedSynthGraph, routeOptions]);
@@ -82,7 +82,7 @@ const NetworkSearchMenu = () => {
       preserveSubgraphIndexRef.current = true;
       resetReagentOriginalGraph.current = true;
       setUsePredictedGraph(false);
-    } else if (value == "PredictiveGraph") {
+    } else if (value == "PredictedGraph") {  // Updated from PredictiveGraph
       setSubgraphIndex(-2);
       preserveSubgraphIndexRef.current = true;
       resetReagentOriginalGraph.current = true;
@@ -130,7 +130,7 @@ const NetworkSearchMenu = () => {
             </Select.Option>
           )}
           {aicpGraph && predictedSynthGraph && (
-            <Select.Option value="PredictiveGraph">
+            <Select.Option value="PredictedGraph">
               Predicted Synth Graph
             </Select.Option>
           )}

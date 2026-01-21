@@ -92,7 +92,7 @@ export const mapGraphDataToCytoscape = (data, routeIndex = 0) => {
   // Extract evidenceSynthGraph and predictedSynthGraph
   const evidenceSynthGraph =
     data.synth_graph || data.evidence_synth_graph || {};
-  const predictedSynthGraph = data.predictive_synth_graph || {};
+  const predictedSynthGraph = data.predicted_synth_graph || data.predictive_synth_graph || {};  // Check predicted first, fallback to predictive
 
   // Extract route_node_labels from the selected subgraph
   const routes = data.routes;

@@ -5,7 +5,7 @@ channels:
 dependencies:
   - svgutils
   - python=3.12
-  - rdkit=2024.3.5
+  - rdkit=2025.03.2
   - networkx
   - pip
   - pip:

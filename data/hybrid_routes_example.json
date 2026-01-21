@@ -2707,7 +2707,7 @@
       }
     ]
   },
-  "predictive_synth_graph": {
+  "predicted_synth_graph": {
     "nodes": [
       {
         "node_label": "45427382-fde3-4163-8315-468e47f1ebab",
