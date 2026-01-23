@@ -23,6 +23,7 @@ const NetworkSearchMenu = () => {
   const [selectedRetrievalOption, setSelectedRetrievalOption] = useState(
     "json"
   );
+  const [primarySynthGraph, setPrimarySynthGraph] = useState(null);
   const [evidenceSynthGraph, setEvidenceSynthGraph] = useState(null);
   const [predictedSynthGraph, setPredictedSynthGraph] = useState(null);
   const [routeOptions, setRouteOptions] = useState(null);
@@ -42,10 +43,22 @@ const NetworkSearchMenu = () => {
   // When aicpGraph changes, update the synth graph states
   useEffect(() => {
     if (aicpGraph) {
-      setEvidenceSynthGraph(
-        aicpGraph.synth_graph || aicpGraph.evidence_synth_graph || null
-      );
-      setPredictedSynthGraph(aicpGraph.predictive_synth_graph || null);
+      const primary = aicpGraph.synth_graph || null;
+      const evidence = aicpGraph.evidence_synth_graph || null;
+      const predicted = aicpGraph.predicted_synth_graph || aicpGraph.predictive_synth_graph || null;
+      
+      setPrimarySynthGraph(primary);
+      
+      // Only show evidence graph if it exists AND differs from primary synth_graph
+      // (or if primary doesn't exist)
+      const showEvidence = evidence && (!primary || JSON.stringify(evidence) !== JSON.stringify(primary));
+      setEvidenceSynthGraph(showEvidence ? evidence : null);
+      
+      // Only show predicted graph if it exists AND differs from primary synth_graph
+      // (or if primary doesn't exist)
+      const showPredicted = predicted && (!primary || JSON.stringify(predicted) !== JSON.stringify(primary));
+      setPredictedSynthGraph(showPredicted ? predicted : null);
+      
       setRouteOptions(aicpGraph.routes || null);
     }
   }, [aicpGraph]);
@@ -53,6 +66,7 @@ const NetworkSearchMenu = () => {
   // Update dropdownDisabled based on the updated state values
   useEffect(() => {
     const shouldDisable =
+      primarySynthGraph == null &&
       evidenceSynthGraph == null &&
       predictedSynthGraph == null &&
       routeOptions == null;
@@ -66,23 +80,30 @@ const NetworkSearchMenu = () => {
 
       if (routeOptions) {
         onRouteChange("Route 0");
+      } else if (primarySynthGraph) {
+        onRouteChange("PrimarySynthGraph");
       } else if (evidenceSynthGraph) {
         onRouteChange("SynthGraph");
       } else if (predictedSynthGraph) {
-        onRouteChange("PredictiveGraph");
+        onRouteChange("PredictedGraph");
       }
     }
-  }, [evidenceSynthGraph, predictedSynthGraph, routeOptions]);
+  }, [primarySynthGraph, evidenceSynthGraph, predictedSynthGraph, routeOptions]);
 
   // On route change
   const onRouteChange = (value) => {
     setSelectedOption(value);
-    if (value == "SynthGraph") {
+    if (value == "PrimarySynthGraph") {
+      setSubgraphIndex(-3);
+      preserveSubgraphIndexRef.current = true;
+      resetReagentOriginalGraph.current = true;
+      setUsePredictedGraph(false);
+    } else if (value == "SynthGraph") {
       setSubgraphIndex(-1);
       preserveSubgraphIndexRef.current = true;
       resetReagentOriginalGraph.current = true;
       setUsePredictedGraph(false);
-    } else if (value == "PredictiveGraph") {
+    } else if (value == "PredictedGraph") {
       setSubgraphIndex(-2);
       preserveSubgraphIndexRef.current = true;
       resetReagentOriginalGraph.current = true;
@@ -124,13 +145,18 @@ const NetworkSearchMenu = () => {
           onChange={(value) => onRouteChange(value)}
           data-testid="SynthesisRouteDropdown"
         >
+          {aicpGraph && primarySynthGraph && (
+            <Select.Option value="PrimarySynthGraph">
+              Synth Graph
+            </Select.Option>
+          )}
           {aicpGraph && evidenceSynthGraph && (
             <Select.Option value="SynthGraph">
               Evidence Synth Graph
             </Select.Option>
           )}
           {aicpGraph && predictedSynthGraph && (
-            <Select.Option value="PredictiveGraph">
+            <Select.Option value="PredictedGraph">
               Predicted Synth Graph
             </Select.Option>
           )}

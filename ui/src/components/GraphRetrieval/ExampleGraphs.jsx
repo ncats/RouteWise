@@ -13,6 +13,7 @@ const exampleJsonFiles = [
     askcosRoute: true,
   },
   { name: "Hybrid Routes Example", path: "/data/hybrid_routes_example.json" },
+  { name: "Merged Routes Example", path: "/data/merged_example.json" },
 ];
 
 const ExampleGraphs = () => {

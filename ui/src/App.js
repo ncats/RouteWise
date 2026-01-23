@@ -335,7 +335,7 @@ function App() {
       subgraphIndex < aicpGraph.routes.length
     ) {
       let data = aicpGraph;
-      const mappedData = mapGraphDataToCytoscape(data, subgraphIndex);
+      const mappedData = mapGraphDataToCytoscape(data, subgraphIndex, usePredictedGraph);
       updateCytoscapeGraph(mappedData);
       resetReagentOriginalGraph.current = true;
     }

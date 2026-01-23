@@ -75,7 +75,7 @@ export const mapGraphData = (data) => {
   };
 };
 
-export const mapGraphDataToCytoscape = (data, routeIndex = 0) => {
+export const mapGraphDataToCytoscape = (data, routeIndex = 0, usePredictedGraph = false) => {
   const flattenObject = (obj) => {
     return Object.keys(obj).reduce((acc, key) => {
       const value = obj[key];
@@ -89,10 +89,10 @@ export const mapGraphDataToCytoscape = (data, routeIndex = 0) => {
     }, {});
   };
 
-  // Extract evidenceSynthGraph and predictedSynthGraph
-  const evidenceSynthGraph =
-    data.synth_graph || data.evidence_synth_graph || {};
-  const predictedSynthGraph = data.predictive_synth_graph || {};
+  // Extract the different graph types
+  const primarySynthGraph = data.synth_graph || {};
+  const evidenceSynthGraph = data.evidence_synth_graph || {};
+  const predictedSynthGraph = data.predicted_synth_graph || data.predictive_synth_graph || {};
 
   // Extract route_node_labels from the selected subgraph
   const routes = data.routes;
@@ -105,7 +105,20 @@ export const mapGraphDataToCytoscape = (data, routeIndex = 0) => {
     const route = routes[routeIndex];
     const predictedRoute = route["predicted"] || false;
 
-    const graph = predictedRoute ? predictedSynthGraph : evidenceSynthGraph;
+    // Select the appropriate graph:
+    // 1. If predicted route, try predictedSynthGraph first, then fall back to primarySynthGraph
+    // 2. If evidence route, try evidenceSynthGraph first, then fall back to primarySynthGraph
+    let graph;
+    if (predictedRoute) {
+      graph = (predictedSynthGraph.nodes && predictedSynthGraph.nodes.length > 0) 
+        ? predictedSynthGraph 
+        : primarySynthGraph;
+    } else {
+      graph = (evidenceSynthGraph.nodes && evidenceSynthGraph.nodes.length > 0) 
+        ? evidenceSynthGraph 
+        : primarySynthGraph;
+    }
+    
     filteredNodes = graph.nodes || [];
     filteredEdges = graph.edges || [];
 
@@ -123,11 +136,23 @@ export const mapGraphDataToCytoscape = (data, routeIndex = 0) => {
         routeNodeLabels.has(edge.end_node)
     );
   } else if (routeIndex === -1) {
-    filteredNodes = evidenceSynthGraph.nodes;
-    filteredEdges = evidenceSynthGraph.edges;
+    // Evidence synth graph, fall back to primary if needed
+    const graph = (evidenceSynthGraph.nodes && evidenceSynthGraph.nodes.length > 0) 
+      ? evidenceSynthGraph 
+      : primarySynthGraph;
+    filteredNodes = graph.nodes;
+    filteredEdges = graph.edges;
   } else if (routeIndex === -2) {
-    filteredNodes = predictedSynthGraph.nodes;
-    filteredEdges = predictedSynthGraph.edges;
+    // Predicted synth graph, fall back to primary if needed
+    const graph = (predictedSynthGraph.nodes && predictedSynthGraph.nodes.length > 0) 
+      ? predictedSynthGraph 
+      : primarySynthGraph;
+    filteredNodes = graph.nodes;
+    filteredEdges = graph.edges;
+  } else if (routeIndex === -3) {
+    // Use the primary synth_graph
+    filteredNodes = primarySynthGraph.nodes;
+    filteredEdges = primarySynthGraph.edges;
   } else {
     throw new Error("Invalid subgraph index.");
   }
@@ -162,6 +187,8 @@ export const mapGraphDataToCytoscape = (data, routeIndex = 0) => {
         evidence_conditions_info: flatNode.evidence_conditions_info ?? {},
         predicted_conditions_info: flatNode.predicted_conditions_info ?? {},
       },
+      // Add class for predicted target molecules
+      classes: flatNode.srole === "tm" && usePredictedGraph ? "predicted-tm" : "",
     };
   });
 
@@ -471,6 +498,12 @@ export const cyStyles = [
       width: "data(width)",
       height: "data(height)",
       "border-width": 3,
+    },
+  },
+  {
+    selector: 'node.predicted-tm',
+    style: {
+      "border-style": "dashed",
     },
   },
   {
