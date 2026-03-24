@@ -650,7 +650,15 @@ def reaction_smiles_to_image(smiles, svg=True, transparent=True, return_png=True
         smiles = Chem.MolToSmarts(mol) if show_atom_indices else Chem.MolToSmiles(mol)
         # Only split when NOT highlighting; splitting breaks highlight atom indices
         if (not highlight) and smiles.count(".") > 1:
-            images.append(molecule_smiles_to_image(smiles, svg=svg, transparent=transparent, **kwargs))
+            images.append(
+                molecule_smiles_to_image(
+                    smiles,
+                    svg=svg,
+                    transparent=transparent,
+                    show_atom_indices=show_atom_indices,
+                    **kwargs,
+                )
+            )
         else:
             images.append(mol_to_image(mol, svg=svg, transparent=transparent, update=update,
                                     show_atom_indices=show_atom_indices, **kwargs))

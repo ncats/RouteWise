@@ -560,7 +560,16 @@ async def smiles_to_svg_endpoint(mol_smiles: str = 'Cc1cc(Br)cc(C)c1C1C(=O)CCC1=
 
     d2d = Draw.MolDraw2DSVG(img_width, img_height)
     try:
-        d2d.DrawMolecule(mol)
+        # Force deterministic Kekule drawing first; if it fails, fall back to aromatic depiction.
+        try:
+            prepared_mol = Draw.PrepareMolForDrawing(mol, kekulize=True)
+            d2d.DrawMolecule(prepared_mol)
+        except Exception as kekulize_error:
+            logger.warning(
+                f"Kekulization failed for SMILES '{mol_smiles}'. Falling back to non-kekulized depiction: {kekulize_error}"
+            )
+            prepared_mol = Draw.PrepareMolForDrawing(mol, kekulize=False)
+            d2d.DrawMolecule(prepared_mol)
     except Exception as e:
         logger.error(f"Failed to draw molecule: {mol_smiles}", exc_info=True)
         raise HTTPException(
