@@ -1,7 +1,10 @@
 # RouteWise
 
 ## Cite Us
-1. Vorontcov I, Miller N, Walker B, Yang B, Soundararajan J, King J, *et al.* (2025). **RouteWise – An Integration Friendly Platform for Interactive Synthesis Routes**. *ChemRxiv*. [https://doi.org/10.26434/chemrxiv-2025-9n358](https://doi.org/10.26434/chemrxiv-2025-9n358)  
+1. Vorontcov I, Miller N, Walker B, Yang B, Soundararajan J, Zahoránszky-Kőhalmi, G., *et al.* (2025). **RouteWise – An Integration Friendly Platform for Interactive Synthesis Routes**. *ChemRxiv*. [https://doi.org/10.26434/chemrxiv-2025-9n358](https://doi.org/10.26434/chemrxiv-2025-9n358)  
+2. Zahoránszky-Kőhalmi G, Lysov N, Vorontcov I, Wang J, Soundararajan J, Metaxotos D, *et al.* (2022). **Algorithm for the Pruning of Synthesis Graphs**. *Journal of Chemical Information and Modeling*. [https://doi.org/10.1021/acs.jcim.1c01202](https://doi.org/10.1021/acs.jcim.1c01202)  
+3. (2025). **Synthesis Route Identification and Prioritization in Reaction Knowledge Graphs**. *ChemRxiv*. [https://doi.org/10.26434/chemrxiv-2025-0s3jp](https://doi.org/10.26434/chemrxiv-2025-0s3jp)  
+4. (2024). **Path Toward High-Throughput Synthesis Planning via Performance Benchmarking**. *ChemRxiv*. [https://doi.org/10.26434/chemrxiv-2024-pmjn8](https://doi.org/10.26434/chemrxiv-2024-pmjn8)  
 *This content is a preprint and has not been peer-reviewed.*
 
 ## Table of Contents

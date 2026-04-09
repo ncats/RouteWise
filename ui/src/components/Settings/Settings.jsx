@@ -265,13 +265,46 @@ const Settings = () => {
         width={600}
       >
         <Typography>
+          <Title level={4}>Publications</Title>
           <Paragraph>
-            <em>Citation for Route Wise manuscript TBD.</em>
+            Vorontcov, I., Miller, N., Walker, B., Yang, B., Soundararajan, J., Zahoránszky-Kőhalmi, G., <em>et al.</em> (2025). <b>RouteWise – An Integration Friendly Platform for Interactive Synthesis Routes</b>. <em>ChemRxiv</em>.{" "}
+            <Link
+              href="https://chemrxiv.org/doi/full/10.26434/chemrxiv-2025-9n358"
+              target="_blank"
+            >
+              https://doi.org/10.26434/chemrxiv-2025-9n358
+            </Link>
+            <br />
+            <em style={{ fontSize: "0.9em" }}>This content is a preprint and has not been peer-reviewed.</em>
           </Paragraph>
           <Paragraph>
-            <em>Citation for Route Wise code repository TBD.</em>
+            (2025). <b>Synthesis Route Identification and Prioritization in Reaction Knowledge Graphs</b>. <em>ChemRxiv</em>.{" "}
+            <Link
+              href="https://chemrxiv.org/doi/full/10.26434/chemrxiv-2025-0s3jp"
+              target="_blank"
+            >
+              https://doi.org/10.26434/chemrxiv-2025-0s3jp
+            </Link>
           </Paragraph>
           <Paragraph>
+            Zahoránszky-Kőhalmi, G. <em>et al.</em> (2022). <b>Algorithm for the Pruning of Synthesis Graphs</b>. <em>J. Chem. Inf. Model.</em> 62(9), 2226–2238.{" "}
+            <Link
+              href="https://pubs.acs.org/doi/10.1021/acs.jcim.1c01202"
+              target="_blank"
+            >
+              https://doi.org/10.1021/acs.jcim.1c01202
+            </Link>
+          </Paragraph>
+          <Paragraph>
+            (2024). <b>Path Toward High-Throughput Synthesis Planning via Performance Benchmarking</b>. <em>ChemRxiv</em>.{" "}
+            <Link
+              href="https://chemrxiv.org/doi/10.26434/chemrxiv-2024-pmjn8"
+              target="_blank"
+            >
+              https://doi.org/10.26434/chemrxiv-2024-pmjn8
+            </Link>
+          </Paragraph>
+          <Paragraph style={{ marginTop: "1.5em" }}>
             <b>RW API Swagger Page:</b>{" "}
             <a
               href={process.env.API_URL + "/api/v1/docs/aicp/rw_api"}

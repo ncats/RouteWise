@@ -560,7 +560,16 @@ async def smiles_to_svg_endpoint(mol_smiles: str = 'Cc1cc(Br)cc(C)c1C1C(=O)CCC1=
 
     d2d = Draw.MolDraw2DSVG(img_width, img_height)
     try:
-        d2d.DrawMolecule(mol)
+        # Force deterministic Kekule drawing first; if it fails, fall back to aromatic depiction.
+        try:
+            prepared_mol = Draw.PrepareMolForDrawing(mol, kekulize=True)
+            d2d.DrawMolecule(prepared_mol)
+        except Exception as kekulize_error:
+            logger.warning(
+                f"Kekulization failed for SMILES '{mol_smiles}'. Falling back to non-kekulized depiction: {kekulize_error}"
+            )
+            prepared_mol = Draw.PrepareMolForDrawing(mol, kekulize=False)
+            d2d.DrawMolecule(prepared_mol)
     except Exception as e:
         logger.error(f"Failed to draw molecule: {mol_smiles}", exc_info=True)
         raise HTTPException(
@@ -667,6 +676,16 @@ def flatten_dict(d, parent_key='', sep='_'):
         if isinstance(v, MutableMapping):
             items.extend(flatten_dict(v, new_key, sep=sep).items())
         else:
+            # Cytoscape infers a single column type; keep patent-related provenance fields list-typed.
+            if new_key.endswith("_patents") or new_key.endswith("_patent_paragraph_nums"):
+                if v is None:
+                    v = []
+                elif isinstance(v, str):
+                    v = [v]
+                elif isinstance(v, (tuple, set)):
+                    v = list(v)
+                elif not isinstance(v, list):
+                    v = [v]
             items.append((new_key, v))
     return dict(items)
 
@@ -674,19 +693,27 @@ def flatten_dict(d, parent_key='', sep='_'):
 def convert_to_cytoscape_json(aicp_graph, synth_graph_key="synth_graph", convert_route=False, is_predicted=False, route_index=0):
     # Try to get the specified graph, with fallback logic similar to frontend
     synth_graph = None
+    actual_graph_key = synth_graph_key  # Track which graph key was actually used
     
     if synth_graph_key in aicp_graph and aicp_graph[synth_graph_key] is not None:
         synth_graph = aicp_graph[synth_graph_key]
+        actual_graph_key = synth_graph_key
     elif "synth_graph" in aicp_graph and aicp_graph["synth_graph"] is not None:
         synth_graph = aicp_graph["synth_graph"]
+        actual_graph_key = "synth_graph"
     elif "evidence_synth_graph" in aicp_graph and aicp_graph["evidence_synth_graph"] is not None:
         synth_graph = aicp_graph["evidence_synth_graph"]
+        actual_graph_key = "evidence_synth_graph"
     elif "predicted_synth_graph" in aicp_graph and aicp_graph["predicted_synth_graph"] is not None:
         synth_graph = aicp_graph["predicted_synth_graph"]
+        actual_graph_key = "predicted_synth_graph"
     elif "predictive_synth_graph" in aicp_graph and aicp_graph["predictive_synth_graph"] is not None:
         synth_graph = aicp_graph["predictive_synth_graph"]  # Backward compatibility
+        actual_graph_key = "predictive_synth_graph"
     else:
         raise ValueError(f"No synthesis graph found. Looked for: {synth_graph_key}, synth_graph, evidence_synth_graph, predicted_synth_graph, predictive_synth_graph")
+
+    selected_route = None
 
     if convert_route:
         routes = aicp_graph.get("routes", [])
@@ -694,8 +721,8 @@ def convert_to_cytoscape_json(aicp_graph, synth_graph_key="synth_graph", convert
             raise ValueError("No routes found in the 'routes' object.")
         if not (0 <= route_index < len(routes)):
             raise ValueError(f"route_index {route_index} is out of bounds for routes of length {len(routes)}.")
-        route = routes[route_index]
-        route_node_labels = set(route["route_node_labels"])
+        selected_route = routes[route_index]
+        route_node_labels = set(selected_route["route_node_labels"])
 
         # Nodes limited to route
         filtered_nodes = [
@@ -713,7 +740,7 @@ def convert_to_cytoscape_json(aicp_graph, synth_graph_key="synth_graph", convert
             if edge["start_node"] in route_node_labels and edge["end_node"] in route_node_labels
         ]
 
-        aggregated_yield = route.get("aggregated_yield", "N/A")
+        aggregated_yield = selected_route.get("aggregated_yield", "N/A")
     else:
         # Full graph conversion (no route filtering)
         filtered_nodes = [
@@ -761,12 +788,29 @@ def convert_to_cytoscape_json(aicp_graph, synth_graph_key="synth_graph", convert
     
     # Generate name based on whether this is a route or full graph
     if convert_route:
-        # Route name: Include reaction steps, index, and type
-        route_type = "Predicted" if is_predicted else "Evidence"
+        # Route name: Prefer route-level prediction flag when available.
+        route_predicted = selected_route.get("predicted") if isinstance(selected_route, dict) else None
+        if route_predicted is True:
+            route_type = "Predicted"
+        elif route_predicted is False:
+            route_type = "Evidence"
+        else:
+            # Fallback for payloads without route prediction metadata.
+            if "predicted" in actual_graph_key.lower() or actual_graph_key in ["predicted_synth_graph", "predictive_synth_graph"]:
+                route_type = "Predicted"
+            elif "evidence" in actual_graph_key.lower() or actual_graph_key == "evidence_synth_graph":
+                route_type = "Evidence"
+            else:
+                route_type = "Synthesis"
         cytoscape_name = f"{target_inchikey}_SD_{reaction_steps} - Route {route_index} - {route_type}"
     else:
         # Full graph name: Simple format
-        graph_type = "Predicted Graph" if is_predicted else "Evidence Graph"
+        if "predicted" in actual_graph_key.lower() or actual_graph_key in ["predicted_synth_graph", "predictive_synth_graph"]:
+            graph_type = "Predicted Graph"
+        elif "evidence" in actual_graph_key.lower() or actual_graph_key == "evidence_synth_graph":
+            graph_type = "Evidence Graph"
+        else:
+            graph_type = "Synthesis Graph"  # fallback for generic synth_graph
         cytoscape_name = f"{target_inchikey} - {graph_type}"
 
     return {
